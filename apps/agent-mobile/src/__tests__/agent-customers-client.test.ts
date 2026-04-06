@@ -91,4 +91,38 @@ describe('agent customers client', () => {
       'Agent is not assigned to this customer',
     )
   })
+
+  it('generates magic-link payload with expiry metadata for share action', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { generateMagicLink } = await import('../api/agent-customers-client')
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          linkUrl: 'https://portal.example.test/m?token=abc123',
+          expiresAt: '2026-04-07T11:30:00.000Z',
+          expiresInSeconds: 5400,
+          lifecycle: 'issued',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    const response = await generateMagicLink('token-42', 'cust-alpha')
+
+    expect(response).toMatchObject({
+      linkUrl: 'https://portal.example.test/m?token=abc123',
+      expiresInSeconds: 5400,
+      lifecycle: 'issued',
+    })
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/customers/cust-alpha/magic-links'), {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: 'Bearer token-42',
+      },
+    })
+  })
 })
