@@ -33,5 +33,6 @@ import { SessionsService } from './sessions.service';
       useExisting: JwtCustomerSessionTokenSigner,
     },
   ],
+  exports: [CustomerSessionAuthGuard, CUSTOMER_SESSIONS_REPOSITORY],
 })
 export class SessionsModule {}
