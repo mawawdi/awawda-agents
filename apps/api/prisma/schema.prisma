@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MagicLinkStatus {
+  ISSUED
+  ACTIVATED
+  EXPIRED
+  CONSUMED
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+  EXPIRED
+}
+
+enum OrderStatus {
+  SUBMITTED
+  FAILED
+  PENDING_RETRY
+}
+
+enum IdempotencyScope {
+  CUSTOMER_ORDER_SUBMIT
+}
+
+enum AuditActorType {
+  AGENT
+  CUSTOMER_SESSION
+  SYSTEM
+}
+
+model Agent {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String         @db.VarChar(120)
+  phone         String         @unique @db.VarChar(32)
+  email         String?        @unique @db.VarChar(255)
+  passwordHash  String         @map("password_hash") @db.VarChar(255)
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  assignments   Assignment[]
+  approvedItems ApprovedItem[]
+  magicLinks    MagicLink[]
+
+  @@map("agents")
+}
+
+model Assignment {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId        String   @map("agent_id") @db.Uuid
+  hashCustomerId String   @map("hash_customer_id") @db.VarChar(128)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([agentId, hashCustomerId], map: "assignments_agent_customer_key")
+  @@index([hashCustomerId], map: "assignments_hash_customer_id_idx")
+  @@index([agentId], map: "assignments_agent_id_idx")
+  @@map("assignments")
+}
+
+model ApprovedItem {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hashCustomerId String   @map("hash_customer_id") @db.VarChar(128)
+  hashItemId     String   @map("hash_item_id") @db.VarChar(128)
+  addedByAgentId String   @map("added_by_agent_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  addedByAgent   Agent    @relation(fields: [addedByAgentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([hashCustomerId, hashItemId], map: "approved_items_customer_item_key")
+  @@index([hashCustomerId], map: "approved_items_hash_customer_id_idx")
+  @@index([addedByAgentId], map: "approved_items_added_by_agent_id_idx")
+  @@map("approved_items")
+}
+
+model MagicLink {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash       String          @unique @map("token_hash") @db.VarChar(128)
+  hashCustomerId  String          @map("hash_customer_id") @db.VarChar(128)
+  issuedByAgentId String          @map("issued_by_agent_id") @db.Uuid
+  expiresAt       DateTime        @map("expires_at") @db.Timestamptz(3)
+  status          MagicLinkStatus @default(ISSUED)
+  activatedAt     DateTime?       @map("activated_at") @db.Timestamptz(3)
+  consumedAt      DateTime?       @map("consumed_at") @db.Timestamptz(3)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  issuedByAgent   Agent           @relation(fields: [issuedByAgentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sessions        Session[]
+
+  @@index([hashCustomerId], map: "magic_links_hash_customer_id_idx")
+  @@index([issuedByAgentId], map: "magic_links_issued_by_agent_id_idx")
+  @@index([status], map: "magic_links_status_idx")
+  @@index([expiresAt], map: "magic_links_expires_at_idx")
+  @@map("magic_links")
+}
+
+model Session {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  magicLinkId      String        @unique @map("magic_link_id") @db.Uuid
+  hashCustomerId   String        @map("hash_customer_id") @db.VarChar(128)
+  sessionExpiresAt DateTime      @map("session_expires_at") @db.Timestamptz(3)
+  status           SessionStatus @default(ACTIVE)
+  isActive         Boolean       @default(true) @map("is_active")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  magicLink        MagicLink     @relation(fields: [magicLinkId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orders           Order[]
+
+  @@index([hashCustomerId], map: "sessions_hash_customer_id_idx")
+  @@index([status], map: "sessions_status_idx")
+  @@index([sessionExpiresAt], map: "sessions_session_expires_at_idx")
+  @@index([isActive], map: "sessions_is_active_idx")
+  @@map("sessions")
+}
+
+model Order {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerSessionId String      @map("customer_session_id") @db.Uuid
+  hashCustomerId    String      @map("hash_customer_id") @db.VarChar(128)
+  hashOrderRef      String?     @unique @map("hash_order_ref") @db.VarChar(128)
+  status            OrderStatus
+  submittedAt       DateTime    @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  estimatedTotal    Decimal     @map("estimated_total") @db.Decimal(14, 2)
+  currency          String      @db.VarChar(3)
+  customerSession   Session     @relation(fields: [customerSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orderLines        OrderLine[]
+
+  @@index([customerSessionId], map: "orders_customer_session_id_idx")
+  @@index([hashCustomerId], map: "orders_hash_customer_id_idx")
+  @@index([status], map: "orders_status_idx")
+  @@map("orders")
+}
+
+model OrderLine {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String  @map("order_id") @db.Uuid
+  hashItemId        String  @map("hash_item_id") @db.VarChar(128)
+  itemNameSnapshot  String  @map("item_name_snapshot") @db.VarChar(255)
+  quantity          Decimal @db.Decimal(14, 3)
+  unit              String  @db.VarChar(16)
+  unitPriceSnapshot Decimal @map("unit_price_snapshot") @db.Decimal(14, 2)
+  lineTotalSnapshot Decimal @map("line_total_snapshot") @db.Decimal(14, 2)
+  order             Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([orderId], map: "order_lines_order_id_idx")
+  @@index([hashItemId], map: "order_lines_hash_item_id_idx")
+  @@map("order_lines")
+}
+
+model IdempotencyKey {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope        IdempotencyScope
+  key          String           @db.VarChar(255)
+  responseHash String?          @map("response_hash") @db.VarChar(128)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([scope, key], map: "idempotency_keys_scope_key_key")
+  @@index([createdAt], map: "idempotency_keys_created_at_idx")
+  @@map("idempotency_keys")
+}
+
+model AuditLog {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorType        AuditActorType @map("actor_type")
+  actorId          String         @map("actor_id") @db.VarChar(128)
+  eventType        String         @map("event_type") @db.VarChar(120)
+  eventPayloadJson Json           @map("event_payload_json")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([actorType, actorId], map: "audit_logs_actor_lookup_idx")
+  @@index([eventType], map: "audit_logs_event_type_idx")
+  @@index([createdAt], map: "audit_logs_created_at_idx")
+  @@map("audit_logs")
+}
