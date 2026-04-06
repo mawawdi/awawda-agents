@@ -6,12 +6,15 @@ How to decide who handles what.
 
 | Work Type | Route To | Examples |
 |-----------|----------|----------|
-| {domain 1} | {Name} | {example tasks} |
-| {domain 2} | {Name} | {example tasks} |
-| {domain 3} | {Name} | {example tasks} |
-| Code review | {Name} | Review PRs, check quality, suggest improvements |
-| Testing | {Name} | Write tests, find edge cases, verify fixes |
-| Scope & priorities | {Name} | What to build next, trade-offs, decisions |
+| Scope, architecture, prioritization | Ripley | Plan phases, set boundaries, review cross-cutting changes |
+| Mobile app & portal UI | Dallas | React Native screens, Next.js pages, forms, UX flows |
+| Backend APIs & data | Parker | NestJS modules, Prisma models, auth/session, integrations |
+| DevOps & delivery | Ash | CI/CD, Docker, environments, deployment hardening |
+| Testing strategy & implementation | Lambert | Unit/integration/e2e tests, regression suites, edge cases |
+| Code review (Dallas + Parker outputs) | Bishop | Reviewer gate, approval/rejection, reassignment recommendations |
+| Code review (all other outputs) | Ripley | PR review, quality checks, architecture alignment |
+| Testing | Lambert | Write tests, find edge cases, verify fixes |
+| Scope & priorities | Ripley | What to build next, trade-offs, decisions |
 | Session logging | Scribe | Automatic — never needs routing |
 
 ## Issue Routing

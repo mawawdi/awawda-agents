@@ -1,0 +1,23 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Alien",
+      "assignment_id": "assignment-2026-04-06T14-46-25Z",
+      "used_at": "2026-04-06T14:46:25.147Z"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "assignment-2026-04-06T14-46-25Z": {
+      "universe": "Alien",
+      "agents": {
+        "lead": "Ripley",
+        "frontend-dev": "Dallas",
+        "backend-dev": "Parker",
+        "tester": "Lambert",
+        "devops": "Ash",
+        "reviewer": "Bishop"
+      },
+      "created_at": "2026-04-06T14:46:25.147Z"
+    }
+  }
+}

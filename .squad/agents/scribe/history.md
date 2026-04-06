@@ -1,16 +1,10 @@
 # Project Context
 
-- **Project:** meatland-agents
-- **Created:** 2026-04-06
-
-## Core Context
-
-Agent Scribe initialized and ready for work.
-
-## Recent Updates
-
-📌 Team initialized on 2026-04-06
+- **Owner:** Cana
+- **Project:** Factory Agent Mobile App + Customer Ordering Portal
+- **Stack:** React Native (Expo), Next.js, NestJS (Fastify), Prisma, PostgreSQL, Redis, pnpm monorepo
+- **Created:** 2026-04-06T14:46:25.147Z
 
 ## Learnings
 
-Initial setup complete.
+- Team initialized for Phase 1 architecture implementation.

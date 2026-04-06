@@ -5,3 +5,12 @@
 .squad/sessions/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+
+# Node / pnpm workspace outputs
+node_modules/
+pnpm-lock.yaml
+.pnpm-store/
+dist/
+.next/
+.expo/
+coverage/

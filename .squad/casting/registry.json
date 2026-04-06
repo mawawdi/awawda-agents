@@ -1,0 +1,46 @@
+{
+  "agents": {
+    "lead": {
+      "persistent_name": "Ripley",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "frontend-dev": {
+      "persistent_name": "Dallas",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "backend-dev": {
+      "persistent_name": "Parker",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "tester": {
+      "persistent_name": "Lambert",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "devops": {
+      "persistent_name": "Ash",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "reviewer": {
+      "persistent_name": "Bishop",
+      "universe": "Alien",
+      "created_at": "2026-04-06T14:46:25.147Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}
