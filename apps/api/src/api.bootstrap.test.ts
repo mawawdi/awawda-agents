@@ -5,8 +5,12 @@ import { createApiApp } from './server';
 
 describe('API bootstrap', () => {
   let app: NestFastifyApplication;
+  const originalJwtSecret = process.env.JWT_SECRET;
+  const originalJwtShiftTokenTtl = process.env.JWT_SHIFT_TOKEN_TTL;
 
   beforeAll(async () => {
+    process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
+    process.env.JWT_SHIFT_TOKEN_TTL = '8h';
     app = await createApiApp();
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -14,6 +18,16 @@ describe('API bootstrap', () => {
 
   afterAll(async () => {
     await app.close();
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
+    if (originalJwtShiftTokenTtl === undefined) {
+      delete process.env.JWT_SHIFT_TOKEN_TTL;
+    } else {
+      process.env.JWT_SHIFT_TOKEN_TTL = originalJwtShiftTokenTtl;
+    }
   });
 
   it('serves health route on /v1/health', async () => {
