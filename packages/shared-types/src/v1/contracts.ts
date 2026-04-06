@@ -28,12 +28,30 @@ export interface AgentCustomersResponse {
   generatedAt: string;
 }
 
-
 export interface AgentMagicLinkIssueResponse {
   linkUrl: string;
   expiresAt: string;
   expiresInSeconds: number;
   lifecycle: 'issued';
+}
+
+export interface AgentApprovedItem {
+  hashItemId: string;
+  addedByAgentId: string;
+  createdAt: string;
+}
+
+export interface AgentApprovedItemsResponse {
+  customerId: string;
+  items: AgentApprovedItem[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentApprovedItemMutationResponse {
+  customerId: string;
+  item: AgentApprovedItem;
+  created: boolean;
 }
 
 export interface AgentCatalogItem {

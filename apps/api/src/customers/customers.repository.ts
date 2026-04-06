@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import type { AgentAssignedCustomer } from '@meatland/shared-types';
+import { AuditActorType, Prisma, PrismaClient } from '@prisma/client';
+import type { AgentApprovedItem, AgentAssignedCustomer } from '@meatland/shared-types';
 
 import type { AgentCustomersRepository } from './customers.types';
 
@@ -64,5 +64,118 @@ export class PrismaAgentCustomersRepository implements AgentCustomersRepository 
       approvedItemsCount: approvedCountByCustomer.get(customerId) ?? 0,
       lastOrderAt: lastOrderByCustomer.get(customerId)?.toISOString() ?? null,
     }));
+  }
+
+  async isAgentAssignedToCustomer(agentId: string, customerId: string): Promise<boolean> {
+    const assignment = await this.prisma.assignment.findFirst({
+      where: {
+        agentId,
+        hashCustomerId: customerId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return assignment !== null;
+  }
+
+  async listApprovedItems(customerId: string): Promise<AgentApprovedItem[]> {
+    const approvedItems = await this.prisma.approvedItem.findMany({
+      where: {
+        hashCustomerId: customerId,
+      },
+      select: {
+        hashItemId: true,
+        addedByAgentId: true,
+        createdAt: true,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+
+    return approvedItems.map((item) => ({
+      hashItemId: item.hashItemId,
+      addedByAgentId: item.addedByAgentId,
+      createdAt: item.createdAt.toISOString(),
+    }));
+  }
+
+  async addApprovedItem(
+    customerId: string,
+    hashItemId: string,
+    agentId: string,
+  ): Promise<{ item: AgentApprovedItem; created: boolean }> {
+    try {
+      const created = await this.prisma.$transaction(async (tx) => {
+        const approvedItem = await tx.approvedItem.create({
+          data: {
+            hashCustomerId: customerId,
+            hashItemId,
+            addedByAgentId: agentId,
+          },
+          select: {
+            id: true,
+            hashItemId: true,
+            addedByAgentId: true,
+            createdAt: true,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorType: AuditActorType.AGENT,
+            actorId: agentId,
+            eventType: 'approved_item.added',
+            eventPayloadJson: {
+              approvedItemId: approvedItem.id,
+              customerId,
+              hashItemId,
+            },
+          },
+        });
+
+        return approvedItem;
+      });
+
+      return {
+        item: {
+          hashItemId: created.hashItemId,
+          addedByAgentId: created.addedByAgentId,
+          createdAt: created.createdAt.toISOString(),
+        },
+        created: true,
+      };
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+        throw error;
+      }
+    }
+
+    const existing = await this.prisma.approvedItem.findUnique({
+      where: {
+        hashCustomerId_hashItemId: {
+          hashCustomerId: customerId,
+          hashItemId,
+        },
+      },
+      select: {
+        hashItemId: true,
+        addedByAgentId: true,
+        createdAt: true,
+      },
+    });
+
+    if (!existing) {
+      throw new Error('Approved item conflict detected but item record was not found');
+    }
+
+    return {
+      item: {
+        hashItemId: existing.hashItemId,
+        addedByAgentId: existing.addedByAgentId,
+        createdAt: existing.createdAt.toISOString(),
+      },
+      created: false,
+    };
   }
 }
