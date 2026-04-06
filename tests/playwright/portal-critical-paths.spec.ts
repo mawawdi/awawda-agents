@@ -69,7 +69,13 @@ test.describe('customer portal browser critical paths', () => {
   });
 
   test('activation route redirects to /order and supports quantity composition', async ({ page }) => {
+    let activationRequestToken: string | undefined;
+    let activationCallCount = 0;
+    let portalDataCallCount = 0;
+
     await page.route('**/v1/customer/sessions/activate', async (route) => {
+      activationCallCount += 1;
+      activationRequestToken = route.request().postDataJSON()?.token;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -78,6 +84,7 @@ test.describe('customer portal browser critical paths', () => {
     });
 
     await page.route('**/v1/customer/portal-data', async (route) => {
+      portalDataCallCount += 1;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -85,10 +92,19 @@ test.describe('customer portal browser critical paths', () => {
       });
     });
 
+    const activationResponseWait = page.waitForResponse((response) =>
+      response.url().includes('/v1/customer/sessions/activate'),
+    );
+    const portalDataResponseWait = page.waitForResponse((response) => response.url().includes('/v1/customer/portal-data'));
+
     await page.goto(`${portalBaseUrl}/m/token-abc`);
 
-    await expect(page.getByRole('heading', { name: 'Activating your order link…' })).toBeVisible();
+    await activationResponseWait;
+    await portalDataResponseWait;
     await expect(page).toHaveURL(`${portalBaseUrl}/order`);
+    expect(activationRequestToken).toBe('token-abc');
+    expect(activationCallCount).toBe(1);
+    expect(portalDataCallCount).toBeGreaterThan(0);
     await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Increase Ribeye Steak' }).click();
