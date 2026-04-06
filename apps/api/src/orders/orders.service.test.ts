@@ -14,6 +14,8 @@ describe('OrdersService', () => {
       }),
       getHealth: vi.fn(),
       getMasterCatalog: vi.fn(),
+      getCustomerRecentItems: vi.fn(),
+      getCustomerPricing: vi.fn(),
     };
 
     const service = new OrdersService(erpGateway);
@@ -45,6 +47,8 @@ describe('OrdersService', () => {
       handoffOrder: vi.fn().mockRejectedValue(new Error('ERP timeout')),
       getHealth: vi.fn(),
       getMasterCatalog: vi.fn(),
+      getCustomerRecentItems: vi.fn(),
+      getCustomerPricing: vi.fn(),
     };
 
     const service = new OrdersService(erpGateway);
