@@ -4,8 +4,8 @@ Phase 1 lightweight customer ordering portal using magic-link activation.
 
 ## Implemented in T17
 
-- `/m/[token]` activation-route bootstrap state model with retryable invalid/expired/network/server failures and weak-network hint transition.
-- `/order` composition model covering recent + approved sections, quantity-stepper interactions, and resilient loading/error states.
+- Runtime `/m/[token]` activation route that exchanges magic-link tokens, shows weak-network guidance, and redirects into ordering on success.
+- Runtime `/order` route wired to portal data fetch + composition UI (recent + approved sections, quantity steppers, estimated total, sticky submit bar).
 - Cart summary model with estimated total math plus mobile-optimized sticky submit bar behavior.
 
 ## Scripts

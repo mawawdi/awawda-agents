@@ -149,3 +149,19 @@ Portal retries now receive consistent responses without duplicate ERP calls, rev
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+---
+
+### 2026-04-07 — Decision Inbox: Issue #17 Runtime Browser-Flow Corrective Revision (Lambert)
+
+**Context**
+Issue #17 re-review rejected PR #44 due to insufficient Playwright evidence of actual browser navigation flow from `/m/[token]` to `/order`, and the branch became merge-conflicting against current main.
+
+**Decision**
+Re-implement the #17 corrective scope from a clean branch off current main, keep runtime portal wiring in `apps/customer-portal` (`/m/:token` activation + `/order` composition), and require Playwright page-level coverage that drives real browser route transitions and quantity interactions instead of request-only checks.
+
+**Rationale**
+Acceptance requires end-user behavior validation on rendered routes. Browser-driven route assertions prevent false positives from API-only tests and directly prove the production customer path.
+
+**Consequences**
+Future re-reviews can verify #17 with deterministic browser evidence (`/m/:token` activation, redirect, `/order` composition controls, weak-network/error UX), while avoiding prior merge-conflict drift by submitting from an up-to-date main lineage.
