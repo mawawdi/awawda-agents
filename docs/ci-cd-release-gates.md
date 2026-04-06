@@ -17,11 +17,12 @@ This project uses GitHub Actions to gate merges and releases through determinist
 `Squad CI` enforces:
 
 1. Deterministic dependency install with `pnpm install --frozen-lockfile`
-2. Workspace `lint`
-3. Workspace `test`
-4. Workspace `build`
-5. API container build (`infra/docker/api.Dockerfile`)
-6. Customer portal container build (`infra/docker/customer-portal.Dockerfile`)
+2. Committed root `pnpm-lock.yaml` is required (missing/untracked lockfile fails the gate)
+3. Workspace `lint`
+4. Workspace `test`
+5. Workspace `build`
+6. API container build (`infra/docker/api.Dockerfile`)
+7. Customer portal container build (`infra/docker/customer-portal.Dockerfile`)
 
 Any failing gate blocks merge.
 

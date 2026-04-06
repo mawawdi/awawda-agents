@@ -22,6 +22,10 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+      - name: Verify lockfile is committed
+        run: |
+          test -f pnpm-lock.yaml
+          git ls-files --error-unmatch pnpm-lock.yaml >/dev/null
       - name: Install dependencies (deterministic)
         run: pnpm install --frozen-lockfile
       - name: Verify release quality gates
