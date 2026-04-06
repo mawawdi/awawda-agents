@@ -96,6 +96,22 @@ Customer APIs can safely reject invalid/expired activation/session tokens with s
 
 ---
 
+### 2026-04-06 — Decision Inbox: PR #40 Conflict-Resolution Verification (Parker)
+
+**Context**
+PR #40 (issue #12) was approved but blocked from merge due to stale conflict metadata against `main`.
+
+**Decision**
+Rebase the issue-12 branch on latest `main` without altering approved session-activation/portal-data semantics, then require fresh API verification gates (`prisma:generate`, `lint`, `test`, `build`) before requesting merge retry.
+
+**Rationale**
+Conflict refreshes must preserve the approved behavior contract (activation exchange, lifecycle transitions, and explicit invalid/expired handling) while producing current CI evidence on the rebased head.
+
+**Consequences**
+PR reviewers can merge using the updated head commit with deterministic proof that issue #12 behavior remains intact after synchronization with `main`.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
