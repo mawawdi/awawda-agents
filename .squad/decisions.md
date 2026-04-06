@@ -165,3 +165,19 @@ Acceptance requires end-user behavior validation on rendered routes. Browser-dri
 
 **Consequences**
 Future re-reviews can verify #17 with deterministic browser evidence (`/m/:token` activation, redirect, `/order` composition controls, weak-network/error UX), while avoiding prior merge-conflict drift by submitting from an up-to-date main lineage.
+
+---
+
+### 2026-04-07 — Decision Inbox: Issue #17 Playwright Flake Hardening (Parker)
+
+**Context**
+PR #45 was rejected after rerun flakiness: the browser-flow spec asserted a transient activation heading that can be skipped on faster redirects from `/m/[token]` to `/order`.
+
+**Decision**
+Stabilize browser-flow verification by synchronizing on durable runtime signals: assert activation API payload/token handling, wait for activation + portal-data responses, assert redirect to `/order`, and validate composed order UI/cart interactions without requiring visibility of transient intermediate headings.
+
+**Rationale**
+Transient render states are timing-sensitive and not required for acceptance semantics. Anchoring assertions to API handshake + final route/UI behavior preserves intent while removing race conditions.
+
+**Consequences**
+`pnpm test:portal-e2e` reruns now exercise the same end-user acceptance path with deterministic synchronization, reducing false negatives while keeping `/m/[token] -> /order` wiring and order composition behavior fully validated.
