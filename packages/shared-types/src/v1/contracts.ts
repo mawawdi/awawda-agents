@@ -28,6 +28,14 @@ export interface AgentCustomersResponse {
   generatedAt: string;
 }
 
+
+export interface AgentMagicLinkIssueResponse {
+  linkUrl: string;
+  expiresAt: string;
+  expiresInSeconds: number;
+  lifecycle: 'issued';
+}
+
 export interface AgentCatalogItem {
   itemId: string;
   sku: string;
