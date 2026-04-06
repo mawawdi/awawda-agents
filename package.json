@@ -6,6 +6,10 @@
   "scripts": {
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "test:portal-e2e": "playwright test tests/playwright/portal-critical-paths.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
   }
 }
