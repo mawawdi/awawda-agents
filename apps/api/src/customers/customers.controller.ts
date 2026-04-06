@@ -1,7 +1,12 @@
-import { Controller, Get, Headers, Inject, UseGuards } from '@nestjs/common';
-import type { AgentCustomersResponse } from '@meatland/shared-types';
+import { Body, Controller, Get, Headers, Inject, Param, Post, Res, UseGuards } from '@nestjs/common';
+import type {
+  AgentApprovedItemMutationResponse,
+  AgentApprovedItemsResponse,
+  AgentCustomersResponse,
+} from '@meatland/shared-types';
 
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
+import { AddApprovedItemRequestDto } from './dto/add-approved-item-request.dto';
 import { CustomersService } from './customers.service';
 
 @Controller({ path: 'agent/customers', version: '1' })
@@ -14,5 +19,26 @@ export class CustomersController {
   @Get()
   getAssignedCustomers(@Headers('x-agent-id') agentId: string): Promise<AgentCustomersResponse> {
     return this.customersService.getAssignedCustomers(agentId);
+  }
+
+  @Get(':customerId/approved-items')
+  getApprovedItems(
+    @Headers('x-agent-id') agentId: string,
+    @Param('customerId') customerId: string,
+  ): Promise<AgentApprovedItemsResponse> {
+    return this.customersService.getApprovedItems(agentId, customerId);
+  }
+
+  @Post(':customerId/approved-items')
+  addApprovedItem(
+    @Headers('x-agent-id') agentId: string,
+    @Param('customerId') customerId: string,
+    @Body() body: AddApprovedItemRequestDto,
+    @Res({ passthrough: true }) response: { status(code: number): unknown },
+  ): Promise<AgentApprovedItemMutationResponse> {
+    return this.customersService.addApprovedItem(agentId, customerId, body.hashItemId).then((result) => {
+      response.status(result.created ? 201 : 200);
+      return result;
+    });
   }
 }
