@@ -18,6 +18,8 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `GET /v1/ready` — readiness contract including ERP adapter health (Hashavshevet skeleton reports `degraded`)
 - `POST /v1/agent/auth/login` — agent login with Argon2 verification + JWT shift token
 - `GET /v1/agent/customers` — assigned customer dashboard data for authenticated agents only
+- `GET /v1/agent/customers/:customerId/approved-items` — assigned-agent allowlist reads for a specific customer
+- `POST /v1/agent/customers/:customerId/approved-items` — assigned-agent allowlist mutation with duplicate-safe semantics + audit log
 - `GET /v1/agent/catalog` — ERP-backed catalog snapshot with short-lived cache metadata + cache headers
 - `POST /v1/agent/customers/:customerId/magic-links` — issue secure customer magic links with hash-only token persistence
 

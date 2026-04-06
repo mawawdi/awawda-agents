@@ -154,6 +154,164 @@ describe('Agent read endpoints', () => {
     });
     expect(vi.mocked(erpGateway.getMasterCatalog)).toHaveBeenCalledTimes(1);
   });
+
+  it('returns approved items for an assigned customer', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    vi.spyOn(customersRepository, 'isAgentAssignedToCustomer').mockResolvedValue(true);
+    vi.spyOn(customersRepository, 'listApprovedItems').mockResolvedValue([
+      {
+        hashItemId: 'itm-9',
+        addedByAgentId: 'agent-42',
+        createdAt: '2026-04-06T18:45:00.000Z',
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/customers/cust-alpha/approved-items',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      customerId: 'cust-alpha',
+      total: 1,
+      items: [
+        {
+          hashItemId: 'itm-9',
+          addedByAgentId: 'agent-42',
+          createdAt: '2026-04-06T18:45:00.000Z',
+        },
+      ],
+    });
+    expect(vi.mocked(customersRepository.isAgentAssignedToCustomer)).toHaveBeenCalledWith(
+      'agent-42',
+      'cust-alpha',
+    );
+    expect(vi.mocked(customersRepository.listApprovedItems)).toHaveBeenCalledWith('cust-alpha');
+  });
+
+  it('blocks approved items read for unassigned customers', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    vi.spyOn(customersRepository, 'isAgentAssignedToCustomer').mockResolvedValue(false);
+    const listApprovedItemsSpy = vi.spyOn(customersRepository, 'listApprovedItems');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/customers/cust-locked/approved-items',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({
+      code: 'AUTH_AGENT_CUSTOMER_ASSIGNMENT_REQUIRED',
+      message: 'Agent is not assigned to this customer',
+    });
+    expect(listApprovedItemsSpy).not.toHaveBeenCalled();
+  });
+
+  it('adds approved items for assigned customers', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    vi.spyOn(customersRepository, 'isAgentAssignedToCustomer').mockResolvedValue(true);
+    vi.spyOn(customersRepository, 'addApprovedItem').mockResolvedValue({
+      created: true,
+      item: {
+        hashItemId: 'itm-11',
+        addedByAgentId: 'agent-42',
+        createdAt: '2026-04-06T19:00:00.000Z',
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/customers/cust-alpha/approved-items',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+      payload: {
+        hashItemId: 'itm-11',
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      customerId: 'cust-alpha',
+      created: true,
+      item: {
+        hashItemId: 'itm-11',
+        addedByAgentId: 'agent-42',
+        createdAt: '2026-04-06T19:00:00.000Z',
+      },
+    });
+    expect(vi.mocked(customersRepository.addApprovedItem)).toHaveBeenCalledWith(
+      'cust-alpha',
+      'itm-11',
+      'agent-42',
+    );
+  });
+
+  it('returns duplicate-safe response when approved item already exists', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    vi.spyOn(customersRepository, 'isAgentAssignedToCustomer').mockResolvedValue(true);
+    vi.spyOn(customersRepository, 'addApprovedItem').mockResolvedValue({
+      created: false,
+      item: {
+        hashItemId: 'itm-11',
+        addedByAgentId: 'agent-7',
+        createdAt: '2026-04-05T10:00:00.000Z',
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/customers/cust-alpha/approved-items',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+      payload: {
+        hashItemId: 'itm-11',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      customerId: 'cust-alpha',
+      created: false,
+      item: {
+        hashItemId: 'itm-11',
+        addedByAgentId: 'agent-7',
+        createdAt: '2026-04-05T10:00:00.000Z',
+      },
+    });
+  });
+
+  it('blocks approved item mutation for unassigned customers', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    vi.spyOn(customersRepository, 'isAgentAssignedToCustomer').mockResolvedValue(false);
+    const addApprovedItemSpy = vi.spyOn(customersRepository, 'addApprovedItem');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/customers/cust-locked/approved-items',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+      payload: {
+        hashItemId: 'itm-11',
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({
+      code: 'AUTH_AGENT_CUSTOMER_ASSIGNMENT_REQUIRED',
+      message: 'Agent is not assigned to this customer',
+    });
+    expect(addApprovedItemSpy).not.toHaveBeenCalled();
+  });
 });
 
 function signAgentToken(agentId: string): string {
