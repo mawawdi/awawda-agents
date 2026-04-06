@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { BMaxXmlAdapter } from './bmax-xml.adapter';
 import { CompositeErpGateway } from './composite-erp.gateway';
@@ -7,6 +7,28 @@ import { HashavshevetAdapter } from './hashavshevet.adapter';
 import { createApiApp } from '../server';
 
 describe('ERP module', () => {
+  const originalJwtSecret = process.env.JWT_SECRET;
+  const originalJwtShiftTokenTtl = process.env.JWT_SHIFT_TOKEN_TTL;
+
+  beforeAll(() => {
+    process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
+    process.env.JWT_SHIFT_TOKEN_TTL = process.env.JWT_SHIFT_TOKEN_TTL ?? '8h';
+  });
+
+  afterAll(() => {
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
+
+    if (originalJwtShiftTokenTtl === undefined) {
+      delete process.env.JWT_SHIFT_TOKEN_TTL;
+    } else {
+      process.env.JWT_SHIFT_TOKEN_TTL = originalJwtShiftTokenTtl;
+    }
+  });
+
   it('provides the ERP gateway abstraction token', async () => {
     const app = await createApiApp();
     await app.init();
