@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import type {
+  ErpGatewayCatalogSnapshot,
   ErpGatewayHealth,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
@@ -39,6 +40,36 @@ export class HashavshevetAdapter {
       provider: 'hashavshevet',
       status: 'degraded',
       detail: 'Hashavshevet adapter initialized in skeleton mode.',
+    };
+  }
+
+  async getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot> {
+    return {
+      source: 'hashavshevet',
+      syncedAt: new Date().toISOString(),
+      items: [
+        {
+          itemId: 'itm-beef-entrecote',
+          sku: 'BEEF-ENT-001',
+          name: 'Beef Entrecôte',
+          unit: 'kg',
+          isActive: true,
+        },
+        {
+          itemId: 'itm-beef-mince',
+          sku: 'BEEF-MIN-010',
+          name: 'Beef Mince 20% Fat',
+          unit: 'kg',
+          isActive: true,
+        },
+        {
+          itemId: 'itm-lamb-ribs',
+          sku: 'LAMB-RIB-002',
+          name: 'Lamb Ribs',
+          unit: 'kg',
+          isActive: true,
+        },
+      ],
     };
   }
 

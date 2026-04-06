@@ -17,12 +17,18 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `GET /v1/health` — liveness contract
 - `GET /v1/ready` — readiness contract including ERP adapter health (Hashavshevet skeleton reports `degraded`)
 - `POST /v1/agent/auth/login` — agent login with Argon2 verification + JWT shift token
+- `GET /v1/agent/customers` — assigned customer dashboard data for authenticated agents only
+- `GET /v1/agent/catalog` — ERP-backed catalog snapshot with short-lived cache metadata + cache headers
 
 ## Auth environment variables
 
 - `JWT_SECRET` (required): signing key for agent JWT access tokens
 - `JWT_SHIFT_TOKEN_TTL` (optional): shift token TTL (`8h` default, supports `s|m|h|d`)
 - `JWT_ISSUER` (optional): JWT issuer claim (`meatland-api` default)
+
+## Catalog environment variables
+
+- `CATALOG_CACHE_TTL_SECONDS` (optional): API catalog cache max-age in seconds (`300` default)
 
 ## Module boundaries
 
