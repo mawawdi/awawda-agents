@@ -1,3 +1,71 @@
-# compose
+# Local infra compose (PostgreSQL + Redis)
 
-Placeholder directory for Docker Compose files per environment/profile.
+This stack provides local runtime dependencies for API development and test execution.
+
+## Prerequisites
+
+- Docker Desktop (or Docker Engine with Compose v2)
+
+## Start local infra
+
+From repository root:
+
+```bash
+docker compose -f infra/compose/local.yml up -d
+```
+
+This starts:
+
+- PostgreSQL `16.3-alpine` on `localhost:5432`
+- Redis `7.2.5-alpine` on `localhost:6379`
+
+## Verify startup health
+
+```bash
+docker compose -f infra/compose/local.yml ps
+```
+
+Expected state:
+
+- `postgres` is `running` and `healthy`
+- `redis` is `running` and `healthy`
+
+You can also inspect logs:
+
+```bash
+docker compose -f infra/compose/local.yml logs --tail=100
+```
+
+## API environment wiring
+
+`apps/api/.env.example` is aligned to this stack:
+
+- `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/meatland`
+- `REDIS_URL=redis://localhost:6379`
+
+Copy `.env.example` to `.env` and keep these defaults for local development.
+
+## Stop stack
+
+```bash
+docker compose -f infra/compose/local.yml down --remove-orphans
+```
+
+## Safe local data reset
+
+To fully reset local PostgreSQL/Redis data volumes:
+
+```bash
+docker compose -f infra/compose/local.yml down --volumes --remove-orphans
+```
+
+This removes local compose containers and volumes (`postgres_data`, `redis_data`) only for this stack.
+
+## First-run initialization
+
+On first bootstrap (fresh volume), PostgreSQL runs SQL files in `infra/compose/init/`.
+
+Current init script provisions:
+
+- `meatland` (primary DB via `POSTGRES_DB`)
+- `meatland_test` (created via `01-create-test-db.sql`)
