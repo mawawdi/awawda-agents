@@ -74,3 +74,44 @@ export interface AgentCatalogResponse {
   source: 'hashavshevet';
   cache: AgentCatalogCacheMetadata;
 }
+
+export interface CustomerSessionActivateRequest {
+  token: string;
+}
+
+export interface CustomerPortalCustomer {
+  customerId: string;
+}
+
+export interface CustomerRecentItem {
+  itemId: string;
+  name: string;
+  lastOrderedAt: string;
+}
+
+export interface CustomerPricingLine {
+  itemId: string;
+  unitPrice: number;
+  currency: string;
+}
+
+export interface CustomerApprovedItem {
+  hashItemId: string;
+  addedByAgentId: string;
+  createdAt: string;
+}
+
+export interface CustomerPortalDataPayload {
+  customer: CustomerPortalCustomer;
+  recentItems: CustomerRecentItem[];
+  approvedItems: CustomerApprovedItem[];
+  pricing: CustomerPricingLine[];
+  priceListVersion: string;
+  sessionExpiresAt: string;
+}
+
+export interface CustomerSessionActivateResponse extends CustomerPortalDataPayload {
+  sessionToken: string;
+}
+
+export type CustomerPortalDataResponse = CustomerPortalDataPayload;

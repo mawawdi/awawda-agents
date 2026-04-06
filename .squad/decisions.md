@@ -80,6 +80,19 @@ Keeping mobile request/response typing pinned to shared contracts prevents drift
 
 **Consequences**
 Future mobile iterations can extend dashboard interactions without reworking base resilience patterns, and Bishop can validate contract parity through focused vitest + UI-state evidence.
+### 2026-04-06 — Decision Inbox: Customer Session Activation Lifecycle Enforcement (Parker)
+
+**Context**
+Issue #12 introduced customer portal activation/read APIs that consume magic-link tokens and must provide auditable lifecycle transitions with explicit invalid/expired responses.
+
+**Decision**
+Activation now hashes inbound tokens, enforces `magic_links` lifecycle guards (`ISSUED` only, with expired `ISSUED` links persisted as `EXPIRED`), creates customer sessions transactionally, and writes audit events for `magic_link.activated`, `magic_link.expired`, `customer_session.activated`, and runtime `customer_session.expired` transitions.
+
+**Rationale**
+This keeps portal access security aligned with one-time magic-link semantics while ensuring operational traceability for every state transition that affects customer authentication validity.
+
+**Consequences**
+Customer APIs can safely reject invalid/expired activation/session tokens with stable explicit codes, and reviewers can verify persistence behavior through repository and integration test evidence.
 
 ---
 

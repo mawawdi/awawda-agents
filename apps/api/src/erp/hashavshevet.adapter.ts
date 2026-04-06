@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import type {
   ErpGatewayCatalogSnapshot,
+  ErpGatewayCustomerPricingSnapshot,
+  ErpGatewayCustomerRecentItemsSnapshot,
   ErpGatewayHealth,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
@@ -68,6 +70,49 @@ export class HashavshevetAdapter {
           name: 'Lamb Ribs',
           unit: 'kg',
           isActive: true,
+        },
+      ],
+    };
+  }
+
+  async getCustomerRecentItems(customerId: string): Promise<ErpGatewayCustomerRecentItemsSnapshot> {
+    const now = new Date().toISOString();
+
+    return {
+      source: 'hashavshevet',
+      syncedAt: now,
+      items: [
+        {
+          itemId: `recent-${customerId}-1`,
+          name: 'Ribeye Steak',
+          lastOrderedAt: now,
+        },
+        {
+          itemId: `recent-${customerId}-2`,
+          name: 'Ground Beef Premium',
+          lastOrderedAt: now,
+        },
+      ],
+    };
+  }
+
+  async getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot> {
+    const now = new Date().toISOString();
+
+    return {
+      source: 'hashavshevet',
+      syncedAt: now,
+      version: `price-list-${customerId}`,
+      lines: [
+        {
+          itemId: 'itm-beef-entrecote',
+          unitPrice: 109.9,
+          currency: 'ILS',
+        },
+        {
+          itemId: 'itm-lamb-ribs',
+          unitPrice: 84.5,
+          currency: 'ILS',
         },
       ],
     };
