@@ -56,7 +56,7 @@ describe('API bootstrap', () => {
           required: true,
         },
         erp: {
-          status: 'unknown',
+          status: 'degraded',
           required: true,
         },
         queue: {
