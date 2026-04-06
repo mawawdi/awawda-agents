@@ -16,6 +16,16 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 
 - `GET /v1/health` — liveness contract
 - `GET /v1/ready` — readiness placeholder contract for dependencies
+- `POST /v1/agent/auth/login` — baseline agent sign-in route for mobile auth shell
+- `GET /v1/agent/auth/session` — validate/restore active agent session from bearer token
+- `POST /v1/agent/auth/logout` — invalidate an active bearer token
+
+Default local agent credentials for integration checks:
+
+- email: `agent@meatland.local`
+- password: `Password123!`
+
+Override with `AGENT_AUTH_EMAIL`, `AGENT_AUTH_PASSWORD`, and `AGENT_AUTH_NAME`.
 
 ## Module boundaries
 
@@ -39,4 +49,3 @@ pnpm infra:local:up
 
 `apps/api/.env.example` already points to this stack (`localhost:5432` and `localhost:6379`).
 Use `pnpm infra:local:ps` to verify health before running API flows.
-

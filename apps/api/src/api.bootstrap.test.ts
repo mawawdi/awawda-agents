@@ -67,4 +67,62 @@ describe('API bootstrap', () => {
     });
     expect(typeof body.timestamp).toBe('string');
   });
+
+  it('supports login, session restore, and logout lifecycle for agent auth', async () => {
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/auth/login',
+      payload: {
+        email: 'agent@meatland.local',
+        password: 'Password123!',
+      },
+    });
+
+    expect(loginResponse.statusCode).toBe(201);
+    const loginBody = loginResponse.json();
+    expect(loginBody).toMatchObject({
+      accessToken: expect.any(String),
+      expiresIn: expect.any(Number),
+      agentProfile: {
+        agentId: 'agent-001',
+        email: 'agent@meatland.local',
+      },
+    });
+
+    const token = loginBody.accessToken as string;
+
+    const sessionResponse = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/auth/session',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    expect(sessionResponse.statusCode).toBe(200);
+    expect(sessionResponse.json()).toMatchObject({
+      agentProfile: {
+        agentId: 'agent-001',
+        email: 'agent@meatland.local',
+      },
+    });
+
+    const logoutResponse = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/auth/logout',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    expect(logoutResponse.statusCode).toBe(201);
+    expect(logoutResponse.json()).toEqual({ success: true });
+
+    const invalidatedSessionResponse = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/auth/session',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+    expect(invalidatedSessionResponse.statusCode).toBe(401);
+  });
 });
