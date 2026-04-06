@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+
+import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 
 type DependencyStatus = {
-  status: 'unknown';
+  status: 'unknown' | 'up' | 'degraded' | 'down';
   required: boolean;
   detail: string;
 };
@@ -20,7 +22,11 @@ export type ReadyResponse = {
 
 @Injectable()
 export class ReadyService {
-  getStatus(): ReadyResponse {
+  constructor(@Inject(ERP_GATEWAY) private readonly erpGateway: ErpGateway) {}
+
+  async getStatus(): Promise<ReadyResponse> {
+    const erpHealth = await this.erpGateway.getHealth();
+
     return {
       status: 'ready',
       service: 'api',
@@ -33,9 +39,9 @@ export class ReadyService {
           detail: 'Database readiness probe not implemented yet.',
         },
         erp: {
-          status: 'unknown',
+          status: erpHealth.status,
           required: true,
-          detail: 'ERP connector readiness probe not implemented yet.',
+          detail: erpHealth.detail,
         },
         queue: {
           status: 'unknown',
