@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,16 +9,21 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import type { AgentApprovedItem, AgentAssignedCustomer } from '@meatland/shared-types'
+import * as Clipboard from 'expo-clipboard'
+import type { AgentApprovedItem, AgentAssignedCustomer, AgentMagicLinkIssueResponse } from '@meatland/shared-types'
 
-import { addApprovedItem, listApprovedItems, listAssignedCustomers } from '../api/agent-customers-client'
+import { addApprovedItem, generateMagicLink, listApprovedItems, listAssignedCustomers } from '../api/agent-customers-client'
 import { useAuth } from '../auth/auth-provider'
 import {
   applyApprovedCountMutation,
+  buildMagicLinkShareMessage,
+  buildWhatsAppDeepLink,
+  formatMagicLinkExpiry,
   formatApprovedItemTimestamp,
   formatLastOrderLabel,
   getResilienceHint,
   mergeApprovedItems,
+  shouldUseCopyLinkFallback,
 } from './agent-dashboard-presenter'
 
 const SLOW_NETWORK_THRESHOLD_MS = 1800
@@ -40,6 +46,11 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [isAddSlow, setIsAddSlow] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [addInfoMessage, setAddInfoMessage] = useState<string | null>(null)
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [magicLinkError, setMagicLinkError] = useState<string | null>(null)
+  const [magicLinkInfo, setMagicLinkInfo] = useState<string | null>(null)
+  const [latestMagicLink, setLatestMagicLink] = useState<AgentMagicLinkIssueResponse | null>(null)
+  const [pendingCopyLink, setPendingCopyLink] = useState<string | null>(null)
 
   const beginSlowNetworkTimer = useCallback((setSlowState: (value: boolean) => void): (() => void) => {
     setSlowState(false)
@@ -163,6 +174,64 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     [customers, selectedCustomerId],
   )
 
+  const copyFallbackLink = useCallback(async () => {
+    if (!pendingCopyLink) {
+      return
+    }
+
+    await Clipboard.setStringAsync(pendingCopyLink)
+    setMagicLinkInfo('Link copied. Share it manually if WhatsApp is unavailable.')
+    setMagicLinkError(null)
+    setPendingCopyLink(null)
+  }, [pendingCopyLink])
+
+  const generateAndShareLink = useCallback(async () => {
+    if (!token) {
+      setMagicLinkError('Session expired. Please sign in again.')
+      return
+    }
+
+    if (!selectedCustomerId) {
+      setMagicLinkError('Select a customer before generating a link.')
+      return
+    }
+
+    setIsGeneratingLink(true)
+    setMagicLinkError(null)
+    setMagicLinkInfo(null)
+    setPendingCopyLink(null)
+
+    let generatedLink: AgentMagicLinkIssueResponse | null = null
+
+    try {
+      const payload = await generateMagicLink(token, selectedCustomerId)
+      generatedLink = payload
+      setLatestMagicLink(payload)
+      const message = buildMagicLinkShareMessage(selectedCustomerId, payload)
+      const deepLink = buildWhatsAppDeepLink(message)
+      const canOpenWhatsApp = await Linking.canOpenURL(deepLink)
+
+      if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
+        setPendingCopyLink(payload.linkUrl)
+        setMagicLinkError('WhatsApp is unavailable on this device. Copy the link instead.')
+        return
+      }
+
+      await Linking.openURL(deepLink)
+      setMagicLinkInfo('Magic link generated and ready to send in WhatsApp.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to generate customer link.'
+      setMagicLinkError(message)
+      setPendingCopyLink(
+        shouldUseCopyLinkFallback(true, error)
+          ? generatedLink?.linkUrl ?? null
+          : null,
+      )
+    } finally {
+      setIsGeneratingLink(false)
+    }
+  }, [selectedCustomerId, token])
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -238,6 +307,48 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           })}
         </ScrollView>
       )}
+
+      <View style={styles.divider} />
+
+      <View style={styles.addItemPanel}>
+        <Text style={styles.addItemTitle}>Share customer order link</Text>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isGeneratingLink || !selectedCustomer}
+          onPress={() => {
+            void generateAndShareLink()
+          }}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            (pressed || isGeneratingLink || !selectedCustomer) && styles.primaryButtonDisabled,
+          ]}
+        >
+          {isGeneratingLink ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Generate & send via WhatsApp</Text>
+          )}
+        </Pressable>
+        {magicLinkError ? <Text style={styles.errorText}>{magicLinkError}</Text> : null}
+        {magicLinkInfo ? <Text style={styles.noticeText}>{magicLinkInfo}</Text> : null}
+        {pendingCopyLink ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              void copyFallbackLink()
+            }}
+            style={({ pressed }) => [styles.linkButton, pressed && styles.linkButtonDisabled]}
+          >
+            <Text style={styles.linkButtonText}>Copy link fallback</Text>
+          </Pressable>
+        ) : null}
+        {latestMagicLink ? (
+          <Text style={styles.customerMeta}>
+            Expires {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · TTL {latestMagicLink.expiresInSeconds}s ·{' '}
+            {latestMagicLink.lifecycle}
+          </Text>
+        ) : null}
+      </View>
 
       <View style={styles.divider} />
 

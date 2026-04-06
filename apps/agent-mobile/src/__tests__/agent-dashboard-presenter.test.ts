@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyApprovedCountMutation,
+  buildMagicLinkShareMessage,
+  buildWhatsAppDeepLink,
+  formatMagicLinkExpiry,
   formatLastOrderLabel,
   getResilienceHint,
   mergeApprovedItems,
+  shouldUseCopyLinkFallback,
 } from '../screens/agent-dashboard-presenter'
 
 describe('agent dashboard presenter', () => {
@@ -72,5 +76,32 @@ describe('agent dashboard presenter', () => {
     )
     expect(getResilienceHint(true, null)).toContain('Network is slower than usual')
     expect(getResilienceHint(false, null)).toBeNull()
+  })
+
+  it('builds WhatsApp deep-link sharing payload for generated links', () => {
+    const shareMessage = buildMagicLinkShareMessage('cust-alpha', {
+      linkUrl: 'https://portal.example.test/m?token=abc123',
+      expiresAt: '2026-04-07T11:30:00.000Z',
+      expiresInSeconds: 5400,
+      lifecycle: 'issued',
+    })
+
+    expect(shareMessage).toContain('cust-alpha')
+    expect(shareMessage).toContain('https://portal.example.test/m?token=abc123')
+
+    const deepLink = buildWhatsAppDeepLink(shareMessage)
+    expect(deepLink).toContain('whatsapp://send?text=')
+    expect(decodeURIComponent(deepLink.split('text=')[1] ?? '')).toContain('Meatland ordering link')
+  })
+
+  it('renders expiry metadata with graceful fallback for invalid backend timestamps', () => {
+    expect(formatMagicLinkExpiry('2026-04-07T11:30:00.000Z')).not.toBe('Expiry unavailable')
+    expect(formatMagicLinkExpiry('not-a-date')).toBe('Expiry unavailable')
+  })
+
+  it('flags copy-link fallback when WhatsApp cannot launch or dispatch throws', () => {
+    expect(shouldUseCopyLinkFallback(false)).toBe(true)
+    expect(shouldUseCopyLinkFallback(true, new Error('cannot open app'))).toBe(true)
+    expect(shouldUseCopyLinkFallback(true)).toBe(false)
   })
 })
