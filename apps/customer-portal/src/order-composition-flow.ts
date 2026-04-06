@@ -164,6 +164,14 @@ export function markOrderSubmitting(state: OrderPageState): OrderPageState {
   return rebuildReadyState(state, getQuantityMap(state), true);
 }
 
+export function clearOrderSubmitting(state: OrderPageState): OrderPageState {
+  if (state.status !== 'ready') {
+    return state;
+  }
+
+  return rebuildReadyState(state, getQuantityMap(state), false);
+}
+
 function rebuildReadyState(
   state: Extract<OrderPageState, { status: 'ready' }>,
   quantities: Record<string, number>,

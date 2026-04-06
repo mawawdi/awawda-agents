@@ -181,3 +181,19 @@ Transient render states are timing-sensitive and not required for acceptance sem
 
 **Consequences**
 `pnpm test:portal-e2e` reruns now exercise the same end-user acceptance path with deterministic synchronization, reducing false negatives while keeping `/m/[token] -> /order` wiring and order composition behavior fully validated.
+
+---
+
+### 2026-04-07 — Decision Inbox: Customer Portal Submit Recovery UX Contract (Dallas)
+
+**Context**
+Issue #18 required production submit behavior in `apps/customer-portal` after backend idempotent submit and mismatch contracts (T13/T17 dependencies) were merged.
+
+**Decision**
+Submit actions now call `POST /v1/customer/orders` with a generated `idempotency-key`; `409 ORDER_LINES_MISMATCH` is surfaced as actionable line-level feedback with explicit **Refresh prices** and **Reconfirm and submit** actions; successful submit renders `orderRef` confirmation and hard-disables duplicate submit/edit actions.
+
+**Rationale**
+Portal users need deterministic recovery when ERP snapshots diverge and must never accidentally double-submit once a valid confirmation is returned.
+
+**Consequences**
+Mismatch remediation is now user-visible and test-enforced (Vitest + Playwright), while submit retries preserve idempotency guarantees and post-success duplicate prevention without backend contract drift.
