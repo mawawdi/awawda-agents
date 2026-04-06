@@ -8,3 +8,5 @@
 ## Learnings
 
 - Team initialized for Phase 1 architecture implementation.
+
+- 2026-04-06: Delivered T14 mobile auth shell (Expo login flow, SecureStore token persistence, authenticated nav baseline, validation/error UX) with passing workspace lint/test/build.
