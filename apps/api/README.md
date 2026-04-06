@@ -11,14 +11,11 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @meatland/api dev` — run API locally (default `0.0.0.0:3000`)
 - `pnpm --filter @meatland/api test` — run API tests
 - `pnpm --filter @meatland/api build` — compile TypeScript to `dist/`
-- `pnpm --filter @meatland/api prisma:generate` — generate Prisma client
-- `pnpm --filter @meatland/api prisma:migrate:dev -- --name <migration-name>` — create/apply migration in local dev DB
-- `pnpm --filter @meatland/api prisma:migrate:deploy` — apply committed migrations
 
 ## Operational routes
 
 - `GET /v1/health` — liveness contract
-- `GET /v1/ready` — readiness placeholder contract for dependencies
+- `GET /v1/ready` — readiness contract including ERP adapter health (Hashavshevet skeleton reports `degraded`)
 
 ## Module boundaries
 
@@ -43,7 +40,6 @@ pnpm infra:local:up
 `apps/api/.env.example` already points to this stack (`localhost:5432` and `localhost:6379`).
 Use `pnpm infra:local:ps` to verify health before running API flows.
 
-
 ## Prisma domain schema (T06)
 
 - Schema: `apps/api/prisma/schema.prisma`
@@ -66,3 +62,10 @@ pnpm --filter @meatland/api exec prisma migrate diff --from-empty --to-schema-da
 ```
 
 Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT EXISTS "pgcrypto"` remains manual in migration SQL.
+
+## ERP integration boundary (T07)
+
+- Application modules consume ERP via the `ERP_GATEWAY` abstraction token (`apps/api/src/erp/erp.gateway.ts`).
+- `HashavshevetAdapter` is wired as a retry/backoff-ready skeleton for the primary handoff path.
+- `BMaxXmlAdapter` is wired as XML fallback stub for order handoff when primary ERP delivery fails.
+- Internal ERP failures use stable `ERP_*` error codes from `apps/api/src/erp/erp.errors.ts`.
