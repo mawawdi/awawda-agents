@@ -128,6 +128,22 @@ Agents can always complete link sharing (direct send or manual copy), and review
 
 ---
 
+### 2026-04-07 — Decision Inbox: Issue #17 Runtime Route Revision (Parker)
+
+**Context**
+Issue #17 was reopened after Bishop rejected PR #42 because `/m/[token]` and `/order` behavior existed only as state models without rendered runtime route wiring.
+
+**Decision**
+Implement real customer portal runtime routes in `apps/customer-portal`: `/m/:token` now executes activation API exchange with weak-network/error UX and redirects to `/order`; `/order` now fetches portal data with customer session auth and renders recent+approved quantity composition, estimated total, and sticky mobile submit bar.
+
+**Rationale**
+Acceptance criteria require deployed route behavior, not model-only helpers. Wiring the runtime UI directly to T12 customer session APIs provides executable proof that valid tokens open ordering, quantities mutate totals, and weak-network states remain usable on mobile.
+
+**Consequences**
+Issue #17 can now be reviewed against route-level runtime tests and UI flow evidence rather than abstract state contracts. Future portal enhancements can extend these routes without reintroducing activation/composition wiring gaps.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
