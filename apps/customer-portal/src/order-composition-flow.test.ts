@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  clearOrderSubmitting,
   createOrderErrorState,
   createOrderLoadingState,
   createOrderReadyState,
@@ -145,6 +146,15 @@ describe('order composition interactions and UX states', () => {
         mobileOptimized: true,
         submitEnabled: false,
         submitLabel: 'Submitting order…',
+      },
+    });
+
+    expect(clearOrderSubmitting(submitting)).toMatchObject({
+      status: 'ready',
+      isSubmitting: false,
+      submitBar: {
+        submitEnabled: true,
+        submitLabel: 'Submit order (1 units)',
       },
     });
   });

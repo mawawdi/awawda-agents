@@ -1,14 +1,16 @@
 import type { CustomerPortalDataPayload, CustomerSessionActivateResponse } from '@meatland/shared-types';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import {
+  clearOrderSubmitting,
   createOrderErrorState,
   createOrderLoadingState,
   createOrderReadyState,
   decrementOrderLineQuantity,
   incrementOrderLineQuantity,
+  markOrderSubmitting,
   markOrderLoadingWeakNetwork,
   setOrderLineQuantity,
   type OrderPageState,
@@ -16,6 +18,14 @@ import {
 } from './order-composition-flow';
 import type { PortalApiClient } from './portal-api-client';
 import { PortalApiError } from './portal-api-client';
+import {
+  createIdleState,
+  markMismatch,
+  markSubmitError,
+  markSubmitting,
+  markSuccess,
+  type OrderSubmitState,
+} from './order-submit-state';
 import {
   createActivationIdleState,
   markActivationError,
@@ -183,18 +193,27 @@ function OrderRoute({
   weakNetworkThresholdMs: number;
 }): ReactElement {
   const [state, setState] = useState<OrderPageState>(createOrderLoadingState());
+  const [submitState, setSubmitState] = useState<OrderSubmitState>(createIdleState());
   const session = useMemo(() => readPortalSession(), []);
+  const submitIdempotencyKeyRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!session) {
-      setState(createOrderErrorState('Session missing. Open your magic link again.'));
+  const resetSubmitDraft = useCallback(() => {
+    if (submitState.status === 'success') {
       return;
     }
 
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let cancelled = false;
+    submitIdempotencyKeyRef.current = null;
+    setSubmitState(createIdleState());
+  }, [submitState.status]);
 
-    const loadPortalData = async (): Promise<void> => {
+  const loadPortalData = useCallback(
+    async (preservedQuantities: Record<string, number> = {}): Promise<void> => {
+      if (!session) {
+        setState(createOrderErrorState('Session missing. Open your magic link again.'));
+        return;
+      }
+
+      let timer: ReturnType<typeof setTimeout> | undefined;
       setState(createOrderLoadingState());
       timer = setTimeout(() => {
         setState((current) => markOrderLoadingWeakNetwork(current));
@@ -202,34 +221,147 @@ function OrderRoute({
 
       try {
         const payload = await apiClient.getPortalData(session.sessionToken);
-        if (cancelled) {
-          return;
-        }
-
         writePortalSession({ ...session, ...payload });
-        setState(createOrderReadyState(toOrderInput(payload)));
+        setState(
+          createOrderReadyState({
+            ...toOrderInput(payload),
+            initialQuantities: preservedQuantities,
+          }),
+        );
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
         setState(createOrderErrorState(toOrderErrorMessage(error)));
       } finally {
         if (timer) {
           clearTimeout(timer);
         }
       }
-    };
+    },
+    [apiClient, session, weakNetworkThresholdMs],
+  );
 
-    void loadPortalData();
+  useEffect(() => {
+    if (!session) {
+      setState(createOrderErrorState('Session missing. Open your magic link again.'));
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      await loadPortalData();
+      if (cancelled) {
+        return;
+      }
+    })();
 
     return () => {
       cancelled = true;
-      if (timer) {
-        clearTimeout(timer);
-      }
     };
-  }, [apiClient, session, weakNetworkThresholdMs]);
+  }, [loadPortalData, session]);
+
+  const updateQuantity = (itemId: string, nextQuantity: number): void => {
+    if (submitState.status === 'success') {
+      return;
+    }
+
+    setState((current) => setOrderLineQuantity(current, itemId, nextQuantity));
+    resetSubmitDraft();
+  };
+
+  const adjustQuantity = (itemId: string, direction: 'increment' | 'decrement'): void => {
+    if (submitState.status === 'success') {
+      return;
+    }
+
+    setState((current) =>
+      direction === 'increment'
+        ? incrementOrderLineQuantity(current, itemId)
+        : decrementOrderLineQuantity(current, itemId),
+    );
+    resetSubmitDraft();
+  };
+
+  const handleSubmit = async (forceNewIdempotencyKey = false): Promise<void> => {
+    if (!session || state.status !== 'ready') {
+      return;
+    }
+
+    if (submitState.status === 'success') {
+      return;
+    }
+
+    const mismatchOverrides =
+      submitState.status === 'mismatch'
+        ? new Map(submitState.lines.map((line) => [line.itemId, line.currentUnitPrice]))
+        : new Map<string, number | undefined>();
+
+    const submitLines = state.cart.lines.map((line) => {
+      const overridePrice = mismatchOverrides.get(line.itemId);
+      const resolvedUnitPrice = overridePrice ?? state.sections.recent.items.find((item) => item.itemId === line.itemId)?.unitPrice;
+      const fallbackPrice = state.sections.approved.items.find((item) => item.itemId === line.itemId)?.unitPrice;
+      const unitPrice = resolvedUnitPrice ?? fallbackPrice;
+
+      if (unitPrice === null || unitPrice === undefined) {
+        return null;
+      }
+
+      return {
+        itemId: line.itemId,
+        quantity: line.quantity,
+        unit: 'unit' as const,
+        clientUnitPrice: unitPrice,
+      };
+    });
+
+    if (submitLines.some((line) => line === null)) {
+      setSubmitState(markSubmitError('Some lines are missing pricing. Refresh prices and try again.'));
+      return;
+    }
+
+    if (submitLines.length === 0) {
+      setSubmitState(markSubmitError('Add at least one item before submitting.'));
+      return;
+    }
+
+    if (forceNewIdempotencyKey || !submitIdempotencyKeyRef.current) {
+      submitIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+
+    setSubmitState(markSubmitting());
+    setState((current) => markOrderSubmitting(current));
+
+    try {
+      const response = await apiClient.submitOrder(session.sessionToken, submitIdempotencyKeyRef.current, {
+        lines: submitLines.filter((line): line is NonNullable<typeof line> => line !== null),
+      });
+      setSubmitState(markSuccess(response.orderRef));
+      setState((current) => clearOrderSubmitting(current));
+    } catch (error) {
+      setState((current) => clearOrderSubmitting(current));
+
+      if (error instanceof PortalApiError && error.kind === 'order_mismatch' && error.mismatch) {
+        submitIdempotencyKeyRef.current = null;
+        setSubmitState(markMismatch(error.mismatch.lines));
+        return;
+      }
+
+      const message = toOrderSubmitErrorMessage(error);
+      setSubmitState(markSubmitError(message));
+    }
+  };
+
+  const refreshAfterMismatch = async (): Promise<void> => {
+    if (state.status !== 'ready') {
+      return;
+    }
+
+    const quantities = Object.fromEntries(state.cart.lines.map((line) => [line.itemId, line.quantity]));
+    submitIdempotencyKeyRef.current = null;
+    await loadPortalData(quantities);
+    if (submitState.status !== 'success') {
+      setSubmitState(createIdleState());
+    }
+  };
 
   if (state.status === 'loading') {
     return (
@@ -255,23 +387,24 @@ function OrderRoute({
       <div>
         <button
           aria-label={`Decrease ${item.name}`}
-          onClick={() => setState((current) => decrementOrderLineQuantity(current, item.itemId))}
+          disabled={state.isSubmitting || submitState.status === 'success'}
+          onClick={() => adjustQuantity(item.itemId, 'decrement')}
           type="button"
         >
           −
         </button>
         <input
           aria-label={`Quantity ${item.name}`}
+          disabled={state.isSubmitting || submitState.status === 'success'}
           inputMode="numeric"
-          onChange={(event) =>
-            setState((current) => setOrderLineQuantity(current, item.itemId, Number(event.currentTarget.value)))
-          }
+          onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
           type="number"
           value={item.quantity}
         />
         <button
           aria-label={`Increase ${item.name}`}
-          onClick={() => setState((current) => incrementOrderLineQuantity(current, item.itemId))}
+          disabled={state.isSubmitting || submitState.status === 'success'}
+          onClick={() => adjustQuantity(item.itemId, 'increment')}
           type="button"
         >
           +
@@ -311,6 +444,42 @@ function OrderRoute({
         <p>{state.submitBar.summaryLabel}</p>
       </section>
 
+      {submitState.status === 'mismatch' ? (
+        <section aria-live="polite" data-testid="submit-mismatch" style={{ border: '1px solid #f3b700', padding: '0.75rem' }}>
+          <h2>Prices changed before submission</h2>
+          <p>Review the highlighted lines, then refresh prices or reconfirm your order.</p>
+          <ul>
+            {submitState.lines.map((line) => (
+              <li key={`${line.itemId}-${line.lineIndex}`}>
+                {line.itemId}: {line.reason}
+              </li>
+            ))}
+          </ul>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button onClick={() => void refreshAfterMismatch()} type="button">
+              Refresh prices
+            </button>
+            <button onClick={() => void handleSubmit(true)} type="button">
+              Reconfirm and submit
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {submitState.status === 'error' ? (
+        <p aria-live="polite" data-testid="submit-error">
+          {submitState.message}
+        </p>
+      ) : null}
+
+      {submitState.status === 'success' ? (
+        <section aria-live="polite" data-testid="submit-success">
+          <h2>Order submitted successfully</h2>
+          <p>Reference: {submitState.orderRef}</p>
+          <p>This order is confirmed. Duplicate submissions are disabled.</p>
+        </section>
+      ) : null}
+
       <footer
         data-testid="sticky-submit-bar"
         style={{
@@ -322,7 +491,12 @@ function OrderRoute({
         }}
       >
         <p>{state.submitBar.summaryLabel}</p>
-        <button disabled={!state.submitBar.submitEnabled} type="button">
+        <button
+          disabled={!state.submitBar.submitEnabled || submitState.status === 'success' || submitState.status === 'mismatch'}
+          onClick={() => void handleSubmit()}
+          style={{ width: '100%', minHeight: '2.75rem' }}
+          type="button"
+        >
           {state.submitBar.submitLabel}
         </button>
       </footer>
@@ -332,7 +506,11 @@ function OrderRoute({
 
 function toActivationErrorReason(error: unknown): 'invalid_token' | 'expired_token' | 'network' | 'server' {
   if (error instanceof PortalApiError) {
-    return error.kind;
+    if (error.kind === 'invalid_token' || error.kind === 'expired_token' || error.kind === 'network') {
+      return error.kind;
+    }
+
+    return 'server';
   }
 
   return 'server';
@@ -344,6 +522,20 @@ function toOrderErrorMessage(error: unknown): string {
   }
 
   return 'Unable to load order data right now. Please retry in a moment.';
+}
+
+function toOrderSubmitErrorMessage(error: unknown): string {
+  if (error instanceof PortalApiError) {
+    if (error.kind === 'network') {
+      return 'Connection dropped while submitting. Retry to confirm your order status.';
+    }
+
+    if (error.kind === 'idempotency_conflict') {
+      return 'Submission key expired. Please review your cart and submit again.';
+    }
+  }
+
+  return 'Could not submit order right now. Please try again.';
 }
 
 function toOrderInput(payload: CustomerPortalDataPayload) {

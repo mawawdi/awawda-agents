@@ -1,12 +1,30 @@
-import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@meatland/shared-types';
+import type {
+  CustomerOrderMismatchResponse,
+  CustomerOrderSubmitRequest,
+  CustomerOrderSubmitResponse,
+  CustomerPortalDataResponse,
+  CustomerSessionActivateResponse,
+} from '@meatland/shared-types';
 
-export type PortalRequestFailure = 'invalid_token' | 'expired_token' | 'network' | 'server';
+export type PortalRequestFailure =
+  | 'invalid_token'
+  | 'expired_token'
+  | 'network'
+  | 'server'
+  | 'order_mismatch'
+  | 'idempotency_conflict';
 
 export class PortalApiError extends Error {
-  constructor(readonly kind: PortalRequestFailure, message: string) {
+  readonly mismatch?: CustomerOrderMismatchResponse;
+
+  constructor(kind: PortalRequestFailure, message: string, mismatch?: CustomerOrderMismatchResponse) {
     super(message);
     this.name = 'PortalApiError';
+    this.kind = kind;
+    this.mismatch = mismatch;
   }
+
+  readonly kind: PortalRequestFailure;
 }
 
 export class PortalApiClient {
@@ -52,6 +70,37 @@ export class PortalApiClient {
     }
 
     return (await response.json()) as CustomerPortalDataResponse;
+  }
+
+  async submitOrder(
+    sessionToken: string,
+    idempotencyKey: string,
+    request: CustomerOrderSubmitRequest,
+  ): Promise<CustomerOrderSubmitResponse> {
+    const response = await this.request('/customer/orders', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${sessionToken}`,
+        'content-type': 'application/json',
+        'idempotency-key': idempotencyKey,
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 409) {
+      const body = (await response.json()) as CustomerOrderMismatchResponse | { code?: string };
+      if (body && body.code === 'ORDER_LINES_MISMATCH' && 'lines' in body) {
+        throw new PortalApiError('order_mismatch', 'Order lines mismatch current ERP pricing', body);
+      }
+
+      throw new PortalApiError('idempotency_conflict', 'Duplicate submission key cannot be reused with another payload');
+    }
+
+    if (!response.ok) {
+      throw new PortalApiError('server', 'Order submit request failed');
+    }
+
+    return (await response.json()) as CustomerOrderSubmitResponse;
   }
 
   private async request(path: string, init: RequestInit): Promise<Response> {
