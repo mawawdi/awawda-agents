@@ -8,3 +8,4 @@
 ## Learnings
 
 - Team initialized for Phase 1 architecture implementation.
+- Delivered Issue #14 revision on latest main: Expo auth shell, SecureStore session lifecycle, and Playwright auth-flow evidence while preserving T08 Argon2 + JWT baseline.
