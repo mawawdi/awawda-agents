@@ -83,6 +83,22 @@ Future mobile iterations can extend dashboard interactions without reworking bas
 
 ---
 
+### 2026-04-06 — Decision Inbox: Mobile Magic-Link WhatsApp Dispatch and Fallback (Dallas)
+
+**Context**
+Issue #16 required production-grade mobile handling for customer link generation/sharing after backend magic-link issuance (Issue #11) and dashboard context (Issue #15) were in place.
+
+**Decision**
+Generate links from selected customer context via `POST /v1/agent/customers/:customerId/magic-links`, compose WhatsApp deep links with prefilled message text from backend link metadata, and force a copy-link fallback path when WhatsApp launch capability/dispatch fails while rendering backend `expiresAt`, `expiresInSeconds`, and `lifecycle` fields directly in UI metadata.
+
+**Rationale**
+This preserves strict contract alignment with backend issuance semantics and prevents field dead-ends on devices lacking WhatsApp handlers.
+
+**Consequences**
+Agents can always complete link sharing (direct send or manual copy), and reviewers can verify deterministic behavior through new client/presenter tests for generation, fallback triggers, and expiry rendering.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

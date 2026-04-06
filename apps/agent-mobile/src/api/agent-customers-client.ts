@@ -3,6 +3,7 @@ import type {
   AgentApprovedItemsResponse,
   AgentAssignedCustomer,
   AgentCustomersResponse,
+  AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 import { z } from 'zod'
 
@@ -41,6 +42,13 @@ const AGENT_APPROVED_ITEM_MUTATION_RESPONSE_SCHEMA: z.ZodType<AgentApprovedItemM
     addedByAgentId: z.string().trim().min(1),
     createdAt: z.string().datetime(),
   }),
+})
+
+const AGENT_MAGIC_LINK_RESPONSE_SCHEMA: z.ZodType<AgentMagicLinkIssueResponse> = z.object({
+  linkUrl: z.string().url(),
+  expiresAt: z.string().datetime(),
+  expiresInSeconds: z.number().int().positive(),
+  lifecycle: z.literal('issued'),
 })
 
 function parseErrorBody(payload: unknown): string | null {
@@ -130,4 +138,19 @@ export async function addApprovedItem(
   })
 
   return parseValidatedResponse(response, AGENT_APPROVED_ITEM_MUTATION_RESPONSE_SCHEMA)
+}
+
+export async function generateMagicLink(
+  accessToken: string,
+  customerId: string,
+): Promise<AgentMagicLinkIssueResponse> {
+  const response = await fetch(`${API_BASE_URL}/v1/agent/customers/${encodeURIComponent(customerId)}/magic-links`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  return parseValidatedResponse(response, AGENT_MAGIC_LINK_RESPONSE_SCHEMA)
 }

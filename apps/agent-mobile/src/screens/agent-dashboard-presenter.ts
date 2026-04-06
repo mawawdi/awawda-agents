@@ -2,6 +2,7 @@ import type {
   AgentApprovedItem,
   AgentApprovedItemMutationResponse,
   AgentAssignedCustomer,
+  AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
 export function formatLastOrderLabel(lastOrderAt: string | null): string {
@@ -63,4 +64,25 @@ export function getResilienceHint(isSlow: boolean, errorMessage: string | null):
   }
 
   return null
+}
+
+export function formatMagicLinkExpiry(expiresAt: string): string {
+  const parsed = Date.parse(expiresAt)
+  if (Number.isNaN(parsed)) {
+    return 'Expiry unavailable'
+  }
+
+  return new Date(parsed).toLocaleString()
+}
+
+export function buildMagicLinkShareMessage(customerId: string, payload: AgentMagicLinkIssueResponse): string {
+  return `Hi! Here is your Meatland ordering link for ${customerId}: ${payload.linkUrl} (expires ${formatMagicLinkExpiry(payload.expiresAt)}).`
+}
+
+export function buildWhatsAppDeepLink(message: string): string {
+  return `whatsapp://send?text=${encodeURIComponent(message)}`
+}
+
+export function shouldUseCopyLinkFallback(canOpenWhatsApp: boolean, dispatchError: unknown = null): boolean {
+  return !canOpenWhatsApp || dispatchError instanceof Error
 }
