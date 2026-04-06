@@ -19,6 +19,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `POST /v1/agent/auth/login` — agent login with Argon2 verification + JWT shift token
 - `GET /v1/agent/customers` — assigned customer dashboard data for authenticated agents only
 - `GET /v1/agent/catalog` — ERP-backed catalog snapshot with short-lived cache metadata + cache headers
+- `POST /v1/agent/customers/:customerId/magic-links` — issue secure customer magic links with hash-only token persistence
 
 ## Auth environment variables
 
@@ -29,6 +30,11 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 ## Catalog environment variables
 
 - `CATALOG_CACHE_TTL_SECONDS` (optional): API catalog cache max-age in seconds (`300` default)
+
+## Magic link environment variables
+
+- `MAGIC_LINK_BASE_URL` (optional): absolute customer portal activation URL (`https://portal.meatland.local/activate` default)
+- `MAGIC_LINK_TTL_SECONDS` (optional): issued magic-link TTL in seconds (`86400` default)
 
 ## Module boundaries
 

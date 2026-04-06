@@ -1,0 +1,21 @@
+import { Controller, Headers, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import type { AgentMagicLinkIssueResponse } from '@meatland/shared-types';
+
+import { AgentAuthGuard } from '../auth/agent-auth.guard';
+import { LinksService } from './links.service';
+
+@Controller({ path: 'agent/customers/:customerId/magic-links', version: '1' })
+@UseGuards(AgentAuthGuard)
+export class LinksController {
+  constructor(@Inject(LinksService) private readonly linksService: LinksService) {
+    this.issueMagicLink = this.issueMagicLink.bind(this);
+  }
+
+  @Post()
+  issueMagicLink(
+    @Headers('x-agent-id') agentId: string,
+    @Param('customerId') customerId: string,
+  ): Promise<AgentMagicLinkIssueResponse> {
+    return this.linksService.issueMagicLink(agentId, customerId);
+  }
+}
