@@ -50,6 +50,23 @@ Explicit operator directive captured for team memory and orchestration consisten
 **Consequences**
 Future spawns should enforce this model selection by default unless the owner explicitly amends the directive.
 
+
+### 2026-04-06 — Decision Inbox: Magic Link Issuance Contract Hardened (Lambert)
+
+**Context**
+Issue #11 required production-grade issuance of customer magic links while preserving strict agent/customer authorization boundaries.
+
+**Decision**
+Issue magic links only when `(agentId, customerId)` assignment exists, persist SHA-256 token hashes only (never plaintext token), and initialize lifecycle as `issued` with configured TTL metadata in API responses.
+
+**Rationale**
+This aligns implementation with the documented security architecture and prevents token leakage or cross-customer issuance by authenticated but unauthorized agents.
+
+**Consequences**
+Downstream activation/session flows can trust issuance records for status and expiry while reviewers can validate boundaries and hash-only storage deterministically through tests.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
