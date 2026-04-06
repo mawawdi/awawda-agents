@@ -18,7 +18,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 ## Operational routes
 
 - `GET /v1/health` — liveness contract
-- `GET /v1/ready` — readiness placeholder contract for dependencies
+- `GET /v1/ready` — readiness contract including ERP adapter health (Hashavshevet skeleton reports `degraded`)
 
 ## Module boundaries
 
@@ -48,3 +48,10 @@ Use `pnpm infra:local:ps` to verify health before running API flows.
 - Schema: `apps/api/prisma/schema.prisma`
 - Initial migration: `apps/api/prisma/migrations/20260406214000_init_phase1_domain_schema/migration.sql`
 - Domain coverage: `agents`, `assignments`, `approved_items`, `magic_links`, `sessions`, `orders`, `order_lines`, `idempotency_keys`, `audit_logs`
+
+## ERP integration boundary (T07)
+
+- Application modules consume ERP via the `ERP_GATEWAY` abstraction token (`apps/api/src/erp/erp.gateway.ts`).
+- `HashavshevetAdapter` is wired as a retry/backoff-ready skeleton for the primary handoff path.
+- `BMaxXmlAdapter` is wired as XML fallback stub for order handoff when primary ERP delivery fails.
+- Internal ERP failures use stable `ERP_*` error codes from `apps/api/src/erp/erp.errors.ts`.
