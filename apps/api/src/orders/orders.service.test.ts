@@ -13,6 +13,7 @@ describe('OrdersService', () => {
         acceptedAt: '2026-04-06T18:00:00.000Z',
       }),
       getHealth: vi.fn(),
+      getMasterCatalog: vi.fn(),
     };
 
     const service = new OrdersService(erpGateway);
@@ -43,6 +44,7 @@ describe('OrdersService', () => {
     const erpGateway: ErpGateway = {
       handoffOrder: vi.fn().mockRejectedValue(new Error('ERP timeout')),
       getHealth: vi.fn(),
+      getMasterCatalog: vi.fn(),
     };
 
     const service = new OrdersService(erpGateway);
