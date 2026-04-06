@@ -1,195 +1,144 @@
 import { expect, test } from '@playwright/test';
-import http, { type IncomingMessage, type ServerResponse } from 'node:http';
-import { AddressInfo } from 'node:net';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 
-const idempotencyResponses = new Map<string, unknown>();
+const portalBaseUrl = 'http://127.0.0.1:4173';
 
-type PortalApiServer = {
-  server: http.Server;
-  baseUrl: string;
+const activationResponse = {
+  sessionToken: 'session-token-77',
+  customer: {
+    customerId: 'cust-777',
+  },
+  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  recentItems: [
+    {
+      itemId: 'item-1',
+      name: 'Ribeye Steak',
+      lastOrderedAt: '2026-04-07T10:00:00.000Z',
+    },
+  ],
+  approvedItems: [
+    {
+      hashItemId: 'item-2',
+      addedByAgentId: 'agent-9',
+      createdAt: '2026-04-06T09:00:00.000Z',
+    },
+  ],
+  pricing: [
+    { itemId: 'item-1', unitPrice: 42.5, currency: 'ILS' },
+    { itemId: 'item-2', unitPrice: 50, currency: 'ILS' },
+  ],
+  priceListVersion: 'v-1',
 };
 
-async function startPortalApiServer(): Promise<PortalApiServer> {
-  const server = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
-    const bodyChunks: Uint8Array[] = [];
-    for await (const chunk of req) {
-      bodyChunks.push(chunk);
-    }
+const portalDataResponse = {
+  customer: {
+    customerId: 'cust-777',
+  },
+  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  recentItems: activationResponse.recentItems,
+  approvedItems: activationResponse.approvedItems,
+  pricing: activationResponse.pricing,
+  priceListVersion: 'v-1',
+};
 
-    const body = bodyChunks.length > 0 ? JSON.parse(Buffer.concat(bodyChunks).toString('utf8')) : {};
+let portalDevServer: ChildProcessWithoutNullStreams;
 
-    if (req.method === 'POST' && req.url === '/v1/customer/links/activate') {
-      res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          sessionToken: 'session-token-77',
-          customer: {
-            customerId: 'cust-777',
-            name: 'Leora Foods',
-          },
-        }),
-      );
-      return;
-    }
-
-    if (req.method === 'POST' && req.url === '/v1/customer/orders') {
-      const idempotencyKey = req.headers['idempotency-key'];
-      if (typeof idempotencyKey === 'string' && idempotencyResponses.has(idempotencyKey)) {
-        res.writeHead(201, { 'content-type': 'application/json' });
-        res.end(JSON.stringify(idempotencyResponses.get(idempotencyKey)));
-        return;
-      }
-
-      const mismatchLine = body.lines?.find((line: { itemId: string; clientUnitPrice: number }) => {
-        return line.itemId === 'hash-i-987' && Number(line.clientUnitPrice) !== 49.9;
-      });
-
-      if (mismatchLine) {
-        res.writeHead(409, { 'content-type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            code: 'PRICE_MISMATCH',
-            lines: [
-              {
-                itemId: mismatchLine.itemId,
-                reason: 'ERP price updated from 45.20 to 49.90',
-              },
-            ],
-          }),
-        );
-        return;
-      }
-
-      const successResponse = {
-        orderRef: 'ORD-2026-00077',
-        status: 'submitted',
-      };
-
-      if (typeof idempotencyKey === 'string') {
-        idempotencyResponses.set(idempotencyKey, successResponse);
-      }
-
-      res.writeHead(201, { 'content-type': 'application/json' });
-      res.end(JSON.stringify(successResponse));
-      return;
-    }
-
-    res.writeHead(404, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ code: 'NOT_FOUND' }));
-  });
-
-  await new Promise<void>((resolve) => {
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-
-  const address = server.address() as AddressInfo;
-  return {
-    server,
-    baseUrl: `http://127.0.0.1:${address.port}`,
-  };
-}
-
-let portalApi: PortalApiServer;
-
-test.describe('customer portal critical paths', () => {
+test.describe('customer portal browser critical paths', () => {
   test.beforeAll(async () => {
-    portalApi = await startPortalApiServer();
+    portalDevServer = spawn(
+      'pnpm',
+      ['--filter', '@meatland/customer-portal', 'dev', '--host', '127.0.0.1', '--port', '4173', '--strictPort'],
+      {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+      },
+    );
+
+    await waitForServer(`${portalBaseUrl}/order`);
   });
 
   test.afterAll(async () => {
-    await new Promise<void>((resolve, reject) => {
-      portalApi.server.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
+    if (!portalDevServer.killed) {
+      portalDevServer.kill('SIGTERM');
+    }
+
+    await new Promise<void>((resolve) => {
+      portalDevServer.once('exit', () => resolve());
+      setTimeout(() => resolve(), 5_000);
+    });
+  });
+
+  test('activation route redirects to /order and supports quantity composition', async ({ page }) => {
+    await page.route('**/v1/customer/sessions/activate', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(activationResponse),
       });
     });
+
+    await page.route('**/v1/customer/portal-data', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(portalDataResponse),
+      });
+    });
+
+    await page.goto(`${portalBaseUrl}/m/token-abc`);
+
+    await expect(page.getByRole('heading', { name: 'Activating your order link…' })).toBeVisible();
+    await expect(page).toHaveURL(`${portalBaseUrl}/order`);
+    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Increase Ribeye Steak' }).click();
+    await page.getByRole('button', { name: 'Increase Approved item item-2' }).click();
+
+    await expect(page.getByText('Total units: 2')).toBeVisible();
+    await expect(page.getByText('Estimated total: 92.50')).toBeVisible();
+    await expect(page.getByTestId('sticky-submit-bar')).toContainText('Submit order (2 units)');
   });
 
-  test('happy path activates link and submits order exactly once for idempotent retries', async ({
-    request,
-  }) => {
-    const activateResponse = await request.post(`${portalApi.baseUrl}/v1/customer/links/activate`, {
-      data: { token: 'valid-link-token' },
+  test('order route shows weak-network and resilient error UI on load failure', async ({ page }) => {
+    await page.addInitScript((session) => {
+      window.sessionStorage.setItem('customer-portal-session', JSON.stringify(session));
+    }, {
+      sessionToken: activationResponse.sessionToken,
+      customerId: activationResponse.customer.customerId,
+      sessionExpiresAt: activationResponse.sessionExpiresAt,
+      payload: portalDataResponse,
     });
 
-    await expect(activateResponse).toBeOK();
-    await expect(activateResponse.json()).resolves.toEqual({
-      sessionToken: 'session-token-77',
-      customer: {
-        customerId: 'cust-777',
-        name: 'Leora Foods',
-      },
+    await page.route('**/v1/customer/portal-data', async (route) => {
+      await page.waitForTimeout(3_000);
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'SERVICE_UNAVAILABLE' }),
+      });
     });
 
-    const payload = {
-      customerId: 'cust-777',
-      lines: [
-        {
-          itemId: 'hash-i-987',
-          quantity: 2,
-          unit: 'kg',
-          clientUnitPrice: 49.9,
-        },
-      ],
-    };
+    await page.goto(`${portalBaseUrl}/order`);
 
-    const headers = {
-      authorization: 'Bearer session-token-77',
-      'idempotency-key': 'idem-777',
-    };
-
-    const firstSubmit = await request.post(`${portalApi.baseUrl}/v1/customer/orders`, {
-      headers,
-      data: payload,
-    });
-    const secondSubmit = await request.post(`${portalApi.baseUrl}/v1/customer/orders`, {
-      headers,
-      data: payload,
-    });
-
-    await expect(firstSubmit).toBeOK();
-    await expect(secondSubmit).toBeOK();
-    await expect(firstSubmit.json()).resolves.toEqual({
-      orderRef: 'ORD-2026-00077',
-      status: 'submitted',
-    });
-    await expect(secondSubmit.json()).resolves.toEqual({
-      orderRef: 'ORD-2026-00077',
-      status: 'submitted',
-    });
-  });
-
-  test('mismatch path returns line-level guidance for customer reconfirmation', async ({ request }) => {
-    const mismatchResponse = await request.post(`${portalApi.baseUrl}/v1/customer/orders`, {
-      headers: {
-        authorization: 'Bearer session-token-77',
-        'idempotency-key': 'idem-778',
-      },
-      data: {
-        customerId: 'cust-777',
-        lines: [
-          {
-            itemId: 'hash-i-987',
-            quantity: 2,
-            unit: 'kg',
-            clientUnitPrice: 45.2,
-          },
-        ],
-      },
-    });
-
-    expect(mismatchResponse.status()).toBe(409);
-    await expect(mismatchResponse.json()).resolves.toEqual({
-      code: 'PRICE_MISMATCH',
-      lines: [
-        {
-          itemId: 'hash-i-987',
-          reason: 'ERP price updated from 45.20 to 49.90',
-        },
-      ],
-    });
+    await expect(page.getByTestId('order-weak-network')).toContainText('Network is slow');
+    await expect(page.getByRole('heading', { name: 'Could not load your order' })).toBeVisible();
+    await expect(page.getByText('Unable to load order data right now. Please retry in a moment.')).toBeVisible();
   });
 });
+
+async function waitForServer(url: string): Promise<void> {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (response.ok || response.status === 404) {
+        return;
+      }
+    } catch {
+      // retry
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`Timed out waiting for dev server: ${url}`);
+}
