@@ -115,3 +115,34 @@ export interface CustomerSessionActivateResponse extends CustomerPortalDataPaylo
 }
 
 export type CustomerPortalDataResponse = CustomerPortalDataPayload;
+
+export interface CustomerOrderSubmitLine {
+  itemId: string;
+  quantity: number;
+  unit: 'kg' | 'unit';
+  clientUnitPrice: number;
+}
+
+export interface CustomerOrderSubmitRequest {
+  lines: CustomerOrderSubmitLine[];
+  notes?: string;
+}
+
+export interface CustomerOrderSubmitResponse {
+  orderId: string;
+  orderRef: string;
+  status: 'submitted' | 'pending_retry' | 'failed';
+}
+
+export interface CustomerOrderMismatchLine {
+  lineIndex: number;
+  itemId: string;
+  reason: string;
+  submittedUnitPrice?: number;
+  currentUnitPrice?: number;
+}
+
+export interface CustomerOrderMismatchResponse {
+  code: 'ORDER_LINES_MISMATCH';
+  lines: CustomerOrderMismatchLine[];
+}
