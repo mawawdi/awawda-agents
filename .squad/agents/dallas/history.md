@@ -8,3 +8,4 @@
 ## Learnings
 
 - Team initialized for Phase 1 architecture implementation.
+- 2026-04-06: Delivered scoped Issue #7 revision from clean main on `dallas/issue-7-scoped-revision`, preserving only T07 ERP gateway abstraction/adapters and passing `pnpm lint`, `pnpm test`, and `pnpm build`.
