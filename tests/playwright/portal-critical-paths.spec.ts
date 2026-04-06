@@ -68,10 +68,12 @@ test.describe('customer portal browser critical paths', () => {
     });
   });
 
-  test('activation route redirects to /order and supports quantity composition', async ({ page }) => {
+  test('activation route supports mismatch recovery and success confirmation', async ({ page }) => {
     let activationRequestToken: string | undefined;
     let activationCallCount = 0;
     let portalDataCallCount = 0;
+    const idempotencyKeys: string[] = [];
+    let submitCallCount = 0;
 
     await page.route('**/v1/customer/sessions/activate', async (route) => {
       activationCallCount += 1;
@@ -92,6 +94,40 @@ test.describe('customer portal browser critical paths', () => {
       });
     });
 
+    await page.route('**/v1/customer/orders', async (route) => {
+      submitCallCount += 1;
+      idempotencyKeys.push(route.request().headers()['idempotency-key'] ?? '');
+      if (submitCallCount === 1) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'ORDER_LINES_MISMATCH',
+            lines: [
+              {
+                lineIndex: 0,
+                itemId: 'item-1',
+                reason: 'ERP unit price changed from 42.50 to 49.90',
+                submittedUnitPrice: 42.5,
+                currentUnitPrice: 49.9,
+              },
+            ],
+          }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          orderId: 'order-77',
+          orderRef: 'ORD-2026-00077',
+          status: 'submitted',
+        }),
+      });
+    });
+
     const activationResponseWait = page.waitForResponse((response) =>
       response.url().includes('/v1/customer/sessions/activate'),
     );
@@ -108,11 +144,20 @@ test.describe('customer portal browser critical paths', () => {
     await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Increase Ribeye Steak' }).click();
-    await page.getByRole('button', { name: 'Increase Approved item item-2' }).click();
+    await expect(page.getByText('Total units: 1')).toBeVisible();
+    await expect(page.getByText('Estimated total: 42.50')).toBeVisible();
 
-    await expect(page.getByText('Total units: 2')).toBeVisible();
-    await expect(page.getByText('Estimated total: 92.50')).toBeVisible();
-    await expect(page.getByTestId('sticky-submit-bar')).toContainText('Submit order (2 units)');
+    await page.getByRole('button', { name: 'Submit order (1 units)' }).click();
+    await expect(page.getByTestId('submit-mismatch')).toContainText('ERP unit price changed from 42.50 to 49.90');
+
+    await page.getByRole('button', { name: 'Reconfirm and submit' }).click();
+    await expect(page.getByTestId('submit-success')).toContainText('Reference: ORD-2026-00077');
+    await expect(page.getByRole('button', { name: 'Submit order (1 units)' })).toBeDisabled();
+
+    expect(submitCallCount).toBe(2);
+    expect(idempotencyKeys[0]).toBeTruthy();
+    expect(idempotencyKeys[1]).toBeTruthy();
+    expect(idempotencyKeys[0]).not.toBe(idempotencyKeys[1]);
   });
 
   test('order route shows weak-network and resilient error UI on load failure', async ({ page }) => {
