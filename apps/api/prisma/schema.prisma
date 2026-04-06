@@ -152,14 +152,21 @@ model OrderLine {
 }
 
 model IdempotencyKey {
-  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  scope        IdempotencyScope
-  key          String           @db.VarChar(255)
-  responseHash String?          @map("response_hash") @db.VarChar(128)
-  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope             IdempotencyScope
+  key               String           @db.VarChar(255)
+  hashCustomerId    String           @map("hash_customer_id") @db.VarChar(128)
+  customerSessionId String           @map("customer_session_id") @db.Uuid
+  requestHash       String           @map("request_hash") @db.VarChar(128)
+  responseHash      String?          @map("response_hash") @db.VarChar(128)
+  responseStatus    Int?             @map("response_status")
+  responseBodyJson  Json?            @map("response_body_json")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([scope, key], map: "idempotency_keys_scope_key_key")
   @@index([createdAt], map: "idempotency_keys_created_at_idx")
+  @@index([hashCustomerId], map: "idempotency_keys_hash_customer_id_idx")
+  @@index([customerSessionId], map: "idempotency_keys_customer_session_id_idx")
   @@map("idempotency_keys")
 }
 

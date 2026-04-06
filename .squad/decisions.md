@@ -128,6 +128,22 @@ Agents can always complete link sharing (direct send or manual copy), and review
 
 ---
 
+### 2026-04-06 — Decision Inbox: Customer Order Submit Idempotent Commit Contract (Parker)
+
+**Context**
+Issue #13 required production order submission from the customer portal with strict anti-duplicate protection, ERP revalidation, and one-way session/link consumption after successful commit.
+
+**Decision**
+Implement `POST /v1/customer/orders` behind customer-session auth with mandatory `idempotency-key`; reserve keys per session/customer+request hash, replay persisted response bodies/statuses for duplicates, return `409 ORDER_LINES_MISMATCH` with line-index detail when approved/recent scope or ERP pricing diverges, and on successful ERP submit persist order+line snapshots then close the session and mark its magic link consumed.
+
+**Rationale**
+Synchronous ERP handoff can only be operationally safe when retries cannot create duplicate submissions and customers receive deterministic mismatch guidance for reconfirmation.
+
+**Consequences**
+Portal retries now receive consistent responses without duplicate ERP calls, reviewers can validate lifecycle closure semantics (`session -> CLOSED`, `magic_link -> CONSUMED`) from repository behavior, and future async retries can build on the persisted idempotency/order snapshots without contract churn.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
