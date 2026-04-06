@@ -1,5 +1,4 @@
 name: Squad Release
-# Project type was not detected — configure build, test, and release commands below
 
 on:
   push:
@@ -11,24 +10,55 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Build and test
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies (deterministic)
+        run: pnpm install --frozen-lockfile
+      - name: Verify release quality gates
         run: |
-          # TODO: Project type was not detected — add your build/test commands here
-          # Go:            go test ./...
-          # Python:        pip install -r requirements.txt && pytest
-          # .NET:          dotnet test
-          # Java (Maven):  mvn test
-          # Java (Gradle): ./gradlew test
-          echo "No build commands configured — update squad-release.yml"
-
-      - name: Create release
+          pnpm lint
+          pnpm test
+          pnpm build
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API container artifact
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          push: false
+          tags: meatland/api:main
+      - name: Build customer portal container artifact
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/customer-portal.Dockerfile
+          push: false
+          tags: meatland/customer-portal:main
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # TODO: Add your release commands here (e.g., git tag, gh release create)
-          echo "No release commands configured — update squad-release.yml"
+          VERSION="v$(node -e \"console.log(require('./package.json').version)\")"
+          NOTES_FILE=.github/release-notes.txt
+          if [ -f CHANGELOG.md ]; then
+            awk '/^## \[/{flag=($0 ~ "^## \\["substr("'"$VERSION"'",2)"\\]")}; flag {print}' CHANGELOG.md > "$NOTES_FILE"
+          fi
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "Automated release for $VERSION." > "$NOTES_FILE"
+          fi
+
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release edit "$VERSION" --notes-file "$NOTES_FILE"
+          else
+            gh release create "$VERSION" --target "$GITHUB_SHA" --notes-file "$NOTES_FILE"
+          fi
