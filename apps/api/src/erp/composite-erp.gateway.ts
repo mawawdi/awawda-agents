@@ -4,6 +4,8 @@ import { ERP_ERROR_CODES, isErpGatewayError, type ErpErrorCode } from './erp.err
 import type {
   ErpGateway,
   ErpGatewayCatalogSnapshot,
+  ErpGatewayCustomerPricingSnapshot,
+  ErpGatewayCustomerRecentItemsSnapshot,
   ErpGatewayHealth,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
@@ -43,5 +45,13 @@ export class CompositeErpGateway implements ErpGateway {
 
   async getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot> {
     return this.hashavshevetAdapter.getMasterCatalog();
+  }
+
+  async getCustomerRecentItems(customerId: string): Promise<ErpGatewayCustomerRecentItemsSnapshot> {
+    return this.hashavshevetAdapter.getCustomerRecentItems(customerId);
+  }
+
+  async getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot> {
+    return this.hashavshevetAdapter.getCustomerPricing(customerId);
   }
 }

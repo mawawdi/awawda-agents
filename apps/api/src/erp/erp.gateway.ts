@@ -1,4 +1,4 @@
-import type { AgentCatalogItem } from '@meatland/shared-types';
+import type { AgentCatalogItem, CustomerPricingLine, CustomerRecentItem } from '@meatland/shared-types';
 
 export const ERP_GATEWAY = Symbol('ERP_GATEWAY');
 
@@ -37,8 +37,23 @@ export type ErpGatewayCatalogSnapshot = {
   source: 'hashavshevet';
 };
 
+export type ErpGatewayCustomerRecentItemsSnapshot = {
+  items: CustomerRecentItem[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayCustomerPricingSnapshot = {
+  lines: CustomerPricingLine[];
+  version: string;
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
 export interface ErpGateway {
   handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse>;
   getHealth(): Promise<ErpGatewayHealth>;
   getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot>;
+  getCustomerRecentItems(customerId: string): Promise<ErpGatewayCustomerRecentItemsSnapshot>;
+  getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot>;
 }
