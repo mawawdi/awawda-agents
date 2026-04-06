@@ -8,7 +8,6 @@
 
 # Node / pnpm workspace outputs
 node_modules/
-pnpm-lock.yaml
 .pnpm-store/
 dist/
 .next/

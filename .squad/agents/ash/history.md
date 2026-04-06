@@ -9,6 +9,7 @@
 
 - Team initialized for Phase 1 architecture implementation.
 - Workspace baseline is now `pnpm bootstrap` + `pnpm check`, with enforced env contracts via `scripts/check-env.mjs` for api/portal/mobile to keep local and CI runs deterministic.
+- 2026-04-06: Implemented Issue #20 CI/CD hardening with deterministic GitHub Actions lint/test/build gates, API + customer-portal container build checks, and documented Playwright-based reviewer release gate policy.
 
 ---
 
