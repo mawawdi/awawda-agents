@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Meatland Agent",
+    "slug": "meatland-agent-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "assetBundlePatterns": ["**/*"]
+  }
+}
