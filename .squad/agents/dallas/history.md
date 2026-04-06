@@ -8,3 +8,4 @@
 ## Learnings
 
 - Team initialized for Phase 1 architecture implementation.
+- 2026-04-06: Owned revision for issue #6 with strict T06 scope only (`apps/api/prisma/*`, API Prisma scripts/docs). Added reproducible empty-DB migration verification path and schema parity proof command.

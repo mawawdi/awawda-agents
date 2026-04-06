@@ -7,7 +7,11 @@
     "dev": "tsx watch src/main.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@meatland/shared-types": "workspace:*",
@@ -17,12 +21,14 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "@prisma/client": "^6.19.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "prisma": "^6.19.3"
   }
 }
