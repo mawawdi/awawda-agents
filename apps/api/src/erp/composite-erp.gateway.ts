@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ERP_ERROR_CODES, isErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
   ErpGateway,
+  ErpGatewayCatalogSnapshot,
   ErpGatewayHealth,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
@@ -38,5 +39,9 @@ export class CompositeErpGateway implements ErpGateway {
 
   async getHealth(): Promise<ErpGatewayHealth> {
     return this.hashavshevetAdapter.getHealth();
+  }
+
+  async getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot> {
+    return this.hashavshevetAdapter.getMasterCatalog();
   }
 }

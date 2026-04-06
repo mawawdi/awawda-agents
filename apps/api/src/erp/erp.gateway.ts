@@ -1,3 +1,5 @@
+import type { AgentCatalogItem } from '@meatland/shared-types';
+
 export const ERP_GATEWAY = Symbol('ERP_GATEWAY');
 
 export type ErpOrderLine = {
@@ -29,7 +31,14 @@ export type ErpGatewayHealth = {
   detail: string;
 };
 
+export type ErpGatewayCatalogSnapshot = {
+  items: AgentCatalogItem[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
 export interface ErpGateway {
   handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse>;
   getHealth(): Promise<ErpGatewayHealth>;
+  getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot>;
 }
