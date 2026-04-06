@@ -1,5 +1,4 @@
 name: Squad Preview Validation
-# Project type was not detected — configure build, test, and validation commands below
 
 on:
   push:
@@ -9,22 +8,42 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  preview-gates:
+    name: Preview gates
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-
-      - name: Build and test
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies (deterministic)
+        run: pnpm install --frozen-lockfile
+      - name: Lint, test, and build
         run: |
-          # TODO: Project type was not detected — add your build/test commands here
-          # Go:            go test ./...
-          # Python:        pip install -r requirements.txt && pytest
-          # .NET:          dotnet test
-          # Java (Maven):  mvn test
-          # Java (Gradle): ./gradlew test
-          echo "No build commands configured — update squad-preview.yml"
-
-      - name: Validate
+          pnpm lint
+          pnpm test
+          pnpm build
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API container artifact
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          push: false
+          tags: meatland/api:preview
+      - name: Build customer portal container artifact
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/customer-portal.Dockerfile
+          push: false
+          tags: meatland/customer-portal:preview
+      - name: Validate release gate documentation reference
         run: |
-          # TODO: Add pre-release validation commands here
-          echo "No validation commands configured — update squad-preview.yml"
+          test -f docs/ci-cd-release-gates.md
+          grep -q "Playwright" docs/ci-cd-release-gates.md
