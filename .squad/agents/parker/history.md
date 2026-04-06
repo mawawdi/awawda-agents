@@ -12,3 +12,4 @@
 - T04 bootstrapped `apps/api` with NestJS + Fastify, URI versioning (`/v1/*`), global ValidationPipe defaults, health/readiness contracts, and phase domain module boundaries.
 - T06 added Prisma v6 to `apps/api`, delivered a Phase 1 operational schema + initial SQL migration for `agents`, `assignments`, `approved_items`, `magic_links`, `sessions`, `orders`, `order_lines`, `idempotency_keys`, and `audit_logs`.
 - T08 implemented agent login at `POST /v1/agent/auth/login` with Argon2 password verification, JWT shift token issuance, stable auth errors, and AuthService success/failure unit coverage.
+- T09 delivered agent-only read APIs: `GET /v1/agent/customers` now enforces assignment scoping with dashboard metadata, and `GET /v1/agent/catalog` now reads from ERP gateway with short-lived cache metadata + HTTP cache headers; integration tests cover auth rejection and happy paths.

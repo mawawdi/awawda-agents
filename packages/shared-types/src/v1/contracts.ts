@@ -15,3 +15,36 @@ export interface AgentLoginResponse {
   expiresIn: number;
   agentProfile: AgentProfile;
 }
+
+export interface AgentAssignedCustomer {
+  customerId: string;
+  approvedItemsCount: number;
+  lastOrderAt: string | null;
+}
+
+export interface AgentCustomersResponse {
+  customers: AgentAssignedCustomer[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentCatalogItem {
+  itemId: string;
+  sku: string;
+  name: string;
+  unit: 'kg' | 'unit';
+  isActive: boolean;
+}
+
+export interface AgentCatalogCacheMetadata {
+  status: 'hit' | 'miss';
+  generatedAt: string;
+  expiresAt: string;
+  ttlSeconds: number;
+}
+
+export interface AgentCatalogResponse {
+  items: AgentCatalogItem[];
+  source: 'hashavshevet';
+  cache: AgentCatalogCacheMetadata;
+}
