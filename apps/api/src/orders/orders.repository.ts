@@ -16,45 +16,46 @@ export class PrismaOrdersRepository implements OrdersRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async reserveIdempotencyKey(input: ReserveIdempotencyKeyInput): Promise<ReserveIdempotencyKeyResult> {
-    try {
-      const created = await this.prisma.idempotencyKey.create({
-        data: {
-          scope: IdempotencyScope.CUSTOMER_ORDER_SUBMIT,
-          key: input.key,
-          hashCustomerId: input.customerId,
-          customerSessionId: input.customerSessionId,
-          requestHash: input.requestHash,
-        },
-        select: {
-          id: true,
-        },
-      });
+    const created = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO "idempotency_keys" ("scope", "key", "hash_customer_id", "customer_session_id", "request_hash")
+      VALUES (
+        ${IdempotencyScope.CUSTOMER_ORDER_SUBMIT}::"IdempotencyScope",
+        ${input.key},
+        ${input.customerId},
+        ${input.customerSessionId}::UUID,
+        ${input.requestHash}
+      )
+      ON CONFLICT ("scope", "key") DO NOTHING
+      RETURNING "id"
+    `;
 
+    if (created.length > 0) {
       return {
         kind: 'reserved',
-        idempotencyId: created.id,
+        idempotencyId: created[0].id,
       };
-    } catch (error) {
-      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
-        throw error;
-      }
     }
 
-    const existing = await this.prisma.idempotencyKey.findUnique({
-      where: {
-        scope_key: {
-          scope: IdempotencyScope.CUSTOMER_ORDER_SUBMIT,
-          key: input.key,
-        },
-      },
-      select: {
-        hashCustomerId: true,
-        customerSessionId: true,
-        requestHash: true,
-        responseStatus: true,
-        responseBodyJson: true,
-      },
-    });
+    const [existing] = await this.prisma.$queryRaw<
+      Array<{
+        hashCustomerId: string;
+        customerSessionId: string;
+        requestHash: string;
+        responseStatus: number | null;
+        responseBodyJson: Prisma.JsonValue | null;
+      }>
+    >`
+      SELECT
+        "hash_customer_id" AS "hashCustomerId",
+        "customer_session_id"::TEXT AS "customerSessionId",
+        "request_hash" AS "requestHash",
+        "response_status" AS "responseStatus",
+        "response_body_json" AS "responseBodyJson"
+      FROM "idempotency_keys"
+      WHERE "scope" = ${IdempotencyScope.CUSTOMER_ORDER_SUBMIT}::"IdempotencyScope"
+        AND "key" = ${input.key}
+      LIMIT 1
+    `;
 
     if (
       !existing ||
@@ -69,11 +70,16 @@ export class PrismaOrdersRepository implements OrdersRepository {
       return { kind: 'conflict' };
     }
 
+    const replayBody = toReplayBody(existing.responseBodyJson);
+    if (!replayBody) {
+      return { kind: 'conflict' };
+    }
+
     return {
       kind: 'replay',
       replay: {
         statusCode: existing.responseStatus,
-        body: existing.responseBodyJson as unknown as OrderSubmitReplay['body'],
+        body: replayBody,
       },
     };
   }
@@ -83,16 +89,14 @@ export class PrismaOrdersRepository implements OrdersRepository {
     replay: OrderSubmitReplay,
     responseHash: string,
   ): Promise<void> {
-    await this.prisma.idempotencyKey.update({
-      where: {
-        id: idempotencyId,
-      },
-      data: {
-        responseHash,
-        responseStatus: replay.statusCode,
-        responseBodyJson: replay.body as unknown as Prisma.InputJsonValue,
-      },
-    });
+    await this.prisma.$executeRaw`
+      UPDATE "idempotency_keys"
+      SET
+        "response_hash" = ${responseHash},
+        "response_status" = ${replay.statusCode},
+        "response_body_json" = ${JSON.stringify(replay.body)}::JSONB
+      WHERE "id" = ${idempotencyId}::UUID
+    `;
   }
 
   async persistOrderSubmission(input: PersistOrderSubmissionInput): Promise<void> {
@@ -221,6 +225,80 @@ function toOrderStatus(status: PersistOrderSubmissionInput['status']): OrderStat
   }
 
   return OrderStatus.FAILED;
+}
+
+function toReplayBody(value: Prisma.JsonValue): OrderSubmitReplay['body'] | null {
+  if (!isJsonRecord(value)) {
+    return null;
+  }
+
+  const orderId = value.orderId;
+  const orderRef = value.orderRef;
+  const status = value.status;
+  if (
+    typeof orderId === 'string' &&
+    typeof orderRef === 'string' &&
+    (status === 'submitted' || status === 'pending_retry' || status === 'failed')
+  ) {
+    return {
+      orderId,
+      orderRef,
+      status,
+    };
+  }
+
+  const code = value.code;
+  const lines = value.lines;
+  if (code === 'ORDER_LINES_MISMATCH' && Array.isArray(lines)) {
+    const parsedLines: Array<{
+      lineIndex: number;
+      itemId: string;
+      reason: string;
+      submittedUnitPrice?: number;
+      currentUnitPrice?: number;
+    }> = [];
+
+    for (const line of lines) {
+      if (!isJsonRecord(line)) {
+        return null;
+      }
+
+      const lineIndex = line.lineIndex;
+      const itemId = line.itemId;
+      const reason = line.reason;
+      const submittedUnitPrice = line.submittedUnitPrice;
+      const currentUnitPrice = line.currentUnitPrice;
+
+      if (
+        typeof lineIndex !== 'number' ||
+        typeof itemId !== 'string' ||
+        typeof reason !== 'string' ||
+        (submittedUnitPrice !== undefined && typeof submittedUnitPrice !== 'number') ||
+        (currentUnitPrice !== undefined && typeof currentUnitPrice !== 'number')
+      ) {
+        return null;
+      }
+
+      parsedLines.push({
+        lineIndex,
+        itemId,
+        reason,
+        ...(submittedUnitPrice === undefined ? {} : { submittedUnitPrice }),
+        ...(currentUnitPrice === undefined ? {} : { currentUnitPrice }),
+      });
+    }
+
+    return {
+      code,
+      lines: parsedLines,
+    };
+  }
+
+  return null;
+}
+
+function isJsonRecord(value: Prisma.JsonValue): value is Prisma.JsonObject {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 export function createResponseHash(replay: OrderSubmitReplay): string {
