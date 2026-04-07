@@ -8,3 +8,4 @@
 ## Learnings
 
 - Team initialized for Phase 1 architecture implementation.
+- PR #48 review approved the orders repository typing hotfix: idempotency reserve/replay/finalize uses parameterized SQL plus strict replay JSON guards in `apps/api/src/orders/orders.repository.ts`, with no unsafe `any` shortcuts and no idempotency behavior regression observed under full lint/test/build verification.

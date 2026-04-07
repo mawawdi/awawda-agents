@@ -10,6 +10,8 @@
 - Team initialized for Phase 1 architecture implementation.
 - Workspace baseline is now `pnpm bootstrap` + `pnpm check`, with enforced env contracts via `scripts/check-env.mjs` for api/portal/mobile to keep local and CI runs deterministic.
 - 2026-04-06: Implemented Issue #20 CI/CD hardening with deterministic GitHub Actions lint/test/build gates, API + customer-portal container build checks, and documented Playwright-based reviewer release gate policy.
+- 2026-04-07: Final integration sweep closed stale open PRs (#23, #24, #26, #29, #32, #44, #45) as superseded by merged successors (#27, #34, #36, #46), verified no open squad PRs remained, and re-ran root verification + portal E2E (tests pass; lint/build currently fail on `apps/api/src/orders/orders.repository.ts` type drift on `IdempotencyKey` fields).
+- 2026-04-07: Merged PR #48 (`fix(api): resolve orders repository TypeScript typing errors`) into `main` via merge commit, restoring mainline health after the orders repository typing regression.
 
 ---
 
