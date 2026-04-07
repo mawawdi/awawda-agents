@@ -1,7 +1,7 @@
 import type { CustomerPortalDataPayload, CustomerSessionActivateResponse } from '@meatland/shared-types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import {
   clearOrderSubmitting,
@@ -75,6 +75,10 @@ export function CustomerPortalRoutes({
         element={<ActivationRoute apiClient={apiClient} weakNetworkThresholdMs={resolvedConfig.weakNetworkThresholdMs} />}
       />
       <Route
+        path="/m"
+        element={<ActivationRoute apiClient={apiClient} weakNetworkThresholdMs={resolvedConfig.weakNetworkThresholdMs} />}
+      />
+      <Route
         path="/order"
         element={<OrderRoute apiClient={apiClient} weakNetworkThresholdMs={resolvedConfig.weakNetworkThresholdMs} />}
       />
@@ -92,7 +96,8 @@ function ActivationRoute({
 }): ReactElement {
   const navigate = useNavigate();
   const params = useParams();
-  const token = params.token ?? '';
+  const [searchParams] = useSearchParams();
+  const token = (params.token ?? searchParams.get('token') ?? '').trim();
   const [state, setState] = useState<ActivationBootstrapState>(() => createActivationIdleState(token));
 
   useEffect(() => {

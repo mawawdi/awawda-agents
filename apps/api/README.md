@@ -29,6 +29,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `JWT_SECRET` (required): signing key for agent JWT access tokens
 - `JWT_SHIFT_TOKEN_TTL` (optional): shift token TTL (`8h` default, supports `s|m|h|d`)
 - `JWT_ISSUER` (optional): JWT issuer claim (`meatland-api` default)
+- `CORS_ALLOWED_ORIGINS` (optional): comma-separated allowed origins for browser clients (defaults include `localhost:8080` and `localhost:8081`)
 
 ## Catalog environment variables
 

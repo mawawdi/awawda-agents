@@ -23,6 +23,7 @@ import {
   formatLastOrderLabel,
   getResilienceHint,
   mergeApprovedItems,
+  normalizeMagicLinkForShare,
   shouldUseCopyLinkFallback,
 } from './agent-dashboard-presenter'
 
@@ -205,14 +206,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
     try {
       const payload = await generateMagicLink(token, selectedCustomerId)
-      generatedLink = payload
-      setLatestMagicLink(payload)
-      const message = buildMagicLinkShareMessage(selectedCustomerId, payload)
+      const normalizedPayload = normalizeMagicLinkForShare(payload)
+      generatedLink = normalizedPayload
+      setLatestMagicLink(normalizedPayload)
+      const message = buildMagicLinkShareMessage(selectedCustomerId, normalizedPayload)
       const deepLink = buildWhatsAppDeepLink(message)
       const canOpenWhatsApp = await Linking.canOpenURL(deepLink)
 
       if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
-        setPendingCopyLink(payload.linkUrl)
+        setPendingCopyLink(normalizedPayload.linkUrl)
         setMagicLinkError('WhatsApp is unavailable on this device. Copy the link instead.')
         return
       }

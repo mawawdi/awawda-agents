@@ -5,6 +5,22 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
+function normalizeLocalMagicLinkUrl(linkUrl: string): string {
+  try {
+    const parsed = new URL(linkUrl)
+    const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+
+    if (isLocalHost && parsed.protocol === 'https:') {
+      parsed.protocol = 'http:'
+      return parsed.toString()
+    }
+  } catch {
+    return linkUrl
+  }
+
+  return linkUrl
+}
+
 export function formatLastOrderLabel(lastOrderAt: string | null): string {
   if (!lastOrderAt) {
     return 'No recent order'
@@ -76,7 +92,14 @@ export function formatMagicLinkExpiry(expiresAt: string): string {
 }
 
 export function buildMagicLinkShareMessage(customerId: string, payload: AgentMagicLinkIssueResponse): string {
-  return `Hi! Here is your Meatland ordering link for ${customerId}: ${payload.linkUrl} (expires ${formatMagicLinkExpiry(payload.expiresAt)}).`
+  return `Hi! Here is your Meatland ordering link for ${customerId}: ${normalizeLocalMagicLinkUrl(payload.linkUrl)} (expires ${formatMagicLinkExpiry(payload.expiresAt)}).`
+}
+
+export function normalizeMagicLinkForShare(payload: AgentMagicLinkIssueResponse): AgentMagicLinkIssueResponse {
+  return {
+    ...payload,
+    linkUrl: normalizeLocalMagicLinkUrl(payload.linkUrl),
+  }
 }
 
 export function buildWhatsAppDeepLink(message: string): string {

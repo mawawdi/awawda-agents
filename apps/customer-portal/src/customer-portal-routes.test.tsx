@@ -86,6 +86,20 @@ describe('customer portal runtime routes', () => {
     expect(activateSession).toHaveBeenCalledWith('token-abc');
   });
 
+  it('activates /m?token=... links and opens /order', async () => {
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m?token=token-query-123');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+    });
+
+    expect(activateSession).toHaveBeenCalledWith('token-query-123');
+  });
+
   it('wires quantity controls into estimated total and sticky submit state', async () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',

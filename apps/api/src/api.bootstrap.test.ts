@@ -7,6 +7,7 @@ describe('API bootstrap', () => {
   let app: NestFastifyApplication;
   const originalJwtSecret = process.env.JWT_SECRET;
   const originalJwtShiftTokenTtl = process.env.JWT_SHIFT_TOKEN_TTL;
+  const originalCorsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
@@ -27,6 +28,11 @@ describe('API bootstrap', () => {
       delete process.env.JWT_SHIFT_TOKEN_TTL;
     } else {
       process.env.JWT_SHIFT_TOKEN_TTL = originalJwtShiftTokenTtl;
+    }
+    if (originalCorsAllowedOrigins === undefined) {
+      delete process.env.CORS_ALLOWED_ORIGINS;
+    } else {
+      process.env.CORS_ALLOWED_ORIGINS = originalCorsAllowedOrigins;
     }
   });
 
@@ -80,5 +86,19 @@ describe('API bootstrap', () => {
       },
     });
     expect(typeof body.timestamp).toBe('string');
+  });
+
+  it('allows CORS preflight for Expo web origin', async () => {
+    const response = await app.inject({
+      method: 'OPTIONS',
+      url: '/v1/agent/auth/login',
+      headers: {
+        origin: 'http://localhost:8081',
+        'access-control-request-method': 'POST',
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8081');
   });
 });
