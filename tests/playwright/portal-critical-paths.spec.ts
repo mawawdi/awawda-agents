@@ -160,6 +160,33 @@ test.describe('customer portal browser critical paths', () => {
     expect(idempotencyKeys[0]).not.toBe(idempotencyKeys[1]);
   });
 
+  test('activation route accepts query-token links', async ({ page }) => {
+    let activationRequestToken: string | undefined;
+
+    await page.route('**/v1/customer/sessions/activate', async (route) => {
+      activationRequestToken = route.request().postDataJSON()?.token;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(activationResponse),
+      });
+    });
+
+    await page.route('**/v1/customer/portal-data', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(portalDataResponse),
+      });
+    });
+
+    await page.goto(`${portalBaseUrl}/m?token=query-token-123`);
+
+    await expect(page).toHaveURL(`${portalBaseUrl}/order`);
+    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
+    expect(activationRequestToken).toBe('query-token-123');
+  });
+
   test('order route shows weak-network and resilient error UI on load failure', async ({ page }) => {
     await page.addInitScript((session) => {
       window.sessionStorage.setItem('customer-portal-session', JSON.stringify(session));
@@ -184,6 +211,43 @@ test.describe('customer portal browser critical paths', () => {
     await expect(page.getByTestId('order-weak-network')).toContainText('Network is slow');
     await expect(page.getByRole('heading', { name: 'Could not load your order' })).toBeVisible();
     await expect(page.getByText('Unable to load order data right now. Please retry in a moment.')).toBeVisible();
+  });
+
+  test('logout clears active session and routes back to activation state', async ({ page }) => {
+    let logoutCalls = 0;
+
+    await page.addInitScript((session) => {
+      window.sessionStorage.setItem('customer-portal-session', JSON.stringify(session));
+    }, {
+      sessionToken: activationResponse.sessionToken,
+      customerId: activationResponse.customer.customerId,
+      sessionExpiresAt: activationResponse.sessionExpiresAt,
+      payload: portalDataResponse,
+    });
+
+    await page.route('**/v1/customer/portal-data', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(portalDataResponse),
+      });
+    });
+
+    await page.route('**/v1/customer/session/logout', async (route) => {
+      logoutCalls += 1;
+      await route.fulfill({
+        status: 204,
+      });
+    });
+
+    await page.goto(`${portalBaseUrl}/order`);
+
+    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
+    await page.getByRole('button', { name: 'Logout session' }).click();
+
+    await expect(page).toHaveURL(`${portalBaseUrl}/m`);
+    await expect(page.getByRole('heading', { name: 'Activation failed' })).toBeVisible();
+    expect(logoutCalls).toBe(1);
   });
 });
 

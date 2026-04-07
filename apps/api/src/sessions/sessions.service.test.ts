@@ -15,6 +15,7 @@ describe('SessionsService', () => {
         sessionExpiresAt: new Date('2026-04-07T12:00:00.000Z'),
       }),
       validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([
         {
           hashItemId: 'item-1',
@@ -103,6 +104,7 @@ describe('SessionsService', () => {
       {
         activateMagicToken: vi.fn().mockResolvedValue({ kind: 'invalid' }),
         validateCustomerSession: vi.fn(),
+        deactivateCustomerSession: vi.fn(),
         listApprovedItems: vi.fn(),
       },
       { sign: vi.fn() },
@@ -126,6 +128,7 @@ describe('SessionsService', () => {
       {
         activateMagicToken: vi.fn().mockResolvedValue({ kind: 'expired' }),
         validateCustomerSession: vi.fn(),
+        deactivateCustomerSession: vi.fn(),
         listApprovedItems: vi.fn(),
       },
       { sign: vi.fn() },
@@ -141,6 +144,36 @@ describe('SessionsService', () => {
 
     await expect(service.activateSession('expired-token')).rejects.toBeInstanceOf(
       CustomerActivationTokenExpiredError,
+    );
+  });
+
+  it('closes customer session on logout', async () => {
+    const repository: CustomerSessionsRepository = {
+      activateMagicToken: vi.fn(),
+      validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn().mockResolvedValue(undefined),
+      listApprovedItems: vi.fn(),
+    };
+
+    const service = new SessionsService(
+      repository,
+      { sign: vi.fn() },
+      { customerSessionTtlSeconds: 7200 },
+      {
+        handoffOrder: vi.fn(),
+        getHealth: vi.fn(),
+        getMasterCatalog: vi.fn(),
+        getCustomerRecentItems: vi.fn(),
+        getCustomerPricing: vi.fn(),
+      },
+    );
+
+    await service.logoutSession('sess-99', 'cust-99');
+
+    expect(repository.deactivateCustomerSession).toHaveBeenCalledWith(
+      'sess-99',
+      'cust-99',
+      expect.any(Date),
     );
   });
 });

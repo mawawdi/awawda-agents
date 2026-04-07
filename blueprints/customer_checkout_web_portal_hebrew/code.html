@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>הספר האומנותי | תשלום</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,700;0,800;1,400&amp;family=Inter:wght@400;600;700&amp;family=Heebo:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#89726f",
+                    "surface-variant": "#e3e3de",
+                    "tertiary-fixed-dim": "#d3c4ba",
+                    "background": "#faf9f4",
+                    "primary": "#190000",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#92857c",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#f0dfd5",
+                    "on-secondary-fixed-variant": "#603f31",
+                    "surface-dim": "#dbdad5",
+                    "on-secondary-container": "#795546",
+                    "outline-variant": "#dcc0bd",
+                    "inverse-surface": "#30312e",
+                    "surface": "#faf9f4",
+                    "on-tertiary-fixed-variant": "#4f453e",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#410002",
+                    "primary-fixed": "#ffdad6",
+                    "tertiary": "#0c0603",
+                    "on-surface": "#1b1c19",
+                    "secondary-container": "#fecdba",
+                    "inverse-primary": "#ffb4ac",
+                    "surface-bright": "#faf9f4",
+                    "tertiary-container": "#261e18",
+                    "surface-container-low": "#f5f4ef",
+                    "secondary": "#7a5647",
+                    "surface-container-highest": "#e3e3de",
+                    "primary-container": "#480003",
+                    "inverse-on-surface": "#f2f1ec",
+                    "on-background": "#1b1c19",
+                    "on-secondary-fixed": "#2e150a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#d2665d",
+                    "surface-container": "#efeee9",
+                    "on-tertiary-fixed": "#221a14",
+                    "on-primary-fixed-variant": "#802924",
+                    "secondary-fixed": "#ffdbce",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#ecbcaa",
+                    "surface-container-high": "#e9e8e3",
+                    "primary-fixed-dim": "#ffb4ac",
+                    "on-surface-variant": "#564240",
+                    "surface-tint": "#9f4039"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Newsreader", "serif"],
+                    "body": ["Inter", "Heebo", "sans-serif"],
+                    "label": ["Inter", "Heebo", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', 'Heebo', sans-serif; }
+        h1, h2, h3 { font-family: 'Newsreader', serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-12">
+<!-- Web Header (Brand Focused) -->
+<header class="bg-[#faf9f4] dark:bg-[#190000] flex justify-between items-center w-full px-6 py-6 rtl:flex-row-reverse border-b border-[#efeee9] dark:border-[#480003] sticky top-0 z-40">
+<div class="flex items-center gap-3">
+<!-- Logo Icon replaced with Brand Symbol -->
+<div class="w-8 h-8 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-4xl">local_mall</span>
+</div>
+<h1 class="text-[#190000] dark:text-[#faf9f4] text-3xl font-black tracking-tight font-['Newsreader']">הספר האומנותי</h1>
+</div>
+<div class="flex items-center gap-8">
+<nav class="flex gap-10 items-center">
+<a class="text-[#7a5647] dark:text-[#dbdad5] hover:text-[#190000] transition-colors font-['Newsreader'] font-bold text-2xl rtl:font-['Heebo'] hidden sm:block" href="#">החנות</a>
+<a class="text-[#190000] dark:text-[#ffffff] font-bold font-['Newsreader'] text-2xl rtl:font-['Heebo'] relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-full after:h-0.5 after:bg-primary" href="#">תשלום</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#480003] dark:text-[#ffdad6] text-2xl cursor-pointer">search</span>
+<span class="material-symbols-outlined text-[#480003] dark:text-[#ffdad6] text-2xl cursor-pointer">account_circle</span>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center">
+<!-- Center Column: Order Summary (Web Portal Focus) -->
+<aside class="w-full max-w-2xl">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_32px_64px_-16px_rgba(121,85,70,0.1)] p-8 space-y-8">
+<h3 class="text-2xl font-bold text-primary border-b border-surface-container-highest pb-4">סיכום הזמנה ואישור</h3>
+<!-- Order Items -->
+<div class="space-y-6">
+<div class="flex justify-between items-center">
+<div class="flex gap-4 items-center">
+<img alt="אנטריקוט פרימיום (מיושן)" class="w-16 h-16 rounded-lg object-cover shadow-sm flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP2WV8HMNXb--QOFt4lbRPuY1Kv3gOawCM92eHwiU6mPjNEEO7DYc4U8wrJaG4c9zvbtha-arRc8D1bRmD0bzj5LGOObmAmaSWE8clSB6HdGSfYJdC13ktKI9ysEGU3FL-Q7xgG5bzEwRgbBQKZ0cTHF_OLYQ78izrzxyL5RvYs7uCN4bymr3Vh7hpfbVIZDNA0PG2YI8TEAZRVKiRkCqQaiPHyBlUwIaYyt2k1AjsFRNcy5z-6-GnmRNnIB-Hiny5hvSCdneU-oE"/>
+<div>
+<p class="text-lg font-bold text-primary">אנטריקוט פרימיום (מיושן)</p>
+<p class="text-sm text-secondary">~5.5 ק"ג | 165.00 ₪ לק"ג</p>
+</div>
+</div>
+<p class="text-lg font-bold text-primary">907.50 ₪</p>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-4 items-center">
+<img alt="סינטה עגל חלב" class="w-16 h-16 rounded-lg object-cover shadow-sm flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6cJtk9Kd28yXaoW1BfVMw-A9jhgnAqDpbYGwPAz9zg80urMAaXAsV9KFg1hFy2qij5VPjm_-tttAlXpqsDRziC2tJxSdfHgsECoH9VSz2hUYoL0xqD6h_zdBU0Ix0G6BbqKR_UNyp0sVUicSqTJCce_GmOR3-FEClR3Z6dFj12S5IG9eBBj3w5wdVdOW44MTyBODOATx25WZU5CWCCVuFXkbQv4Nuy63IKGNBmv3LHpG4Wj1_gv6c9Z9TjMCQPX1az5ZkDprdZkQ"/>
+<div>
+<p class="text-lg font-bold text-primary">סינטה עגל חלב</p>
+<p class="text-sm text-secondary">~3.2 ק"ג | 142.00 ₪ לק"ג</p>
+</div>
+</div>
+<p class="text-lg font-bold text-primary">454.40 ₪</p>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-4 items-center">
+<img alt="צלעות טלה ישראלי" class="w-16 h-16 rounded-lg object-cover shadow-sm flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2hxUMjJk5HbEw-Ww6oQkoIveAXzk110kz4pmU8gGk5d4Ap2kGG7p0i6DjcQErrBONis8JDRKG_lpCQve2FFJd8XDNvsd3ncEQ5O3IAN_zGMsmBjHDuLSOSY8_BOSbz9p95aAX9NS1cxMaIZUVmObQAkc8J6P_mp0UPdbkEYENwVToBcnD3hzP5zzd-QVtfKcMdgYqiZPlw4t9HqStWY1AmubhfdHl0rPJbyX1dj8zeinYtThc2n70IRC_KwxHAFAZX4xJhQdvduI"/>
+<div>
+<p class="text-lg font-bold text-primary">צלעות טלה ישראלי</p>
+<p class="text-sm text-secondary">~2.0 ק"ג | 189.00 ₪ לק"ג</p>
+</div>
+</div>
+<p class="text-lg font-bold text-primary">378.00 ₪</p>
+</div>
+</div>
+<div class="bg-surface-container-highest h-[1px] w-full"></div>
+<!-- Totals -->
+<div class="space-y-4">
+<div class="flex justify-between text-on-surface-variant">
+<span>סיכום ביניים</span>
+<span>1,739.90 ₪</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>דמי משלוח</span>
+<span class="text-primary-container font-bold">חינם</span>
+</div>
+<div class="pt-4 flex justify-between items-baseline">
+<span class="text-xl font-bold text-primary">סה"כ משוער</span>
+<div class="text-left">
+<p class="text-3xl font-black text-primary">1,739.90 ₪</p>
+<p class="text-[10px] text-secondary uppercase tracking-tighter">כפוף לשקילה סופית (משקל משתנה)</p>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full bg-primary-container text-on-primary py-5 rounded-xl text-xl font-bold hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-primary-container/20">
+                שלח הזמנה לאישור
+            </button>
+<div class="flex items-center justify-center gap-2 text-secondary opacity-60 text-sm">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>תשלום מאובטח ומוצפן</span>
+</div>
+</div>
+</aside>
+</main>
+<!-- Web Footer -->
+<footer class="bg-[#faf9f4] dark:bg-[#190000] mt-auto border-t border-[#dbdad5]">
+<div class="max-w-7xl mx-auto py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 rtl:flex-row-reverse">
+<div class="flex flex-col items-center md:items-end gap-2">
+<span class="font-['Newsreader'] italic text-[#7a5647] text-2xl">הספר האומנותי</span>
+<p class="font-['Inter'] text-sm tracking-tight text-[#7a5647] text-center md:text-right">© 2024 The Artisanal Ledger.<br class="md:hidden"/> פורטל לקוחות פרטי.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors font-['Inter'] text-sm tracking-tight" href="#">תנאי שימוש</a>
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors font-['Inter'] text-sm tracking-tight" href="#">מדיניות פרטיות</a>
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors font-['Inter'] text-sm tracking-tight" href="#">עזרה ותמיכה</a>
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors font-['Inter'] text-sm tracking-tight" href="#">צור קשר</a>
+</div>
+</div>
+</footer>
+<!-- Background Decorative Image -->
+<div class="fixed top-0 right-0 -z-10 w-1/3 h-full opacity-5 pointer-events-none overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Abstract macro photography of raw marble texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-JRQptOomHSjmCG7ZtQxW5WlGamGMOelRd5IGVieQXPv7PWFsZ5K4uJtizcESyKpKZF7xr1C5RA8L5t0C9QGjrLLOiD2pLMobtyKL44sNdsuBrX4oABZOaWQzdivsNOU5IZERhzl8dLljFTjpoFlTEnKyYNd-TepDWTkIp1kWkjzt_6xSCoUQ6Loipr-4hdro3_ugVY4fG45KtheYxLr7w_LWy35bD4tX_GV6AdL4SSIBJaWWS1qVgA9VKNG8YgM7NrXOufhIKjc"/>
+</div>
+</body></html>

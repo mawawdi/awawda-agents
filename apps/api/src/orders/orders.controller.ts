@@ -7,6 +7,7 @@ import type {
 
 import { CustomerSessionAuthGuard } from '../sessions/customer-session-auth.guard';
 import { CustomerOrderSubmitDto } from './dto/customer-order-submit.dto';
+import type { CustomerOrderErpUnavailableResponse } from './orders.errors';
 import { CustomerOrderIdempotencyKeyRequiredError } from './orders.errors';
 import { OrdersService } from './orders.service';
 
@@ -23,7 +24,7 @@ export class OrdersController {
     @Headers('x-customer-session-id') customerSessionId: string,
     @Body() body: CustomerOrderSubmitDto,
     @Res({ passthrough: true }) response: { status(code: number): unknown },
-  ): Promise<CustomerOrderSubmitResponse | CustomerOrderMismatchResponse> {
+  ): Promise<CustomerOrderSubmitResponse | CustomerOrderMismatchResponse | CustomerOrderErpUnavailableResponse> {
     const normalizedIdempotencyKey = idempotencyKey?.trim();
 
     if (!normalizedIdempotencyKey) {

@@ -100,6 +100,52 @@ describe('customer portal runtime routes', () => {
     expect(activateSession).toHaveBeenCalledWith('token-query-123');
   });
 
+  it('keeps activation flow working when sessionStorage is unavailable', async () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-storage-fallback');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+    });
+
+    expect(activateSession).toHaveBeenCalledWith('token-storage-fallback');
+    setItemSpy.mockRestore();
+  });
+
+  it('logs out current session and routes back to activation state', async () => {
+    __setPortalSessionForTests({
+      sessionToken: 'session-123',
+      customerId: 'cust-1',
+      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      payload: portalDataResponse,
+    });
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+    const logoutSession = vi.fn(async () => undefined);
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder, logoutSession }, '/order');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Logout session' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Activation failed' })).toBeTruthy();
+    });
+    expect(logoutSession).toHaveBeenCalledWith('session-123');
+  });
+
   it('wires quantity controls into estimated total and sticky submit state', async () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
@@ -153,6 +199,28 @@ describe('customer portal runtime routes', () => {
       expect(screen.getByRole('heading', { name: 'Could not load your order' })).toBeTruthy();
     });
     expect(screen.getByText('Unable to load order data right now. Please retry in a moment.')).toBeTruthy();
+  });
+
+  it('clears stale session and routes to activation when portal token is rejected', async () => {
+    __setPortalSessionForTests({
+      sessionToken: 'session-stale',
+      customerId: 'cust-1',
+      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      payload: portalDataResponse,
+    });
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => {
+      throw new PortalApiError('expired_token', 'Expired');
+    });
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Activation failed' })).toBeTruthy();
+    });
+    expect(getPortalData).toHaveBeenCalledTimes(1);
   });
 
   it('handles submit loading, mismatch recovery prompt, and reconfirmation payload', async () => {
@@ -260,12 +328,18 @@ describe('customer portal runtime routes', () => {
 });
 
 function renderWithRouter(
-  api: Pick<PortalApiClient, 'activateSession' | 'getPortalData' | 'submitOrder'>,
+  api: Pick<PortalApiClient, 'activateSession' | 'getPortalData' | 'submitOrder'> &
+    Partial<Pick<PortalApiClient, 'logoutSession'>>,
   initialPath: string,
 ): void {
+  const apiClient = {
+    ...api,
+    logoutSession: api.logoutSession ?? (async () => undefined),
+  } as PortalApiClient;
+
   render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <CustomerPortalRoutes apiClient={api as PortalApiClient} config={{ weakNetworkThresholdMs: 1 }} />
+      <CustomerPortalRoutes apiClient={apiClient} config={{ weakNetworkThresholdMs: 1 }} />
     </MemoryRouter>,
   );
 }

@@ -23,3 +23,25 @@ export class CustomerOrderIdempotencyKeyConflictError extends HttpException {
     );
   }
 }
+
+export const CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE = 'CUSTOMER_ORDER_ERP_UNAVAILABLE' as const;
+export const CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE =
+  'Order service is temporarily unavailable. Please retry in a moment.' as const;
+
+export type CustomerOrderErpUnavailableResponse = {
+  code: typeof CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE;
+  message: string;
+};
+
+export function createCustomerOrderErpUnavailableBody(): CustomerOrderErpUnavailableResponse {
+  return {
+    code: CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE,
+    message: CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE,
+  };
+}
+
+export class CustomerOrderErpUnavailableError extends HttpException {
+  constructor() {
+    super(createCustomerOrderErpUnavailableBody(), HttpStatus.SERVICE_UNAVAILABLE);
+  }
+}

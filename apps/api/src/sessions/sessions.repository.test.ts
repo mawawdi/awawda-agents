@@ -147,4 +147,45 @@ describe('PrismaCustomerSessionsRepository', () => {
       }),
     );
   });
+
+  it('closes active session on explicit logout request', async () => {
+    const now = new Date('2026-04-08T10:00:00.000Z');
+    const tx = {
+      session: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'sess-1',
+          hashCustomerId: 'cust-1',
+          status: 'ACTIVE',
+          isActive: true,
+        }),
+        update: vi.fn().mockResolvedValue(undefined),
+      },
+      auditLog: {
+        create: vi.fn().mockResolvedValue(undefined),
+      },
+    };
+
+    const repository = new PrismaCustomerSessionsRepository({
+      $transaction: vi.fn().mockImplementation(async (callback) => callback(tx)),
+    } as never);
+
+    await repository.deactivateCustomerSession('sess-1', 'cust-1', now);
+
+    expect(tx.session.update).toHaveBeenCalledWith({
+      where: {
+        id: 'sess-1',
+      },
+      data: {
+        status: 'CLOSED',
+        isActive: false,
+      },
+    });
+    expect(tx.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventType: 'customer_session.closed',
+        }),
+      }),
+    );
+  });
 });

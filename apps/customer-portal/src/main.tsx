@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 
 import { CustomerPortalApp } from './customer-portal-routes';
 import { PortalApiClient } from './portal-api-client';
+import './customer-portal.css';
 
 const rootElement = document.getElementById('root');
 

@@ -101,4 +101,32 @@ describe('API bootstrap', () => {
     expect(response.statusCode).toBe(204);
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8081');
   });
+
+  it('applies baseline security headers', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/health',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('DENY');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+    expect(response.headers['permissions-policy']).toContain('camera=()');
+    expect(response.headers['content-security-policy']).toContain("default-src 'none'");
+  });
+
+  it('enforces API request body size limits', async () => {
+    const oversizedValue = 'x'.repeat(1_200_000);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/auth/login',
+      payload: {
+        phoneOrEmail: oversizedValue,
+        password: 'not-used',
+      },
+    });
+
+    expect(response.statusCode).toBe(413);
+  });
 });

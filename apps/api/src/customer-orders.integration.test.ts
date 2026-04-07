@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ERP_ERROR_CODES, ErpGatewayError } from './erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from './erp/erp.gateway';
 import { ORDERS_REPOSITORY } from './orders/orders.constants';
 import type { OrdersRepository } from './orders/orders.types';
@@ -325,6 +326,150 @@ describe('Customer order submit endpoint', () => {
       status: 'submitted',
     });
     expect(erpGateway.handoffOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns actionable 503 when ERP pricing snapshot is unavailable', async () => {
+    const sessionsRepository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    const ordersRepository = app.get<OrdersRepository>(ORDERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
+
+    vi.spyOn(sessionsRepository, 'validateCustomerSession').mockResolvedValue({
+      kind: 'valid',
+      sessionId: 'sess-24',
+      customerId: 'cust-24',
+      sessionExpiresAt: new Date('2026-04-10T14:00:00.000Z'),
+    });
+    vi.spyOn(sessionsRepository, 'listApprovedItems').mockResolvedValue([
+      {
+        hashItemId: 'item-1',
+        addedByAgentId: 'agent-1',
+        createdAt: '2026-04-09T09:00:00.000Z',
+      },
+    ]);
+    vi.spyOn(ordersRepository, 'reserveIdempotencyKey').mockResolvedValue({
+      kind: 'reserved',
+      idempotencyId: 'idem-row-4',
+    });
+
+    vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
+      source: 'hashavshevet',
+      syncedAt: '2026-04-10T10:00:00.000Z',
+      items: [],
+    });
+    vi.spyOn(erpGateway, 'getCustomerPricing').mockRejectedValue(
+      new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'pricing endpoint unavailable'),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/orders',
+      headers: {
+        authorization: `Bearer ${signCustomerToken('sess-24', 'cust-24')}`,
+        'idempotency-key': 'idem-780',
+      },
+      payload: {
+        lines: [
+          {
+            itemId: 'item-1',
+            quantity: 1,
+            unit: 'kg',
+            clientUnitPrice: 49.9,
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
+      message: 'Order service is temporarily unavailable. Please retry in a moment.',
+    });
+  });
+
+  it('replays persisted 503 ERP outage response for duplicate idempotency retries', async () => {
+    const sessionsRepository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    const ordersRepository = app.get<OrdersRepository>(ORDERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
+
+    vi.spyOn(sessionsRepository, 'validateCustomerSession').mockResolvedValue({
+      kind: 'valid',
+      sessionId: 'sess-25',
+      customerId: 'cust-25',
+      sessionExpiresAt: new Date('2026-04-10T14:00:00.000Z'),
+    });
+    vi.spyOn(sessionsRepository, 'listApprovedItems').mockResolvedValue([]);
+
+    vi.spyOn(ordersRepository, 'reserveIdempotencyKey')
+      .mockResolvedValueOnce({
+        kind: 'reserved',
+        idempotencyId: 'idem-row-5',
+      })
+      .mockResolvedValueOnce({
+        kind: 'replay',
+        replay: {
+          statusCode: 503,
+          body: {
+            code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
+            message: 'Order service is temporarily unavailable. Please retry in a moment.',
+          },
+        },
+      });
+    vi.spyOn(ordersRepository, 'finalizeIdempotencyKey').mockResolvedValue(undefined);
+
+    vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
+      source: 'hashavshevet',
+      syncedAt: '2026-04-10T10:00:00.000Z',
+      items: [],
+    });
+    vi.spyOn(erpGateway, 'getCustomerPricing').mockRejectedValue(
+      new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'pricing endpoint unavailable'),
+    );
+
+    const firstResponse = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/orders',
+      headers: {
+        authorization: `Bearer ${signCustomerToken('sess-25', 'cust-25')}`,
+        'idempotency-key': 'idem-781',
+      },
+      payload: {
+        lines: [
+          {
+            itemId: 'item-1',
+            quantity: 1,
+            unit: 'kg',
+            clientUnitPrice: 49.9,
+          },
+        ],
+      },
+    });
+
+    const secondResponse = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/orders',
+      headers: {
+        authorization: `Bearer ${signCustomerToken('sess-25', 'cust-25')}`,
+        'idempotency-key': 'idem-781',
+      },
+      payload: {
+        lines: [
+          {
+            itemId: 'item-1',
+            quantity: 1,
+            unit: 'kg',
+            clientUnitPrice: 49.9,
+          },
+        ],
+      },
+    });
+
+    expect(firstResponse.statusCode).toBe(503);
+    expect(secondResponse.statusCode).toBe(503);
+    expect(secondResponse.json()).toEqual({
+      code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
+      message: 'Order service is temporarily unavailable. Please retry in a moment.',
+    });
+    expect(erpGateway.getCustomerPricing).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -661,6 +661,16 @@ Use deep link format:
   - submit order
   - mismatch handling flow
 
+## 17.4 Fallback Matrix (must stay covered)
+
+- Magic-link activation supports both `/m/:token` and `/m?token=...`.
+- Session bootstrap survives strict browser storage limitations (memory fallback when `sessionStorage` is unavailable).
+- Slow network states show non-blocking retry-oriented messaging before hard failure.
+- Order mismatch responses (`409`) require explicit refresh/reconfirm flow.
+- ERP snapshot/handoff outages surface actionable `503 CUSTOMER_ORDER_ERP_UNAVAILABLE` responses.
+- WhatsApp dispatch must degrade to copy-link fallback when native dispatch is unavailable.
+- Localhost HTTPS links are normalized to HTTP for local dev to avoid invalid cert UX traps.
+
 Recommended tools:
 
 - Vitest/Jest, Supertest, Playwright, React Native Testing Library.
@@ -707,3 +717,14 @@ Recommended tools:
 - Order submit revalidates against current Hashavshevet state.
 - Successful submit invalidates link/session to prevent duplicates.
 - Portal and APIs meet mobile performance and security baseline.
+
+---
+
+## 21. Mobile Store Release Readiness (iOS + Android)
+
+- Build profiles and signing are configured for both stores (Apple distribution cert/profile, Android keystore).
+- App metadata is finalized (localized app name, subtitle/short description, support URL, privacy policy URL).
+- Permission surface is minimal and justified in store disclosures.
+- Crash-safe startup verified on fresh install and upgrade path.
+- Auth/session/logout, link sharing fallback, and degraded network flows pass release smoke tests.
+- Production API base URLs, CORS allowlists, and customer portal base links are environment-specific and validated.

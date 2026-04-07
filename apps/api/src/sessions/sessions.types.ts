@@ -35,6 +35,7 @@ export interface CustomerSessionsRepository {
     customerId: string,
     now: Date,
   ): Promise<CustomerSessionValidationResult>;
+  deactivateCustomerSession(sessionId: string, customerId: string, closedAt: Date): Promise<void>;
   listApprovedItems(customerId: string): Promise<CustomerApprovedItem[]>;
 }
 

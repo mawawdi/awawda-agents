@@ -72,6 +72,10 @@ export class SessionsService {
     return this.getPortalDataPayload(customerId, sessionExpiresAt);
   }
 
+  async logoutSession(sessionId: string, customerId: string): Promise<void> {
+    await this.customerSessionsRepository.deactivateCustomerSession(sessionId, customerId, new Date());
+  }
+
   private async getPortalDataPayload(
     customerId: string,
     sessionExpiresAt: string,

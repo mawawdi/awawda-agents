@@ -4,9 +4,11 @@ import type {
   CustomerOrderSubmitResponse,
 } from '@meatland/shared-types';
 
+import type { CustomerOrderErpUnavailableResponse } from './orders.errors';
+
 export type OrderSubmitReplay = {
   statusCode: number;
-  body: CustomerOrderSubmitResponse | CustomerOrderMismatchResponse;
+  body: CustomerOrderSubmitResponse | CustomerOrderMismatchResponse | CustomerOrderErpUnavailableResponse;
 };
 
 export type ReserveIdempotencyKeyInput = {

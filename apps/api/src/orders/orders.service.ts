@@ -7,11 +7,15 @@ import type {
   CustomerOrderSubmitResponse,
 } from '@meatland/shared-types';
 
+import { isErpGatewayError } from '../erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { CUSTOMER_SESSIONS_REPOSITORY } from '../sessions/sessions.constants';
 import type { CustomerSessionsRepository } from '../sessions/sessions.types';
 import { ORDERS_REPOSITORY } from './orders.constants';
-import { CustomerOrderIdempotencyKeyConflictError } from './orders.errors';
+import {
+  createCustomerOrderErpUnavailableBody,
+  CustomerOrderIdempotencyKeyConflictError,
+} from './orders.errors';
 import { createResponseHash } from './orders.repository';
 import type { OrderSubmitReplay, OrdersRepository } from './orders.types';
 
@@ -50,11 +54,30 @@ export class OrdersService {
       throw new CustomerOrderIdempotencyKeyConflictError();
     }
 
-    const [approvedItems, recentItemsSnapshot, pricingSnapshot] = await Promise.all([
-      this.customerSessionsRepository.listApprovedItems(context.customerId),
-      this.erpGateway.getCustomerRecentItems(context.customerId),
-      this.erpGateway.getCustomerPricing(context.customerId),
-    ]);
+    const approvedItems = await this.customerSessionsRepository.listApprovedItems(context.customerId);
+    let recentItemsSnapshot: Awaited<ReturnType<ErpGateway['getCustomerRecentItems']>>;
+    let pricingSnapshot: Awaited<ReturnType<ErpGateway['getCustomerPricing']>>;
+
+    try {
+      [recentItemsSnapshot, pricingSnapshot] = await Promise.all([
+        this.erpGateway.getCustomerRecentItems(context.customerId),
+        this.erpGateway.getCustomerPricing(context.customerId),
+      ]);
+    } catch (error) {
+      if (isErpGatewayError(error)) {
+        const replay: OrderSubmitReplay = {
+          statusCode: 503,
+          body: createCustomerOrderErpUnavailableBody(),
+        };
+        await this.ordersRepository.finalizeIdempotencyKey(
+          reservation.idempotencyId,
+          replay,
+          createResponseHash(replay),
+        );
+        return replay;
+      }
+      throw error;
+    }
 
     const approvedItemIds = new Set(approvedItems.map((item) => item.hashItemId));
     const recentItemIds = new Set(recentItemsSnapshot.items.map((item) => item.itemId));
@@ -113,12 +136,29 @@ export class OrdersService {
     }
 
     const orderId = randomUUID();
-    const erpResponse = await this.erpGateway.handoffOrder({
-      orderId,
-      customerId: context.customerId,
-      lines: request.lines,
-      notes: request.notes,
-    });
+    let erpResponse: Awaited<ReturnType<ErpGateway['handoffOrder']>>;
+    try {
+      erpResponse = await this.erpGateway.handoffOrder({
+        orderId,
+        customerId: context.customerId,
+        lines: request.lines,
+        notes: request.notes,
+      });
+    } catch (error) {
+      if (isErpGatewayError(error)) {
+        const replay: OrderSubmitReplay = {
+          statusCode: 503,
+          body: createCustomerOrderErpUnavailableBody(),
+        };
+        await this.ordersRepository.finalizeIdempotencyKey(
+          reservation.idempotencyId,
+          replay,
+          createResponseHash(replay),
+        );
+        return replay;
+      }
+      throw error;
+    }
 
     const linesWithSnapshots = request.lines.map((line) => {
       const unitPrice = pricingByItemId.get(line.itemId)?.unitPrice ?? line.clientUnitPrice;

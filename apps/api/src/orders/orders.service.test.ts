@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ERP_ERROR_CODES, ErpGatewayError } from '../erp/erp.errors';
 import type { ErpGateway } from '../erp/erp.gateway';
 import type { CustomerSessionsRepository } from '../sessions/sessions.types';
-import { CustomerOrderIdempotencyKeyConflictError } from './orders.errors';
+import {
+  CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE,
+  CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE,
+  CustomerOrderIdempotencyKeyConflictError,
+} from './orders.errors';
 import { OrdersService } from './orders.service';
 import type { OrdersRepository } from './orders.types';
 
@@ -45,6 +50,7 @@ describe('OrdersService', () => {
     const sessionsRepository: CustomerSessionsRepository = {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([
         {
           hashItemId: 'item-1',
@@ -125,6 +131,7 @@ describe('OrdersService', () => {
     const sessionsRepository: CustomerSessionsRepository = {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([]),
     };
 
@@ -187,6 +194,7 @@ describe('OrdersService', () => {
     const sessionsRepository: CustomerSessionsRepository = {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
       listApprovedItems: vi.fn(),
     };
 
@@ -252,6 +260,7 @@ describe('OrdersService', () => {
       {
         activateMagicToken: vi.fn(),
         validateCustomerSession: vi.fn(),
+        deactivateCustomerSession: vi.fn(),
         listApprovedItems: vi.fn(),
       },
       {
@@ -280,5 +289,65 @@ describe('OrdersService', () => {
         },
       ),
     ).rejects.toBeInstanceOf(CustomerOrderIdempotencyKeyConflictError);
+  });
+
+  it('returns and persists actionable ERP error when ERP pricing snapshot fails', async () => {
+    const finalizeIdempotencyKey = vi.fn();
+    const service = new OrdersService(
+      {
+        handoffOrder: vi.fn(),
+        getHealth: vi.fn(),
+        getMasterCatalog: vi.fn(),
+        getCustomerRecentItems: vi.fn().mockResolvedValue({
+          source: 'hashavshevet',
+          syncedAt: '2026-04-10T10:55:00.000Z',
+          items: [],
+        }),
+        getCustomerPricing: vi
+          .fn()
+          .mockRejectedValue(new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'Pricing API down')),
+      },
+      {
+        activateMagicToken: vi.fn(),
+        validateCustomerSession: vi.fn(),
+        deactivateCustomerSession: vi.fn(),
+        listApprovedItems: vi.fn().mockResolvedValue([]),
+      },
+      {
+        reserveIdempotencyKey: vi.fn().mockResolvedValue({
+          kind: 'reserved',
+          idempotencyId: 'idem-row-6',
+        }),
+        persistOrderSubmission: vi.fn(),
+        finalizeIdempotencyKey,
+      },
+    );
+
+    await expect(
+      service.submitOrder(
+        {
+          customerId: 'cust-9',
+          customerSessionId: 'sess-9',
+          idempotencyKey: 'idem-999',
+        },
+        {
+          lines: [
+            {
+              itemId: 'item-1',
+              quantity: 1,
+              unit: 'kg',
+              clientUnitPrice: 49.9,
+            },
+          ],
+        },
+      ),
+    ).resolves.toEqual({
+      statusCode: 503,
+      body: {
+        code: CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE,
+        message: CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE,
+      },
+    });
+    expect(finalizeIdempotencyKey).toHaveBeenCalledTimes(1);
   });
 });

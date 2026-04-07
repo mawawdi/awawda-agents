@@ -189,6 +189,49 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
     });
   }
 
+  async deactivateCustomerSession(sessionId: string, customerId: string, closedAt: Date): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const session = await tx.session.findUnique({
+        where: {
+          id: sessionId,
+        },
+        select: {
+          id: true,
+          hashCustomerId: true,
+          status: true,
+          isActive: true,
+        },
+      });
+
+      if (!session || session.hashCustomerId !== customerId || !session.isActive || session.status !== SessionStatus.ACTIVE) {
+        return;
+      }
+
+      await tx.session.update({
+        where: {
+          id: session.id,
+        },
+        data: {
+          status: SessionStatus.CLOSED,
+          isActive: false,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorType: AuditActorType.CUSTOMER_SESSION,
+          actorId: session.id,
+          eventType: 'customer_session.closed',
+          eventPayloadJson: {
+            sessionId: session.id,
+            customerId: session.hashCustomerId,
+            closedAt: closedAt.toISOString(),
+          },
+        },
+      });
+    });
+  }
+
   async listApprovedItems(customerId: string): Promise<CustomerApprovedItem[]> {
     const items = await this.prisma.approvedItem.findMany({
       where: {

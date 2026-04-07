@@ -6,6 +6,8 @@ import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fa
 
 import { AppModule } from "./app.module"
 
+const DEFAULT_API_BODY_LIMIT_BYTES = 1024 * 1024
+
 const DEFAULT_CORS_ALLOWED_ORIGINS = [
 	"http://localhost:8080",
 	"http://127.0.0.1:8080",
@@ -26,9 +28,33 @@ function resolveCorsAllowedOrigins(): Set<string> {
 	return new Set(DEFAULT_CORS_ALLOWED_ORIGINS)
 }
 
+function resolveApiBodyLimit(): number {
+	const configuredLimit = Number(process.env.API_BODY_LIMIT_BYTES)
+	if (Number.isInteger(configuredLimit) && configuredLimit > 0) {
+		return configuredLimit
+	}
+
+	return DEFAULT_API_BODY_LIMIT_BYTES
+}
+
 export async function createApiApp(): Promise<NestFastifyApplication> {
-	const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter())
+	const app = await NestFactory.create<NestFastifyApplication>(
+		AppModule,
+		new FastifyAdapter({
+			bodyLimit: resolveApiBodyLimit(),
+		}),
+	)
 	const allowedOrigins = resolveCorsAllowedOrigins()
+	const fastify = app.getHttpAdapter().getInstance()
+
+	fastify.addHook("onSend", async (_request: unknown, reply: { header(name: string, value: string): void }, payload: unknown) => {
+		reply.header("x-content-type-options", "nosniff")
+		reply.header("x-frame-options", "DENY")
+		reply.header("referrer-policy", "no-referrer")
+		reply.header("permissions-policy", "camera=(), microphone=(), geolocation=()")
+		reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+		return payload
+	})
 
 	app.enableCors({
 		origin: (origin, callback) => {

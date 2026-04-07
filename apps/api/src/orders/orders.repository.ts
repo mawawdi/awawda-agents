@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { AuditActorType, IdempotencyScope, MagicLinkStatus, OrderStatus, Prisma, PrismaClient, SessionStatus } from '@prisma/client';
 
+import { CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE } from './orders.errors';
 import type {
   OrderSubmitReplay,
   OrdersRepository,
@@ -291,6 +292,14 @@ function toReplayBody(value: Prisma.JsonValue): OrderSubmitReplay['body'] | null
     return {
       code,
       lines: parsedLines,
+    };
+  }
+
+  const message = value.message;
+  if (code === CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE && typeof message === 'string') {
+    return {
+      code,
+      message,
     };
   }
 

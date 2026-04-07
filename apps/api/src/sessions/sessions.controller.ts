@@ -25,4 +25,14 @@ export class SessionsController {
   ): Promise<CustomerPortalDataResponse> {
     return this.sessionsService.getPortalData(customerId, customerSessionExpiresAt);
   }
+
+  @Post('session/logout')
+  @HttpCode(204)
+  @UseGuards(CustomerSessionAuthGuard)
+  async logoutSession(
+    @Headers('x-customer-id') customerId: string,
+    @Headers('x-customer-session-id') customerSessionId: string,
+  ): Promise<void> {
+    await this.sessionsService.logoutSession(customerSessionId, customerId);
+  }
 }

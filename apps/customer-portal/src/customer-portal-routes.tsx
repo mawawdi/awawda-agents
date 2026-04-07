@@ -44,6 +44,7 @@ type StoredPortalSession = {
 
 const SESSION_STORAGE_KEY = 'customer-portal-session';
 const WEAK_NETWORK_THRESHOLD_MS = 2_500;
+let memoryPortalSession: StoredPortalSession | null = null;
 
 type RouteConfig = {
   weakNetworkThresholdMs: number;
@@ -161,31 +162,38 @@ function ActivationRoute({
 
   if (state.status === 'error') {
     return (
-      <main>
-        <h1>Activation failed</h1>
-        <p>{state.message}</p>
-        <button onClick={() => setState(createActivationIdleState(token))} type="button">
-          Retry activation
-        </button>
+      <main className="status-screen">
+        <section className="status-card" data-kind="error">
+          <h1>Activation failed</h1>
+          <p>{state.message}</p>
+          <button onClick={() => setState(createActivationIdleState(token))} type="button">
+            Retry activation
+          </button>
+        </section>
       </main>
     );
   }
 
   if (state.status === 'ready') {
     return (
-      <main>
-        <h1>Opening your order…</h1>
+      <main className="status-screen">
+        <section className="status-card" data-kind="ready">
+          <h1>Opening your order…</h1>
+          <p>Your secure session is ready.</p>
+        </section>
       </main>
     );
   }
 
   return (
-    <main>
-      <h1>Activating your order link…</h1>
-      <p>Please wait while we load your account.</p>
-      {state.status === 'activating' && state.weakNetworkHint ? (
-        <p data-testid="activation-weak-network">Slow network detected. Keep this page open.</p>
-      ) : null}
+    <main className="status-screen">
+      <section className="status-card" data-kind="loading">
+        <h1>Activating your order link…</h1>
+        <p>Please wait while we load your account.</p>
+        {state.status === 'activating' && state.weakNetworkHint ? (
+          <p data-testid="activation-weak-network">Slow network detected. Keep this page open.</p>
+        ) : null}
+      </section>
     </main>
   );
 }
@@ -197,8 +205,10 @@ function OrderRoute({
   apiClient: PortalApiClient;
   weakNetworkThresholdMs: number;
 }): ReactElement {
+  const navigate = useNavigate();
   const [state, setState] = useState<OrderPageState>(createOrderLoadingState());
   const [submitState, setSubmitState] = useState<OrderSubmitState>(createIdleState());
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const session = useMemo(() => readPortalSession(), []);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
 
@@ -234,6 +244,12 @@ function OrderRoute({
           }),
         );
       } catch (error) {
+        if (error instanceof PortalApiError && (error.kind === 'invalid_token' || error.kind === 'expired_token')) {
+          clearPortalSession();
+          navigate('/m', { replace: true });
+          return;
+        }
+
         setState(createOrderErrorState(toOrderErrorMessage(error)));
       } finally {
         if (timer) {
@@ -241,7 +257,7 @@ function OrderRoute({
         }
       }
     },
-    [apiClient, session, weakNetworkThresholdMs],
+    [apiClient, navigate, session, weakNetworkThresholdMs],
   );
 
   useEffect(() => {
@@ -350,6 +366,12 @@ function OrderRoute({
         return;
       }
 
+      if (error instanceof PortalApiError && (error.kind === 'invalid_token' || error.kind === 'expired_token')) {
+        clearPortalSession();
+        navigate('/m', { replace: true });
+        return;
+      }
+
       const message = toOrderSubmitErrorMessage(error);
       setSubmitState(markSubmitError(message));
     }
@@ -368,30 +390,65 @@ function OrderRoute({
     }
   };
 
+  const handleLogout = async (): Promise<void> => {
+    if (!session || isLoggingOut) {
+      clearPortalSession();
+      navigate('/m', { replace: true });
+      return;
+    }
+
+    setIsLoggingOut(true);
+    try {
+      await apiClient.logoutSession(session.sessionToken);
+    } catch {
+      // logout should still clear local state and route user to activation
+    } finally {
+      clearPortalSession();
+      submitIdempotencyKeyRef.current = null;
+      setSubmitState(createIdleState());
+      setIsLoggingOut(false);
+      navigate('/m', { replace: true });
+    }
+  };
+
   if (state.status === 'loading') {
     return (
-      <main>
-        <h1>Loading order page…</h1>
-        {state.weakNetworkHint ? <p data-testid="order-weak-network">Network is slow. Content will appear soon.</p> : null}
+      <main className="status-screen">
+        <section className="status-card" data-kind="loading">
+          <h1>Loading order page…</h1>
+          {state.weakNetworkHint ? (
+            <p data-testid="order-weak-network">Network is slow. Content will appear soon.</p>
+          ) : (
+            <p>Preparing your latest prices and approved items.</p>
+          )}
+        </section>
       </main>
     );
   }
 
   if (state.status === 'error') {
     return (
-      <main>
-        <h1>Could not load your order</h1>
-        <p>{state.message}</p>
+      <main className="status-screen">
+        <section className="status-card" data-kind="error">
+          <h1>Could not load your order</h1>
+          <p>{state.message}</p>
+        </section>
       </main>
     );
   }
 
   const renderItem = (item: OrderSectionItem): ReactElement => (
-    <li key={item.itemId}>
-      <strong>{item.name}</strong>
-      <div>
+    <li className="item-card" key={item.itemId}>
+      <h3 className="item-title">{item.name}</h3>
+      <p className="item-pricing">
+        {item.unitPrice === null
+          ? 'Price unavailable'
+          : `${formatCurrency(item.currency, item.unitPrice)} / unit`}
+      </p>
+      <div className="qty-row">
         <button
           aria-label={`Decrease ${item.name}`}
+          className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'decrement')}
           type="button"
@@ -400,6 +457,7 @@ function OrderRoute({
         </button>
         <input
           aria-label={`Quantity ${item.name}`}
+          className="qty-input"
           disabled={state.isSubmitting || submitState.status === 'success'}
           inputMode="numeric"
           onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
@@ -408,6 +466,7 @@ function OrderRoute({
         />
         <button
           aria-label={`Increase ${item.name}`}
+          className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'increment')}
           type="button"
@@ -415,96 +474,136 @@ function OrderRoute({
           +
         </button>
       </div>
-      <p>{item.unitPrice === null ? 'Price unavailable' : `${item.currency} ${item.unitPrice.toFixed(2)} / unit`}</p>
     </li>
   );
 
   return (
-    <main>
-      <h1>Compose order</h1>
-      <p data-testid="layout-state">Layout: {state.layout}</p>
-
-      <section>
-        <h2>{state.sections.recent.title}</h2>
-        {state.sections.recent.items.length === 0 ? (
-          <p>{state.sections.recent.emptyMessage}</p>
-        ) : (
-          <ul>{state.sections.recent.items.map(renderItem)}</ul>
-        )}
-      </section>
-
-      <section>
-        <h2>{state.sections.approved.title}</h2>
-        {state.sections.approved.items.length === 0 ? (
-          <p>{state.sections.approved.emptyMessage}</p>
-        ) : (
-          <ul>{state.sections.approved.items.map(renderItem)}</ul>
-        )}
-      </section>
-
-      <section aria-label="Cart summary">
-        <h2>Cart summary</h2>
-        <p>Total units: {state.cart.totalUnits}</p>
-        <p>Estimated total: {state.cart.estimatedTotal.toFixed(2)}</p>
-        <p>{state.submitBar.summaryLabel}</p>
-      </section>
-
-      {submitState.status === 'mismatch' ? (
-        <section aria-live="polite" data-testid="submit-mismatch" style={{ border: '1px solid #f3b700', padding: '0.75rem' }}>
-          <h2>Prices changed before submission</h2>
-          <p>Review the highlighted lines, then refresh prices or reconfirm your order.</p>
-          <ul>
-            {submitState.lines.map((line) => (
-              <li key={`${line.itemId}-${line.lineIndex}`}>
-                {line.itemId}: {line.reason}
-              </li>
-            ))}
-          </ul>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button onClick={() => void refreshAfterMismatch()} type="button">
-              Refresh prices
-            </button>
-            <button onClick={() => void handleSubmit(true)} type="button">
-              Reconfirm and submit
+    <main className="portal-shell">
+      <div className="portal-frame">
+        <header className="portal-header">
+          <div>
+            <h1 className="portal-brand">Compose order</h1>
+            <p className="portal-meta">Customer: {session?.customerId ?? 'Unknown customer'} · Session secured</p>
+          </div>
+          <div className="portal-header-actions">
+            <span className="layout-badge" data-testid="layout-state">
+              Layout: {state.layout}
+            </span>
+            <button
+              className="ghost-action"
+              disabled={isLoggingOut}
+              onClick={() => void handleLogout()}
+              type="button"
+            >
+              {isLoggingOut ? 'Closing session…' : 'Logout session'}
             </button>
           </div>
-        </section>
-      ) : null}
+        </header>
 
-      {submitState.status === 'error' ? (
-        <p aria-live="polite" data-testid="submit-error">
-          {submitState.message}
-        </p>
-      ) : null}
+        <div className="portal-content">
+          <section className="portal-column">
+            <section className="panel">
+              <h2>{state.sections.recent.title}</h2>
+              {state.sections.recent.items.length === 0 ? (
+                <p>{state.sections.recent.emptyMessage}</p>
+              ) : (
+                <ul className="items-list">{state.sections.recent.items.map(renderItem)}</ul>
+              )}
+            </section>
 
-      {submitState.status === 'success' ? (
-        <section aria-live="polite" data-testid="submit-success">
-          <h2>Order submitted successfully</h2>
-          <p>Reference: {submitState.orderRef}</p>
-          <p>This order is confirmed. Duplicate submissions are disabled.</p>
-        </section>
-      ) : null}
+            <section className="panel">
+              <h2>{state.sections.approved.title}</h2>
+              {state.sections.approved.items.length === 0 ? (
+                <p>{state.sections.approved.emptyMessage}</p>
+              ) : (
+                <ul className="items-list">{state.sections.approved.items.map(renderItem)}</ul>
+              )}
+            </section>
+          </section>
 
-      <footer
-        data-testid="sticky-submit-bar"
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          padding: '0.75rem',
-          borderTop: '1px solid #ddd',
-          backgroundColor: '#fff',
-        }}
-      >
-        <p>{state.submitBar.summaryLabel}</p>
-        <button
-          disabled={!state.submitBar.submitEnabled || submitState.status === 'success' || submitState.status === 'mismatch'}
-          onClick={() => void handleSubmit()}
-          style={{ width: '100%', minHeight: '2.75rem' }}
-          type="button"
-        >
-          {state.submitBar.submitLabel}
-        </button>
-      </footer>
+          <aside className="portal-column">
+            <section aria-label="Cart summary" className="summary-card">
+              <h2>Cart summary</h2>
+              <div className="summary-line">
+                <span>Total units: {state.cart.totalUnits}</span>
+              </div>
+              <div className="summary-line summary-total">
+                <span>Estimated total: {state.cart.estimatedTotal.toFixed(2)}</span>
+              </div>
+              <div className="summary-line summary-total">
+                <span>Estimated total ({state.cart.currency ?? 'N/A'}): {formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</span>
+              </div>
+              <p>{state.submitBar.summaryLabel}</p>
+              <p className="summary-microcopy">
+                Final invoice reflects exact shipped weight for variable-weight products.
+              </p>
+              {state.cart.lines.length > 0 ? (
+                <ul className="summary-lines">
+                  {state.cart.lines.map((line) => (
+                    <li className="summary-line" key={line.itemId}>
+                      <span>{line.name}</span>
+                      <span>
+                        {line.quantity} ·{' '}
+                        {line.lineEstimate === null
+                          ? 'Pending'
+                          : formatCurrency(line.currency, line.lineEstimate)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+
+            {submitState.status === 'mismatch' ? (
+              <section aria-live="polite" className="feedback" data-kind="mismatch" data-testid="submit-mismatch">
+                <h2>Prices changed before submission</h2>
+                <p>Review the highlighted lines, then refresh prices or reconfirm your order.</p>
+                <ul>
+                  {submitState.lines.map((line) => (
+                    <li key={`${line.itemId}-${line.lineIndex}`}>
+                      {line.itemId}: {line.reason}
+                    </li>
+                  ))}
+                </ul>
+                <div className="feedback-actions">
+                  <button onClick={() => void refreshAfterMismatch()} type="button">
+                    Refresh prices
+                  </button>
+                  <button onClick={() => void handleSubmit(true)} type="button">
+                    Reconfirm and submit
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
+            {submitState.status === 'error' ? (
+              <section aria-live="polite" className="feedback" data-kind="error" data-testid="submit-error">
+                <h2>Submission failed</h2>
+                <p>{submitState.message}</p>
+              </section>
+            ) : null}
+
+            {submitState.status === 'success' ? (
+              <section aria-live="polite" className="feedback" data-kind="success" data-testid="submit-success">
+                <h2>Order submitted successfully</h2>
+                <p>Reference: {submitState.orderRef}</p>
+                <p>This order is confirmed. Duplicate submissions are disabled.</p>
+              </section>
+            ) : null}
+          </aside>
+        </div>
+
+        <footer className="sticky-submit" data-testid="sticky-submit-bar">
+          <p>{state.submitBar.summaryLabel}</p>
+          <button
+            disabled={!state.submitBar.submitEnabled || submitState.status === 'success' || submitState.status === 'mismatch'}
+            onClick={() => void handleSubmit()}
+            type="button"
+          >
+            {state.submitBar.submitLabel}
+          </button>
+        </footer>
+      </div>
     </main>
   );
 }
@@ -543,6 +642,22 @@ function toOrderSubmitErrorMessage(error: unknown): string {
   return 'Could not submit order right now. Please try again.';
 }
 
+function formatCurrency(currency: string | null, amount: number): string {
+  if (!Number.isFinite(amount)) {
+    return '—';
+  }
+
+  if (currency === 'ILS') {
+    return `₪${amount.toFixed(2)}`;
+  }
+
+  if (!currency) {
+    return amount.toFixed(2);
+  }
+
+  return `${currency} ${amount.toFixed(2)}`;
+}
+
 function toOrderInput(payload: CustomerPortalDataPayload) {
   return {
     recentItems: payload.recentItems,
@@ -554,29 +669,66 @@ function toOrderInput(payload: CustomerPortalDataPayload) {
 
 function writePortalSession(payload: CustomerSessionActivateResponse | StoredPortalSession): void {
   const session = 'payload' in payload ? payload : toStoredPortalSession(payload);
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  memoryPortalSession = session;
+
+  try {
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // Session storage may be unavailable in strict browser contexts.
+  }
+}
+
+function clearPortalSession(): void {
+  memoryPortalSession = null;
+
+  try {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // Session storage may be unavailable in strict browser contexts.
+  }
 }
 
 function readPortalSession(): StoredPortalSession | null {
-  const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  let raw: string | null = null;
+
+  try {
+    raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  } catch {
+    raw = null;
+  }
+
   if (!raw) {
-    return null;
+    return validateStoredSession(memoryPortalSession);
   }
 
   try {
     const parsed = JSON.parse(raw) as StoredPortalSession;
-    if (
-      typeof parsed.sessionToken !== 'string' ||
-      typeof parsed.customerId !== 'string' ||
-      typeof parsed.sessionExpiresAt !== 'string'
-    ) {
-      return null;
-    }
-
-    return parsed;
+    return validateStoredSession(parsed);
   } catch {
+    clearPortalSession();
     return null;
   }
+}
+
+function validateStoredSession(session: StoredPortalSession | null): StoredPortalSession | null {
+  if (
+    !session ||
+    typeof session.sessionToken !== 'string' ||
+    typeof session.customerId !== 'string' ||
+    typeof session.sessionExpiresAt !== 'string' ||
+    !session.payload ||
+    typeof session.payload !== 'object'
+  ) {
+    clearPortalSession();
+    return null;
+  }
+
+  if (new Date(session.sessionExpiresAt).getTime() <= Date.now()) {
+    clearPortalSession();
+    return null;
+  }
+
+  return session;
 }
 
 function toStoredPortalSession(payload: CustomerSessionActivateResponse): StoredPortalSession {
@@ -596,9 +748,15 @@ function toStoredPortalSession(payload: CustomerSessionActivateResponse): Stored
 }
 
 export function __resetPortalSessionForTests(): void {
-  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  clearPortalSession();
 }
 
 export function __setPortalSessionForTests(session: StoredPortalSession): void {
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  memoryPortalSession = session;
+
+  try {
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // no-op
+  }
 }

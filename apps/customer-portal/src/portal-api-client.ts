@@ -66,6 +66,13 @@ export class PortalApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        const authErrorCode = await this.readErrorCode(response);
+        if (authErrorCode === 'AUTH_CUSTOMER_SESSION_EXPIRED') {
+          throw new PortalApiError('expired_token', 'Customer session expired');
+        }
+        throw new PortalApiError('invalid_token', 'Customer session token invalid');
+      }
       throw new PortalApiError('server', 'Portal data request failed');
     }
 
@@ -97,10 +104,30 @@ export class PortalApiClient {
     }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        const authErrorCode = await this.readErrorCode(response);
+        if (authErrorCode === 'AUTH_CUSTOMER_SESSION_EXPIRED') {
+          throw new PortalApiError('expired_token', 'Customer session expired');
+        }
+        throw new PortalApiError('invalid_token', 'Customer session token invalid');
+      }
       throw new PortalApiError('server', 'Order submit request failed');
     }
 
     return (await response.json()) as CustomerOrderSubmitResponse;
+  }
+
+  async logoutSession(sessionToken: string): Promise<void> {
+    const response = await this.request('/customer/session/logout', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${sessionToken}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 401) {
+      throw new PortalApiError('server', 'Session logout request failed');
+    }
   }
 
   private async request(path: string, init: RequestInit): Promise<Response> {
@@ -108,6 +135,15 @@ export class PortalApiClient {
       return await this.fetchImpl(`${this.baseUrl}${path}`, init);
     } catch {
       throw new PortalApiError('network', 'Network connection failed');
+    }
+  }
+
+  private async readErrorCode(response: Response): Promise<string | null> {
+    try {
+      const body = (await response.json()) as { code?: unknown };
+      return typeof body.code === 'string' ? body.code : null;
+    } catch {
+      return null;
     }
   }
 }

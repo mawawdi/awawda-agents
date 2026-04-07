@@ -223,6 +223,34 @@ describe('Customer session endpoints', () => {
     });
   });
 
+  it('closes customer session via authenticated logout endpoint', async () => {
+    const repository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    vi.spyOn(repository, 'validateCustomerSession').mockResolvedValue({
+      kind: 'valid',
+      sessionId: 'sess-logout',
+      customerId: 'cust-logout',
+      sessionExpiresAt: new Date('2026-04-08T14:00:00.000Z'),
+    });
+    const deactivateSpy = vi
+      .spyOn(repository, 'deactivateCustomerSession')
+      .mockResolvedValue(undefined);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/session/logout',
+      headers: {
+        authorization: `Bearer ${signCustomerToken('sess-logout', 'cust-logout')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(deactivateSpy).toHaveBeenCalledWith(
+      'sess-logout',
+      'cust-logout',
+      expect.any(Date),
+    );
+  });
+
   it('rejects expired customer session tokens on portal-data', async () => {
     const repository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
     vi.spyOn(repository, 'validateCustomerSession').mockResolvedValue({

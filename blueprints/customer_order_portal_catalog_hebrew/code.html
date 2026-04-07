@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,700;0,800;1,400&amp;family=Inter:wght@400;500;600;700&amp;family=Heebo:wght@300;400;500;700;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#89726f",
+                        "surface-variant": "#e3e3de",
+                        "tertiary-fixed-dim": "#d3c4ba",
+                        "background": "#faf9f4",
+                        "primary": "#480003", // Deep Cherry Red
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#92857c",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#f0dfd5",
+                        "on-secondary-fixed-variant": "#603f31",
+                        "surface-dim": "#dbdad5",
+                        "on-tertiary-fixed-variant": "#4f453e",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#410002",
+                        "primary-fixed": "#ffdad6",
+                        "tertiary": "#0c0603",
+                        "on-surface": "#1b1c19",
+                        "secondary-container": "#fecdba",
+                        "inverse-primary": "#ffb4ac",
+                        "surface-bright": "#faf9f4",
+                        "tertiary-container": "#261e18",
+                        "surface-container-low": "#f5f4ef",
+                        "secondary": "#7a5647",
+                        "surface-container-highest": "#e3e3de",
+                        "primary-container": "#480003",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-background": "#1b1c19",
+                        "on-secondary-fixed": "#2e150a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#d2665d",
+                        "surface-container": "#efeee9",
+                        "on-tertiary-fixed": "#221a14",
+                        "on-primary-fixed-variant": "#802924",
+                        "secondary-fixed": "#ffdbce",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#ecbcaa",
+                        "surface-container-high": "#e9e8e3",
+                        "primary-fixed-dim": "#ffb4ac",
+                        "on-surface-variant": "#564240",
+                        "surface-tint": "#9f4039"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Newsreader", "serif"],
+                        "body": ["Heebo", "Inter", "sans-serif"],
+                        "label": ["Heebo", "Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body {
+            min-height: 100dvh;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Customer Web Portal Header -->
+<header class="bg-background/95 backdrop-blur-md sticky top-0 z-40 border-b border-outline/10">
+<div class="flex justify-between items-center w-full px-6 py-5 max-w-7xl mx-auto">
+<div class="flex flex-col">
+<h1 class="font-headline font-extrabold text-2xl text-primary tracking-tight">הספר האומנותי</h1>
+<span class="text-[9px] uppercase tracking-widest text-secondary opacity-60">The Artisanal Ledger</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-primary hover:bg-surface-container-high rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">shopping_basket</span>
+<span class="absolute top-1 left-1 bg-primary text-white text-[10px] w-4.5 h-4.5 flex items-center justify-center rounded-full border-2 border-background">3</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pb-36 px-6 pt-10 max-w-7xl mx-auto">
+<!-- Catalog Introduction -->
+<section class="mb-14">
+<h2 class="font-headline text-5xl font-extrabold text-primary mb-3 leading-tight tracking-tight">קטלוג מובחר</h2>
+<p class="text-secondary/80 max-w-md text-lg leading-relaxed font-light">בחרו את הנתחים האיכותיים ביותר למטבח שלכם. גישה ישירה למלאי המאושר שלנו.</p>
+</section>
+<!-- Recent Orders / Regulars -->
+<section class="mb-16">
+<div class="flex justify-between items-baseline mb-8 border-b border-outline/10 pb-4">
+<h3 class="font-headline text-3xl font-bold text-primary">הנתחים הקבועים שלכם</h3>
+<a class="text-sm font-medium text-primary hover:underline transition-colors" href="#">היסטוריית הזמנות</a>
+</div>
+<div class="flex gap-6 overflow-x-auto hide-scrollbar pb-6 -mx-6 px-6">
+<!-- Product Card 1 -->
+<div class="min-w-[300px] bg-surface-container-lowest rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(72,0,3,0.05)] border border-outline/5 group transition-all hover:shadow-lg">
+<div class="h-40 w-full rounded-xl overflow-hidden mb-5 bg-surface-container-high">
+<img alt="raw ribeye steak" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6rIhVzW0-ujTO_ylHLjWE5H07aPkSYhZcUn2hqH1tUmBLSe74mWtlQ31nEcmkqHcdRoyCbzQFXVlaQ412CVPN5wKNgIbJYqOzzV1DgYJwmoe4b0kFi37VV4RY9hiYfsGU2WOANhl5iM7kWJk6cCQjJWhtjl0mIKvNHNv45xSQoUbobWiv7d8tVAHOPWenE_vB5Hy2KNNWlx136XRBetOgxPU7FyvE2FcUQwR3Zi7lMjAtmW7-jP4GCKSOP16pkiqC3BIB4sPmjow"/>
+</div>
+<div class="flex justify-between items-start mb-3">
+<div>
+<h4 class="font-headline font-bold text-xl text-primary leading-tight">אנטריקוט ואגיו MS9</h4>
+<p class="text-[11px] text-secondary/60 mt-1 uppercase">WGY-RB-09</p>
+</div>
+<span class="bg-primary/5 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider">Prime</span>
+</div>
+<div class="flex justify-between items-end mt-6">
+<div class="flex flex-col">
+<span class="text-xs text-secondary mb-0.5">מחיר ליחידה (lb)</span>
+<p class="text-2xl font-black text-primary">₪185.00</p>
+</div>
+<div class="flex items-center bg-surface-container-high rounded-full p-1 gap-4">
+<button class="bg-white text-primary rounded-full w-8 h-8 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-bold text-base w-4 text-center">2</span>
+<button class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<div class="mt-5 pt-4 border-t border-outline/5 flex justify-between items-center">
+<p class="text-[11px] text-secondary">משקל משוער: <span class="font-bold text-primary">2.6 lbs</span></p>
+<p class="text-[11px] text-secondary">סה"כ: <span class="font-bold text-primary">₪481.00</span></p>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="min-w-[300px] bg-surface-container-lowest rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(72,0,3,0.05)] border border-outline/5 group transition-all hover:shadow-lg">
+<div class="h-40 w-full rounded-xl overflow-hidden mb-5 bg-surface-container-high">
+<img alt="dry aged pork belly" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtJvWbKEKP20IaNYMk6ZqIs97fktcN3D0PZkJp6o8ThaxIY6J1aLHb85ZEu7scAU_socwpLICCa5mbjTWsLbNnaKns6MHO_Bjw3XXdtkqXu5wceWw79V6dENkTG4J5KTqEuNMQ4p3DxFeGgpX2eLsBh-om_PfJCDY6W0-lXnNAPtvh0TocJ6E0h9RFjvjV4FdzT-OrR0ZpkrKoFn9YP9w-N9EN_alVe3PoEcWOLq-yu9XXu7mVzBVqg6bqw5yAqoXhxCgoZznzMVk"/>
+</div>
+<div class="flex justify-between items-start mb-3">
+<div>
+<h4 class="font-headline font-bold text-xl text-primary leading-tight">בטן חזיר ביישון יבש</h4>
+<p class="text-[11px] text-secondary/60 mt-1 uppercase">PRK-BL-DR</p>
+</div>
+<span class="bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider">Dry Aged</span>
+</div>
+<div class="flex justify-between items-end mt-6">
+<div class="flex flex-col">
+<span class="text-xs text-secondary mb-0.5">מחיר ליחידה (lb)</span>
+<p class="text-2xl font-black text-primary">₪72.00</p>
+</div>
+<div class="flex items-center bg-surface-container-high rounded-full p-1 gap-4">
+<button class="bg-white text-primary rounded-full w-8 h-8 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-bold text-base w-4 text-center">0</span>
+<button class="bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<div class="mt-5 pt-4 border-t border-outline/5">
+<p class="text-[11px] text-secondary/60 italic font-light">* המחיר הסופי ייקבע במעמד השקילה</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Approved Catalog -->
+<section>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
+<h3 class="font-headline text-3xl font-bold text-primary">קטלוג מאושר</h3>
+<div class="flex gap-2 overflow-x-auto w-full sm:w-auto hide-scrollbar">
+<span class="bg-primary text-white px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap">כל המוצרים</span>
+<span class="bg-surface-container-high px-5 py-2 rounded-full text-xs text-secondary hover:bg-surface-container-highest transition-colors cursor-pointer whitespace-nowrap">בקר פרימיום</span>
+<span class="bg-surface-container-high px-5 py-2 rounded-full text-xs text-secondary hover:bg-surface-container-highest transition-colors cursor-pointer whitespace-nowrap">עופות וציד</span>
+<span class="bg-surface-container-high px-5 py-2 rounded-full text-xs text-secondary hover:bg-surface-container-highest transition-colors cursor-pointer whitespace-nowrap">מעושנים</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Catalog Item 1 -->
+<div class="bg-white border border-outline/10 flex overflow-hidden rounded-2xl h-40 group hover:border-primary/20 transition-all shadow-sm">
+<div class="w-1/3 h-full overflow-hidden">
+<img alt="artisan sausages" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlSILhbYBo54GQ3oPx_tTa8ntG5IfCtjjTRrG6fRJVrWMqIhkc5sglgWFi-Tyu74mVT7Z0Ad0a5aNtrcczr2M7lt0Wt4PGMMyJnmFEhMRMYgC_CdX74tecktpF2bh95Z-a5UKMvXw44vLj6Ygkf8wAbJVwt1N3D33ADNUPvb-GCuhBC4l2UJakEl3Cxl-vfAk3Rsd9wG0z3pl23An5yfOMBU1Yc768efo48DZ85EqdKPtHZnIHsHH_LtNS1Hg4FsQGVzuk0tBx7Hc"/>
+</div>
+<div class="w-2/3 p-5 flex flex-col justify-between">
+<div>
+<h5 class="font-headline font-bold text-lg text-primary line-clamp-1">צ'וריסו בייצור עצמי</h5>
+<p class="text-[10px] text-secondary/50 mt-1 font-mono">HOU-CHO-01</p>
+</div>
+<div class="flex justify-between items-end">
+<p class="font-black text-xl text-primary">₪42.00<span class="text-xs font-light text-secondary/70"> /lb</span></p>
+<div class="flex items-center bg-surface-container-high rounded-lg p-0.5 border border-outline/5">
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-primary">add</span>
+<span class="text-sm px-2 font-bold min-w-[20px] text-center">0</span>
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-secondary/30 pointer-events-none">remove</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Catalog Item 2 -->
+<div class="bg-white border border-outline/10 flex overflow-hidden rounded-2xl h-40 group hover:border-primary/20 transition-all shadow-sm">
+<div class="w-1/3 h-full overflow-hidden">
+<img alt="hamburger patties" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDormfVIVaNzJXqN3HWQWPhW8mvIX4DylP1n1pzf7LstIiLglBpAyjtyz9d8iMYXdBlpUtLhXUM_CSPcWHOBvxfDmFDoFiaEGghpUwcsnw3mJU0WW-RXRVURPrF4QnQ6rIzIpmrGh5b0Al5H0--gIz64fs2DIn_FNrOjdrzHRA1Q94UBpyQy06nMn7nl-hL5mCqfYmM12AFFmezAWo06qWUDAGBfggIvELFEjhcRtIF_-aHwnsWE44cXzaqIORHvkBTK5ePqKEQVeI"/>
+</div>
+<div class="w-2/3 p-5 flex flex-col justify-between">
+<div>
+<h5 class="font-headline font-bold text-lg text-primary line-clamp-1">תערובת המבורגר הבית</h5>
+<p class="text-[10px] text-secondary/50 mt-1 font-mono">BND-SIG-20</p>
+</div>
+<div class="flex justify-between items-end">
+<p class="font-black text-xl text-primary">₪38.50<span class="text-xs font-light text-secondary/70"> /lb</span></p>
+<div class="flex items-center bg-surface-container-high rounded-lg p-0.5 border border-outline/5">
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-primary">add</span>
+<span class="text-sm px-2 font-bold min-w-[20px] text-center">12</span>
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-primary">remove</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Catalog Item 3 -->
+<div class="bg-white border border-outline/10 flex overflow-hidden rounded-2xl h-40 group hover:border-primary/20 transition-all shadow-sm">
+<div class="w-1/3 h-full overflow-hidden">
+<img alt="duck prosciutto" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABWaqPwWDqr1beDAvlkJi0FPMH9SCBY1x056OQ_IzAHOoCjXrNoZSYC31_1bg_gg33Ol_oF9rwj25CQ4ljgEYTqntgX3CyBqYAJyKLeFxQe9ynJlicwTEPg_QgFBP9R7LMxPxXAIDUXJBKKrTStNS0Jgjcs78ko6VsXUq_yVGGu7gImQu5-3jfOAdCGoq6jMQof5dU7hY8M8ZLFT2i9Quc0TJBf3TO8J2fZAnGXEM5n37zaah1oOm_neg6dSxv-GrLqWw8ucyrMX4"/>
+</div>
+<div class="w-2/3 p-5 flex flex-col justify-between">
+<div>
+<h5 class="font-headline font-bold text-lg text-primary line-clamp-1">פרושוטו חזה אווז</h5>
+<p class="text-[10px] text-secondary/50 mt-1 font-mono">DUK-PRO-S</p>
+</div>
+<div class="flex justify-between items-end">
+<p class="font-black text-xl text-primary">₪112.00<span class="text-xs font-light text-secondary/70"> /lb</span></p>
+<div class="flex items-center bg-surface-container-high rounded-lg p-0.5 border border-outline/5">
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-primary">add</span>
+<span class="text-sm px-2 font-bold min-w-[20px] text-center">0</span>
+<span class="material-symbols-outlined text-lg px-1.5 cursor-pointer text-secondary/30 pointer-events-none">remove</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Sticky Checkout Button (Floating Action) -->
+<div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background/90 to-transparent z-40">
+<button class="w-full max-w-7xl mx-auto bg-primary text-white py-5 px-8 rounded-2xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4">
+<div class="flex flex-col items-start leading-tight">
+<span class="text-[10px] uppercase tracking-widest opacity-80">3 מוצרים בסל</span>
+<span class="text-lg font-bold">שליחת הזמנה למפעל</span>
+</div>
+<span class="material-symbols-outlined text-2xl">send</span>
+</button>
+</div>
+</body></html>

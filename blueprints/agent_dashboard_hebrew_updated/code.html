@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@6..72,200..800&amp;family=Inter:wght@100..900&amp;family=Heebo:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#89726f",
+                    "surface-variant": "#e3e3de",
+                    "tertiary-fixed-dim": "#d3c4ba",
+                    "background": "#faf9f4",
+                    "primary": "#190000",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#92857c",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#f0dfd5",
+                    "on-secondary-fixed-variant": "#603f31",
+                    "surface-dim": "#dbdad5",
+                    "on-secondary-container": "#795546",
+                    "outline-variant": "#dcc0bd",
+                    "inverse-surface": "#30312e",
+                    "surface": "#faf9f4",
+                    "on-tertiary-fixed-variant": "#4f453e",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#410002",
+                    "primary-fixed": "#ffdad6",
+                    "tertiary": "#0c0603",
+                    "on-surface": "#1b1c19",
+                    "secondary-container": "#fecdba",
+                    "inverse-primary": "#ffb4ac",
+                    "surface-bright": "#faf9f4",
+                    "tertiary-container": "#261e18",
+                    "surface-container-low": "#f5f4ef",
+                    "secondary": "#7a5647",
+                    "surface-container-highest": "#e3e3de",
+                    "primary-container": "#480003",
+                    "inverse-on-surface": "#f2f1ec",
+                    "on-background": "#1b1c19",
+                    "on-secondary-fixed": "#2e150a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#d2665d",
+                    "surface-container": "#efeee9",
+                    "on-tertiary-fixed": "#221a14",
+                    "on-primary-fixed-variant": "#802924",
+                    "secondary-fixed": "#ffdbce",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#ecbcaa",
+                    "surface-container-high": "#e9e8e3",
+                    "primary-fixed-dim": "#ffb4ac",
+                    "on-surface-variant": "#564240",
+                    "surface-tint": "#9f4039"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Newsreader"],
+                    "body": ["Inter"],
+                    "label": ["Heebo"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', 'Heebo', sans-serif; }
+        .headline-font { font-family: 'Newsreader', serif; }
+        .hebrew-font { font-family: 'Heebo', sans-serif; }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-primary selection:bg-secondary-container">
+<!-- TopAppBar -->
+<header class="bg-[#faf9f4] dark:bg-[#190000] sticky top-0 z-40 border-b border-[#efeee9] dark:border-[#480003]">
+<div class="flex justify-between items-center w-full px-6 py-4 flex-row">
+<div class="flex items-center gap-4 flex-row">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
+<img alt="Agent Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5thWoijBdmf7ZXvu8aeq-EKNZxnTJioboGGzZdXZUXjH4HBrixbe5iYdBndDWabQDSVbMyCGrRp9z660ICSvR3VkrRFCxOtWx3p5ss7yX8Yo2AXnVqZM1UcsJkiPc65trHOMD9-uWQVQatuW9Ba5iz0v2YGz9yfaS5Ds1U7PFwRYxIxH-mgcNvALcuQe2ntSmCIYE55iqIwpl8UPfi_4w7ivKy6oME13AJ8boHMAqKC8FRhpOYx-ILwfWLM_46gyVXckW3wRVZGU"/>
+</div>
+<div class="hidden md:block text-right">
+<p class="text-xs text-secondary font-medium tracking-tight hebrew-font">נציג הפצה</p>
+<p class="text-sm font-bold text-primary hebrew-font">אלכסנדר לוי</p>
+</div>
+</div>
+<h1 class="text-2xl md:text-3xl font-black text-[#190000] dark:text-[#faf9f4] tracking-tight headline-font">
+            The Artisanal Ledger
+        </h1>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-[#efeee9] dark:hover:bg-[#480003] transition-colors rounded-full">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pb-32 pt-8 px-6 max-w-7xl mx-auto">
+<!-- Quick Search Persistent Bar -->
+<section class="mb-12">
+<div class="relative group">
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-secondary">search</span>
+</div>
+<input class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary-container py-5 pr-12 pl-6 rounded-xl text-lg hebrew-font placeholder:text-on-tertiary-container/50" placeholder="חיפוש לקוחות, מספרי הזמנה או מזהי פריט" type="text"/>
+</div>
+</section>
+<!-- Decision Augmentation Section: Priority Action Queue -->
+<section class="mb-12">
+<div class="flex justify-between items-baseline mb-6 flex-row">
+<h2 class="text-3xl md:text-4xl headline-font italic text-primary">תור פעולות דחופות</h2>
+<span class="hebrew-font text-secondary text-sm font-medium">4 לקוחות ממתינים לקישור היום</span>
+</div>
+<div class="flex overflow-x-auto pb-4 gap-6 no-scrollbar snap-x rtl:flex-row">
+<!-- Card 1 -->
+<div class="min-w-[320px] bg-surface-container-lowest p-6 rounded-xl snap-center group hover:bg-primary-container transition-all duration-300 shadow-sm">
+<div class="flex justify-between items-start mb-8 flex-row-reverse">
+<div class="w-12 h-12 bg-secondary-fixed rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-fixed">restaurant</span>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-2 py-1 rounded tracking-tighter uppercase">Prime</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-white transition-colors hebrew-font">קצבינת הבוטיק מרלו</h3>
+<p class="text-sm text-secondary mb-6 group-hover:text-on-primary-container transition-colors hebrew-font">הזמנה שבועית - נתחי אנטריקוט</p>
+<button class="w-full bg-primary-container text-white py-3 rounded-xl font-bold text-sm group-hover:bg-white group-hover:text-primary transition-all hebrew-font">
+                    שלח קישור להזמנה
+                </button>
+</div>
+<!-- Card 2 -->
+<div class="min-w-[320px] bg-surface-container-lowest p-6 rounded-xl snap-center group hover:bg-primary-container transition-all duration-300 shadow-sm">
+<div class="flex justify-between items-start mb-8 flex-row-reverse">
+<div class="w-12 h-12 bg-secondary-fixed rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-fixed">hotel</span>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-2 py-1 rounded tracking-tighter uppercase">Choice</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-white transition-colors hebrew-font">מלון הרויאל פלאזה</h3>
+<p class="text-sm text-secondary mb-6 group-hover:text-on-primary-container transition-colors hebrew-font">חידוש מלאי - בשר טלה מובחר</p>
+<button class="w-full bg-primary-container text-white py-3 rounded-xl font-bold text-sm group-hover:bg-white group-hover:text-primary transition-all hebrew-font">
+                    שלח קישור להזמנה
+                </button>
+</div>
+<!-- Card 3 -->
+<div class="min-w-[320px] bg-surface-container-lowest p-6 rounded-xl snap-center group hover:bg-primary-container transition-all duration-300 shadow-sm">
+<div class="flex justify-between items-start mb-8 flex-row-reverse">
+<div class="w-12 h-12 bg-secondary-fixed rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-fixed">lunch_dining</span>
+</div>
+<span class="bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-2 py-1 rounded tracking-tighter uppercase">Select</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-white transition-colors hebrew-font">המבורגריית גורמה עכו</h3>
+<p class="text-sm text-secondary mb-6 group-hover:text-on-primary-container transition-colors hebrew-font">הזמנה דחופה - טחינה גסה</p>
+<button class="w-full bg-primary-container text-white py-3 rounded-xl font-bold text-sm group-hover:bg-white group-hover:text-primary transition-all hebrew-font">
+                    שלח קישור להזמנה
+                </button>
+</div>
+</div>
+</section>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Recent Activity Feed -->
+<div class="lg:col-span-3">
+<div class="bg-surface-container-low p-8 rounded-2xl">
+<div class="flex justify-between items-center mb-8 flex-row">
+<h2 class="text-2xl headline-font font-bold">פעילות אחרונה</h2>
+<span class="material-symbols-outlined text-secondary">history</span>
+</div>
+<div class="space-y-6">
+<!-- Activity Item 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:translate-x-[-4px] transition-transform flex-row shadow-sm">
+<div class="flex items-center gap-4 flex-row">
+<div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
+<div class="text-right">
+<p class="font-bold hebrew-font">קישור נשלח: מסעדת השף דה-לוקס</p>
+<p class="text-xs text-secondary hebrew-font">לפני 12 דקות • נשלח בוואטסאפ</p>
+</div>
+</div>
+<p class="text-sm font-medium font-mono text-primary">#ORD-8829</p>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:translate-x-[-4px] transition-transform flex-row shadow-sm">
+<div class="flex items-center gap-4 flex-row">
+<div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
+<div class="text-right">
+<p class="font-bold hebrew-font">הזמנה אושרה: קצבית הבשרים חיפה</p>
+<p class="text-xs text-secondary hebrew-font">לפני 45 דקות • סה"כ 4,500 ₪</p>
+</div>
+</div>
+<p class="text-sm font-medium font-mono text-primary">#ORD-8825</p>
+</div>
+<!-- Activity Item 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:translate-x-[-4px] transition-transform flex-row shadow-sm">
+<div class="flex items-center gap-4 flex-row">
+<div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
+<div class="text-right">
+<p class="font-bold hebrew-font">קישור נשלח: קייטרינג שפע מרכז</p>
+<p class="text-xs text-secondary hebrew-font">לפני שעתיים • נשלח במייל</p>
+</div>
+</div>
+<p class="text-sm font-medium font-mono text-primary">#ORD-8812</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe bg-[#ffffff] dark:bg-[#190000] border-t border-[#efeee9]/15 shadow-[0_-4px_32px_-4px_rgba(121,85,70,0.06)] rounded-t-xl h-20 md:hidden">
+<a class="flex flex-col items-center justify-center bg-[#480003] text-[#ffffff] rounded-xl px-4 py-1.5" href="#">
+<span class="material-symbols-outlined" data-weight="fill">home</span>
+<span class="font-['Heebo'] text-xs uppercase tracking-widest mt-1">דף הבית</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dbdad5] px-4 py-1.5 hover:text-[#480003] transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Heebo'] text-xs uppercase tracking-widest mt-1">לקוחות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dbdad5] px-4 py-1.5 hover:text-[#480003] transition-colors" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-['Heebo'] text-xs uppercase tracking-widest mt-1">קטלוג</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dbdad5] px-4 py-1.5 hover:text-[#480003] transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Heebo'] text-xs uppercase tracking-widest mt-1">הגדרות</span>
+</a>
+</nav>
+<!-- Footer (Web Only) -->
+<footer class="hidden md:block bg-[#faf9f4] dark:bg-[#190000] border-t border-[#dbdad5] w-full py-12 px-8">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 rtl:flex-row">
+<div class="flex items-center gap-2 flex-row">
+<span class="font-['Newsreader'] italic text-2xl font-bold">The Artisanal Ledger.</span>
+<span class="text-secondary text-sm hebrew-font">פלטפורמת הפצה למקצוענים.</span>
+</div>
+<div class="flex gap-8">
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors text-sm hebrew-font" href="#">תנאי שימוש</a>
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors text-sm hebrew-font" href="#">מדיניות פרטיות</a>
+<a class="text-[#7a5647] hover:text-[#190000] transition-colors text-sm hebrew-font" href="#">צור קשר</a>
+</div>
+<p class="text-[#7a5647] text-sm font-['Inter'] tracking-tight">© 2024 The Artisanal Ledger. Built for the Modern Butcher.</p>
+</div>
+</footer>
+</body></html>

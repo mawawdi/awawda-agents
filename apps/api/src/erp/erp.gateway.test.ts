@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { BMaxXmlAdapter } from './bmax-xml.adapter';
 import { CompositeErpGateway } from './composite-erp.gateway';
+import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import { ERP_GATEWAY } from './erp.gateway';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
 import { createApiApp } from '../server';
@@ -62,5 +63,67 @@ describe('ERP module', () => {
       provider: 'bmax_xml',
     });
     expect(response.externalRef).toMatch(/^bmax-queue:4dadf2f2-a619-4eb0-9db7-8817ed7fd98d:\d+$/);
+  });
+
+  it('retries with exponential backoff before surfacing Hashavshevet handoff failure', async () => {
+    const adapter = new HashavshevetAdapter();
+    const startedAt = Date.now();
+
+    let thrown: unknown;
+    try {
+      await adapter.handoffOrder({
+        orderId: '4dadf2f2-a619-4eb0-9db7-8817ed7fd98d',
+        customerId: 'customer-18',
+        lines: [
+          {
+            itemId: 'item-1',
+            quantity: 1,
+            unit: 'kg',
+            clientUnitPrice: 10,
+          },
+        ],
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(elapsedMs).toBeGreaterThanOrEqual(550);
+    expect(thrown).toBeInstanceOf(ErpGatewayError);
+    expect((thrown as ErpGatewayError).code).toBe(ERP_ERROR_CODES.ERP_ORDER_HANDOFF_FAILED);
+    expect((thrown as ErpGatewayError).message).toContain('failed after 3 attempts');
+    expect((thrown as ErpGatewayError).cause).toBeInstanceOf(ErpGatewayError);
+    expect(((thrown as ErpGatewayError).cause as ErpGatewayError).code).toBe(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+    );
+  });
+
+  it('does not fallback to B-MAX when Hashavshevet returns non-fallback ERP errors', async () => {
+    const hashavshevet = new HashavshevetAdapter();
+    const bmax = new BMaxXmlAdapter();
+    const hashavshevetSpy = vi
+      .spyOn(hashavshevet, 'handoffOrder')
+      .mockRejectedValue(new ErpGatewayError(ERP_ERROR_CODES.ERP_VALIDATION_FAILED, 'invalid payload'));
+    const bmaxSpy = vi.spyOn(bmax, 'handoffOrder');
+    const gateway = new CompositeErpGateway(hashavshevet, bmax);
+
+    await expect(
+      gateway.handoffOrder({
+      orderId: '4dadf2f2-a619-4eb0-9db7-8817ed7fd98d',
+      customerId: 'customer-19',
+      lines: [
+        {
+          itemId: 'item-1',
+          quantity: 1,
+          unit: 'kg',
+          clientUnitPrice: 10,
+        },
+      ],
+      }),
+    ).rejects.toBeInstanceOf(ErpGatewayError);
+
+    expect(hashavshevetSpy).toHaveBeenCalledTimes(1);
+    expect(bmaxSpy).not.toHaveBeenCalled();
   });
 });

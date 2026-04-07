@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 
 import { useAuth } from '../auth/auth-provider'
 import { validateLoginInput, type LoginValidationErrors } from '../auth/validation'
+import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 
 export function LoginScreen(): React.JSX.Element {
   const { signIn, errorMessage, clearError } = useAuth()
@@ -31,7 +32,7 @@ export function LoginScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Agent Sign in</Text>
-      <Text style={styles.subtitle}>Use your Meatland credentials to continue.</Text>
+      <Text style={styles.subtitle}>Use your Meatland credentials to continue your shift workflow.</Text>
 
       <TextInput
         accessibilityLabel="Phone or email"
@@ -85,51 +86,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    gap: 12,
-    padding: 20,
-    backgroundColor: '#f7f8fa',
+    gap: spacing.md,
+    padding: spacing.xl,
+    backgroundColor: palette.background,
   },
   title: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '700',
-    color: '#111827',
+    color: palette.primaryContainer,
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
   },
   subtitle: {
     marginBottom: 12,
-    color: '#4b5563',
+    color: palette.textMuted,
+    fontSize: 14,
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    borderWidth: 0,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: palette.surfaceMid,
+    color: palette.text,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    minHeight: touchTarget.comfortable,
   },
   button: {
     marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: '#1d4ed8',
+    borderRadius: radius.md,
+    backgroundColor: palette.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: touchTarget.comfortable,
   },
   buttonDisabled: {
     opacity: 0.65,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   error: {
-    color: '#b91c1c',
+    color: palette.danger,
     fontSize: 13,
   },
   errorBanner: {
     marginTop: 4,
     padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
+    borderRadius: radius.sm,
+    backgroundColor: palette.dangerSurface,
+    color: palette.danger,
   },
 })

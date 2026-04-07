@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Inter:wght@100..900&amp;family=Heebo:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'grad' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            font-family: 'Inter', 'Heebo', sans-serif;
+            background-color: #faf9f4;
+            color: #1b1c19;
+            -webkit-font-smoothing: antialiased;
+        }
+        .font-newsreader { font-family: 'Newsreader', serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#190000",
+                      "on-secondary-container": "#795546",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed": "#221a14",
+                      "on-secondary-fixed": "#2e150a",
+                      "on-secondary": "#ffffff",
+                      "surface-variant": "#e3e3de",
+                      "outline": "#89726f",
+                      "surface-container-high": "#e9e8e3",
+                      "surface-container-highest": "#e3e3de",
+                      "tertiary-container": "#261e18",
+                      "surface-bright": "#faf9f4",
+                      "on-primary": "#ffffff",
+                      "surface-container": "#efeee9",
+                      "secondary-fixed-dim": "#ecbcaa",
+                      "on-tertiary": "#ffffff",
+                      "on-surface-variant": "#564240",
+                      "surface-container-low": "#f5f4ef",
+                      "surface": "#faf9f4",
+                      "on-tertiary-container": "#92857c",
+                      "on-primary-fixed-variant": "#802924",
+                      "primary-fixed-dim": "#ffb4ac",
+                      "background": "#faf9f4",
+                      "secondary-fixed": "#ffdbce",
+                      "error-container": "#ffdad6",
+                      "surface-dim": "#dbdad5",
+                      "surface-tint": "#9f4039",
+                      "tertiary-fixed": "#f0dfd5",
+                      "primary-container": "#480003",
+                      "on-background": "#1b1c19",
+                      "secondary": "#7a5647",
+                      "on-tertiary-fixed-variant": "#4f453e",
+                      "inverse-on-surface": "#f2f1ec",
+                      "on-primary-container": "#d2665d",
+                      "inverse-primary": "#ffb4ac",
+                      "primary-fixed": "#ffdad6",
+                      "outline-variant": "#dcc0bd",
+                      "inverse-surface": "#30312e",
+                      "on-surface": "#1b1c19",
+                      "tertiary": "#0c0603",
+                      "on-error-container": "#93000a",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed-dim": "#d3c4ba",
+                      "secondary-container": "#fecdba",
+                      "on-primary-fixed": "#410002",
+                      "on-secondary-fixed-variant": "#603f31",
+                      "on-error": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Newsreader"],
+                      "body": ["Inter", "Heebo"],
+                      "label": ["Inter", "Heebo"]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#faf9f4] dark:bg-[#190000] sticky top-0 z-50">
+<div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container/10">
+<img class="w-full h-full object-cover" data-alt="Professional portrait of a mature male sales agent in a formal shirt, clean background, high-end editorial lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyOjEAqiHV277ND6IHyH5dhokUfWdanSm_jzL0Pt_m7KMI73w6eEVq9FZYT9t6Qhs6eL-FNUu5n2GkCkms-cdxG6qR3AzYd0LBlY13tTWjgNbGM8TFkpjg31woM8MBacIfOm1qPuDn1BVgYTvc046TUW82fO_wfNZ2ZqAISvCHwr8TqQlvpdm_z1Q8L7duiP6-vY7mAZpRAbpxHAEDemxrulsjU4KrYutTVCIA2ShsdeONiAaHWxjBaPJG4z46Pr4SiWmjdk9yx0k"/>
+</div>
+<div class="hidden md:block text-left">
+<p class="text-xs text-secondary leading-none mb-1">סוכן מכירות</p>
+<p class="text-sm font-bold text-primary">אבי כהן</p>
+</div>
+</div>
+<h1 class="font-newsreader italic text-3xl tracking-tight text-[#480003] dark:text-[#ffdad6]">לקוחות</h1>
+<button class="p-2 rounded-full hover:bg-[#efeee9] dark:hover:bg-[#480003] transition-colors active:opacity-80">
+<span class="material-symbols-outlined text-[#480003] dark:text-[#ffdad6]">search</span>
+</button>
+</div>
+<div class="bg-[#efeee9] dark:bg-[#2d1614] h-[1px] w-full"></div>
+</header>
+<main class="max-w-5xl mx-auto px-6 mt-8">
+<!-- Persistent Search & Filter Section -->
+<section class="mb-10 space-y-6">
+<div class="relative group">
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full bg-surface-container-high border-none rounded-xl py-4 pr-12 pl-4 text-primary placeholder:text-outline focus:ring-2 focus:ring-primary-container transition-all" placeholder="חיפוש לפי שם לקוח או מזהה..." type="text"/>
+</div>
+<!-- Filter Toggles -->
+<div class="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+<button class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary text-sm font-medium whitespace-nowrap shadow-sm">הכל</button>
+<button class="px-6 py-2.5 rounded-full bg-surface-container text-secondary text-sm font-medium whitespace-nowrap hover:bg-surface-container-highest transition-colors">פעיל</button>
+<button class="px-6 py-2.5 rounded-full bg-surface-container text-secondary text-sm font-medium whitespace-nowrap hover:bg-surface-container-highest transition-colors">דורש פעולה</button>
+<button class="px-6 py-2.5 rounded-full bg-surface-container text-secondary text-sm font-medium whitespace-nowrap hover:bg-surface-container-highest transition-colors">ממתין ללינק</button>
+</div>
+</section>
+<!-- Customer Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Customer Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_4px_24px_rgba(121,85,70,0.04)] flex flex-col justify-between border-r-4 border-primary-container">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-outline font-bold">#8829</span>
+<h3 class="text-xl font-bold text-primary mt-1">מסעדת השף - ירושלים</h3>
+<p class="text-sm text-secondary mt-1">רחוב המלך ג'ורג' 12, ירושלים</p>
+</div>
+<span class="bg-[#e8f5e9] text-[#2e7d32] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#2e7d32]"></span>
+                        פעיל
+                    </span>
+</div>
+<div class="flex gap-3 mt-4">
+<button class="flex-1 py-3 px-4 bg-primary-container text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">link</span>
+                        שלח לינק קסם
+                    </button>
+<button class="py-3 px-6 bg-secondary-fixed text-on-secondary-fixed rounded-xl text-sm font-bold hover:bg-secondary-container transition-colors active:scale-95 transition-transform">
+                        קטלוג
+                    </button>
+</div>
+</div>
+<!-- Customer Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_4px_24px_rgba(121,85,70,0.04)] flex flex-col justify-between border-r-4 border-secondary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-outline font-bold">#9102</span>
+<h3 class="text-xl font-bold text-primary mt-1">קצביית המרכז</h3>
+<p class="text-sm text-secondary mt-1">מרכז מסחרי שרונה, תל אביב</p>
+</div>
+<span class="bg-[#fff3e0] text-[#795546] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#795546]"></span>
+                        דורש פעולה
+                    </span>
+</div>
+<div class="flex gap-3 mt-4">
+<button class="flex-1 py-3 px-4 bg-primary-container text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">link</span>
+                        שלח לינק קסם
+                    </button>
+<button class="py-3 px-6 bg-secondary-fixed text-on-secondary-fixed rounded-xl text-sm font-bold hover:bg-secondary-container transition-colors active:scale-95 transition-transform">
+                        קטלוג
+                    </button>
+</div>
+</div>
+<!-- Customer Card 3 (Visual Focus) -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_4px_24px_rgba(121,85,70,0.04)] flex flex-col md:col-span-2 relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none">
+<img class="w-full h-full object-cover" data-alt="Close-up texture of high-quality aged steak on a dark background with dramatic shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFtySVbwlsba7hfDy0AyU-uJtc_ONMpYT1EUNYEFjFlWNJAyuaAgDeZO9JT2VQ55iZqk7_emkRIUE2LIAC48O9f4rfYx3wfhq3NM-ooiN9pXTABdspcLJToTIm37qhEEII3j9mshpqOGpvgmbNyeYLNrwRuINpCgbs5x4wPMfRyBBtz74aeEtmIm3FIV3pgSrSrlfugxpCMJEhz-e3XhRcttP2LYp83O0csplvyPmOVV70lswMJ4Pavd2sT5kDha3avlx1s5eydxE"/>
+</div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-8">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-outline font-bold">#4452</span>
+<h3 class="text-2xl font-bold text-primary mt-1">גריל האוס פרימיום</h3>
+<p class="text-sm text-secondary mt-1">אזור התעשייה קיסריה</p>
+</div>
+<span class="bg-[#e8f5e9] text-[#2e7d32] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#2e7d32]"></span>
+                            פעיל
+                        </span>
+</div>
+<div class="flex flex-wrap gap-4 items-center justify-between">
+<div class="flex gap-8">
+<div>
+<p class="text-[10px] text-outline font-bold mb-1">הזמנה אחרונה</p>
+<p class="text-sm font-bold text-primary">לפני יומיים</p>
+</div>
+<div>
+<p class="text-[10px] text-outline font-bold mb-1">סוג לקוח</p>
+<p class="text-sm font-bold text-primary">VIP / מסעדות</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="py-3 px-8 bg-primary-container text-on-primary rounded-xl text-sm font-bold flex items-center gap-2 active:scale-95 transition-transform shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-sm">link</span>
+                                שלח לינק קסם
+                            </button>
+<button class="py-3 px-8 bg-surface-container text-secondary rounded-xl text-sm font-bold hover:bg-surface-container-highest transition-colors active:scale-95 transition-transform">
+                                פרטי לקוח
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Customer Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_4px_24px_rgba(121,85,70,0.04)] flex flex-col justify-between border-r-4 border-primary-container">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-outline font-bold">#7718</span>
+<h3 class="text-xl font-bold text-primary mt-1">מעדניית הכפר</h3>
+<p class="text-sm text-secondary mt-1">רחוב רוטשילד 44, כפר סבא</p>
+</div>
+<span class="bg-[#e8f5e9] text-[#2e7d32] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#2e7d32]"></span>
+                        פעיל
+                    </span>
+</div>
+<div class="flex gap-3 mt-4">
+<button class="flex-1 py-3 px-4 bg-primary-container text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">link</span>
+                        שלח לינק קסם
+                    </button>
+<button class="py-3 px-6 bg-secondary-fixed text-on-secondary-fixed rounded-xl text-sm font-bold hover:bg-secondary-container transition-colors active:scale-95 transition-transform">
+                        קטלוג
+                    </button>
+</div>
+</div>
+<!-- Customer Card 5 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_4px_24px_rgba(121,85,70,0.04)] flex flex-col justify-between border-r-4 border-secondary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-outline font-bold">#2293</span>
+<h3 class="text-xl font-bold text-primary mt-1">ביסטרו נווה צדק</h3>
+<p class="text-sm text-secondary mt-1">רחוב שבזי 2, תל אביב</p>
+</div>
+<span class="bg-[#fff3e0] text-[#795546] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#795546]"></span>
+                        דורש פעולה
+                    </span>
+</div>
+<div class="flex gap-3 mt-4">
+<button class="flex-1 py-3 px-4 bg-primary-container text-on-primary rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">link</span>
+                        שלח לינק קסם
+                    </button>
+<button class="py-3 px-6 bg-secondary-fixed text-on-secondary-fixed rounded-xl text-sm font-bold hover:bg-secondary-container transition-colors active:scale-95 transition-transform">
+                        קטלוג
+                    </button>
+</div>
+</div>
+</div>
+<!-- Pagination/Load More (Editorial Style) -->
+<div class="mt-16 text-center">
+<button class="px-12 py-4 border border-outline-variant/30 text-secondary font-bold text-sm rounded-full hover:bg-surface-container transition-colors">
+                טען לקוחות נוספים
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center px-4 pb-6 pt-3 bg-[#faf9f4]/80 dark:bg-[#190000]/80 backdrop-blur-xl border-t border-[#dcc0bd]/15 shadow-[0_-4px_32px_-4px_rgba(121,85,70,0.06)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dcc0bd] px-5 py-2 hover:text-[#480003] dark:hover:text-[#ffdad6] scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-inter text-xs font-medium">בית</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#480003] dark:bg-[#ffdad6] text-[#ffffff] dark:text-[#410002] rounded-xl px-5 py-2 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-inter text-xs font-medium">לקוחות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dcc0bd] px-5 py-2 hover:text-[#480003] dark:hover:text-[#ffdad6] scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-inter text-xs font-medium">קטלוג</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#7a5647] dark:text-[#dcc0bd] px-5 py-2 hover:text-[#480003] dark:hover:text-[#ffdad6] scale-95 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-inter text-xs font-medium">הגדרות</span>
+</a>
+</nav>
+</body></html>

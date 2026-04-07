@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Inter:wght@100..900&amp;family=Heebo:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#89726f",
+                        "surface-variant": "#e3e3de",
+                        "tertiary-fixed-dim": "#d3c4ba",
+                        "background": "#faf9f4",
+                        "primary": "#190000",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#92857c",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#f0dfd5",
+                        "on-secondary-fixed-variant": "#603f31",
+                        "surface-dim": "#dbdad5",
+                        "on-secondary-container": "#795546",
+                        "outline-variant": "#dcc0bd",
+                        "inverse-surface": "#30312e",
+                        "surface": "#faf9f4",
+                        "on-tertiary-fixed-variant": "#4f453e",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#410002",
+                        "primary-fixed": "#ffdad6",
+                        "tertiary": "#0c0603",
+                        "on-surface": "#1b1c19",
+                        "secondary-container": "#fecdba",
+                        "inverse-primary": "#ffb4ac",
+                        "surface-bright": "#faf9f4",
+                        "tertiary-container": "#261e18",
+                        "surface-container-low": "#f5f4ef",
+                        "secondary": "#7a5647",
+                        "surface-container-highest": "#e3e3de",
+                        "primary-container": "#480003",
+                        "inverse-on-surface": "#f2f1ec",
+                        "on-background": "#1b1c19",
+                        "on-secondary-fixed": "#2e150a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#d2665d",
+                        "surface-container": "#efeee9",
+                        "on-tertiary-fixed": "#221a14",
+                        "on-primary-fixed-variant": "#802924",
+                        "secondary-fixed": "#ffdbce",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#ecbcaa",
+                        "surface-container-high": "#e9e8e3",
+                        "primary-fixed-dim": "#ffb4ac",
+                        "on-surface-variant": "#564240",
+                        "surface-tint": "#9f4039"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Newsreader", "serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Heebo", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-toggle {
+            background-color: #ba1a1a;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #efeee9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #7a5647;
+        }
+        body {
+            font-family: 'Heebo', 'Inter', sans-serif;
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body antialiased custom-scrollbar">
+<!-- TopAppBar -->
+<header class="bg-[#faf9f4] dark:bg-[#190000] sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-6 py-4 flex-row-reverse">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#480003] dark:text-[#ffdad6]">search</span>
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+<img alt="פרופיל סוכן" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAng9Lv9R-UCimnzKzklxoQjkWVsrBpCQrJZv8i6rlBnheT4DHlmMabPmcpLqP_51oDMDzwOe06UTLKiDzUZK5oSDGpXmxSJxczBn5h_0RvoyJQzAmbT4gkHqisoHVKGazkh6ykf07YY-8ZYwhsvREb7M5hOM-IUZ2i8C5vdbbmaNDuM1UG0gYk1t9osPFRKFS7c9wOxcviUefO2MkTQe7tp7LT77quAIKTHV36o6ssWQMz2SdKUcKM5yBvGuxzujMWALsA95ezYE0"/>
+</div>
+</div>
+<h1 class="font-headline font-bold text-2xl text-[#480003] dark:text-[#ffdad6] tracking-tight">The Artisanal Ledger</h1>
+<div class="flex items-center">
+<button class="material-symbols-outlined text-[#7a5647]">menu</button>
+</div>
+</div>
+<div class="bg-[#efeee9] dark:bg-[#480003] h-[1px] w-full"></div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-8 md:pb-24">
+<!-- Customer Profile Header -->
+<section class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="flex-1">
+<div class="flex items-center gap-4 mb-4">
+<span class="bg-primary-fixed text-on-primary-fixed text-xs font-bold px-3 py-1 rounded-full tracking-widest uppercase font-label">לקוח VIP</span>
+<span class="text-secondary text-sm font-label italic">מספר לקוח: #8829-TL</span>
+</div>
+<h2 class="font-headline text-5xl md:text-6xl text-primary mb-2 leading-tight">מעדניית הבוטיק "שירז"</h2>
+<div class="flex flex-wrap gap-6 text-on-surface-variant font-label">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">person</span>
+<span>ארז מזרחי</span>
+</div>
+<div class="flex items-center gap-2 border-r border-outline-variant pr-6">
+<span class="material-symbols-outlined text-sm">call</span>
+<span dir="ltr">+972 54 123 4567</span>
+</div>
+<div class="flex items-center gap-2 border-r border-outline-variant pr-6">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>רחוב דיזנגוף 120, תל אביב</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-surface-container-low hover:bg-surface-container-high transition-colors px-6 py-3 rounded-xl font-label text-primary font-bold flex items-center gap-2">
+<span class="material-symbols-outlined">edit</span>
+<span>עריכת פרטים</span>
+</button>
+<button class="bg-primary-container text-on-primary px-8 py-3 rounded-xl font-label font-bold shadow-lg flex items-center gap-2">
+<span class="material-symbols-outlined">history</span>
+<span>היסטוריית הזמנות</span>
+</button>
+</div>
+</section>
+<!-- Catalog Management Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Sidebar Metadata -->
+<div class="lg:col-span-3 space-y-8">
+<div class="bg-surface-container-low p-6 rounded-xl space-y-4">
+<h3 class="font-label text-xl text-primary font-bold">סטטוס הרשאות</h3>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm font-label">
+<span class="text-on-surface-variant">פריטים מאושרים</span>
+<span class="font-bold">42</span>
+</div>
+<div class="flex justify-between items-center text-sm font-label">
+<span class="text-on-surface-variant">קטגוריות פתוחות</span>
+<span class="font-bold">6</span>
+</div>
+<div class="w-full bg-surface-dim h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+</div>
+</div>
+<div class="bg-secondary-fixed p-6 rounded-xl">
+<p class="font-label text-on-secondary-fixed-variant text-sm leading-relaxed">
+                    הלקוח רשאי לצפות ולהזמין רק את הפריטים שסומנו ב"רשימה המאושרת". שינויים יתעדכנו באפליקציית הלקוח באופן מיידי.
+                </p>
+</div>
+</div>
+<!-- Main Interactive List -->
+<div class="lg:col-span-9">
+<!-- Navigation Tabs -->
+<div class="flex items-center gap-12 mb-8 border-b border-surface-container-highest">
+<button class="pb-4 font-label text-2xl text-primary font-bold relative after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-primary">פריטים מאושרים</button>
+<button class="pb-4 font-label text-2xl text-on-surface-variant hover:text-primary transition-colors">הקטלוג המלא</button>
+<div class="mr-auto mb-4 relative">
+<input class="bg-surface-container border-none focus:ring-2 focus:ring-primary rounded-xl px-10 py-2 text-sm w-64 font-label" placeholder="חיפוש בקטלוג..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant text-sm">search</span>
+</div>
+</div>
+<!-- Bulk Actions Bar -->
+<div class="flex items-center justify-between mb-6 px-4 py-3 bg-surface-container-lowest rounded-xl">
+<div class="flex items-center gap-4">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-label text-on-surface-variant">בחר הכל (42 פריטים)</span>
+</div>
+<div class="flex gap-2">
+<button class="text-error font-label text-sm px-4 py-2 hover:bg-error-container rounded-lg transition-colors">הסר הרשאה לנבחרים</button>
+<button class="text-primary font-label text-sm px-4 py-2 hover:bg-surface-container rounded-lg transition-colors">הוסף לקבוצה</button>
+</div>
+</div>
+<!-- Product High-Density List -->
+<div class="space-y-3">
+<!-- Product Item 1 -->
+<div class="group flex items-center gap-6 p-4 bg-surface-container-lowest hover:bg-surface-container-high transition-all rounded-xl">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-dim shrink-0">
+<img alt="אנטריקוט פרימיום" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4FOXiFO5kXvkYVhcIiL5lZUSaidYEhI4IFWRKVvPCDwBVLjG3gkXKorhrsCHEVePL7X3yu10Tr7s2zJOvH-aVI-S0sA9fttAPg3Nwj-CaYx5_-_dDUHXaE2_n2HQnQdvivVcyeixxctqOLfu1qGAIXd-9ratMysYDct_tmhO9oYDY-p-z6_ufbXbHc9x4vmCLv2aXIX-5KitRoHSchrKKQAQXnylFAnPR1Ulb8_Sny1_eOnlUPPGsYH9A8qMK1dnoicmRYryOEjg"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-bold text-lg text-primary font-label">אנטריקוט פרימיום - יישון 21 יום</h4>
+<span class="bg-primary-fixed text-on-primary-fixed-variant text-[10px] px-2 py-0.5 rounded uppercase font-black font-label">PRIME</span>
+</div>
+<p class="text-sm text-on-surface-variant font-label">קטגוריה: בקר טרי | מק"ט: B-4022</p>
+</div>
+<div class="text-left shrink-0">
+<div class="text-lg font-bold text-primary mb-1 font-label">₪185.00</div>
+<div class="text-xs text-on-secondary-container font-label">מחיר לק"ג</div>
+</div>
+<div class="shrink-0 flex items-center pr-6 border-r border-outline-variant/20">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all active-toggle"></div>
+</label>
+</div>
+</div>
+<!-- Product Item 2 -->
+<div class="group flex items-center gap-6 p-4 bg-surface-container-lowest hover:bg-surface-container-high transition-all rounded-xl">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-dim shrink-0">
+<img alt="צוריסו ארגנטינאי" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD08EZeOOFyV4X2sOBz74yKZggk3Skkdxq1y38SAsNQ-IcZbInxj-HKdNf915YEIf0ZWRIx7g6DXHyJaEZA9QkZkf3Df86GR40_OUyO8spJ2MDccUvnMgYJHPqnqnaa4qvxr2JD1GVfCs5rK39f6QQYJeXEkWUYgzRUB9BCJFMkTV8lodWKlDZYmEXOyeRHQO4-ofUuAdjHNE5MrnaRo0S7o0xYA4Ljg36ebdpUEvIwizK3WS9zcyP0APhxFmbCOZntXQNZTTEXDYM"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-bold text-lg text-primary font-label">צוריסו ארגנטינאי בעבודת יד</h4>
+</div>
+<p class="text-sm text-on-surface-variant font-label">קטגוריה: נקניקים | מק"ט: S-1109</p>
+</div>
+<div class="text-left shrink-0">
+<div class="text-lg font-bold text-primary mb-1 font-label">₪65.00</div>
+<div class="text-xs text-on-secondary-container font-label">מארז 500 גרם</div>
+</div>
+<div class="shrink-0 flex items-center pr-6 border-r border-outline-variant/20">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all active-toggle"></div>
+</label>
+</div>
+</div>
+<!-- Product Item 3 -->
+<div class="group flex items-center gap-6 p-4 bg-surface-container-lowest hover:bg-surface-container-high transition-all rounded-xl opacity-60">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-dim shrink-0">
+<img alt="צלעות טלה" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpb7-GfwtTfJ1XB0dFafg22igRjgkPuZip7p2IevOq1rQ5E4A91UFO2RyZF6lHdRjlZQ15CLyeY5MX9LjAgi15TMhVg2p-hmZ6DNV19E9h1yYyxwwWon2z5S48LK7QXrTWA-0Iou7ciYzJrlD0Fid3TYsi79CGYO80vKCZda3QcW-I18ZLrEngQXQusIfAFPJHt3cIRZvTPlbSIDTeoH4IKgHDYuz8OeplhS_uIMPQYKP0XAXKdHNr-q7Nx2wETBDM2BZTCdKW0PI"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-bold text-lg text-primary font-label">צלעות טלה ישראלי מובחר</h4>
+</div>
+<p class="text-sm text-on-surface-variant font-label">קטגוריה: טלה | מק"ט: L-882</p>
+</div>
+<div class="text-left shrink-0">
+<div class="text-lg font-bold text-primary mb-1 font-label">₪210.00</div>
+<div class="text-xs text-on-secondary-container font-label">מחיר לק"ג</div>
+</div>
+<div class="shrink-0 flex items-center pr-6 border-r border-outline-variant/20">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB (Approve Selected) -->
+<button class="fixed bottom-24 left-8 bg-[#480003] text-white p-4 rounded-full shadow-2xl z-50 flex items-center gap-2 group transition-all hover:pr-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all font-label font-bold whitespace-nowrap">אשר שינויים (12)</span>
+</button>
+<!-- Bottom Actions Bar -->
+<nav class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-4px_32px_-4px_rgba(121,85,70,0.1)] z-40">
+<div class="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-secondary font-label text-sm hidden md:block">עודכן לאחרונה: היום, 14:32 ע"י סוכן 04</p>
+<div class="flex items-center gap-4 w-full md:w-auto">
+<button class="flex-1 md:flex-none border border-outline text-primary px-8 py-3 rounded-xl font-label font-bold hover:bg-surface-container transition-colors">
+                ביטול
+            </button>
+<button class="flex-[2] md:flex-none bg-primary-container text-white px-12 py-3 rounded-xl font-label font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined">link</span>
+<span>שתף קישור לקטלוג</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Navigation Drawer -->
+<aside class="fixed inset-y-0 right-0 w-80 bg-[#efeee9] dark:bg-[#190000] backdrop-blur-xl opacity-95 shadow-2xl z-[60] -translate-x-full transition-transform lg:translate-x-0 hidden lg:flex flex-col">
+<div class="p-8 space-y-12 h-full">
+<div class="flex flex-col items-center gap-4 pt-4">
+<div class="w-20 h-20 rounded-full border-2 border-primary overflow-hidden p-1">
+<img alt="תמונת סוכן" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeXp05psAsWnw8CRqdhq9nHwdnDZzYfhinDx6oGf3Eswj3SSMwOtd0ZVU2ALsEBxTEuYAGJbnIv-dlsZP4Nd6rzVzyihz1Df2Tv2hHDSOwB8u_ZaIhIok1EWF6Qpn02QHTU1TAmoCJKEhqQpYqRmJ5BHSHR_NbElO8FcNUPjP2EXFItO4gfAPzNpbsRbzz1c4RDWu4qbMwwjlYUS7J-OWTdJ8DzfsieKWhQCLUUM1vKb3ATVu4vZO89qh_bRRJ8AE-5yWT6RKJOMU"/>
+</div>
+<div class="text-center">
+<h5 class="font-headline text-xl text-primary font-bold">ניהול קטלוג לקוחות</h5>
+<p class="text-secondary text-sm font-label uppercase tracking-widest">סוכן הפצה ראשי</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-4 text-[#7a5647] hover:bg-[#dbdad5] rounded-l-full ml-4 px-6 py-3 transition-transform hover:-translate-x-1" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label text-lg">דאשבורד</span>
+</a>
+<a class="flex items-center gap-4 bg-[#480003] text-[#ffffff] rounded-l-full ml-4 px-6 py-3 transition-transform hover:-translate-x-1" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label text-lg">לקוחות</span>
+</a>
+<a class="flex items-center gap-4 text-[#7a5647] hover:bg-[#dbdad5] rounded-l-full ml-4 px-6 py-3 transition-transform hover:-translate-x-1" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label text-lg">מלאי וקטלוג</span>
+</a>
+<a class="flex items-center gap-4 text-[#7a5647] hover:bg-[#dbdad5] rounded-l-full ml-4 px-6 py-3 transition-transform hover:-translate-x-1" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label text-lg">אנליטיקה</span>
+</a>
+</nav>
+<div class="pb-8">
+<div class="bg-surface-container-highest p-4 rounded-xl">
+<div class="flex items-center gap-3 text-primary mb-2">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-bold font-label">מרכז תמיכה</span>
+</div>
+<p class="text-xs text-on-surface-variant font-label leading-relaxed">זקוק לעזרה בניהול הרשאות לקוח? פנה למוקד הסוכנים.</p>
+</div>
+</div>
+</div>
+</aside>
+</body></html>

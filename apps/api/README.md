@@ -23,6 +23,8 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `POST /v1/agent/customers/:customerId/approved-items` — assigned-agent allowlist mutation with duplicate-safe semantics + audit log
 - `GET /v1/agent/catalog` — ERP-backed catalog snapshot with short-lived cache metadata + cache headers
 - `POST /v1/agent/customers/:customerId/magic-links` — issue secure customer magic links with hash-only token persistence
+- `POST /v1/customer/session/logout` — authenticated customer-session close to invalidate active ordering session
+- `POST /v1/customer/orders` — idempotent order submit; returns actionable `503 CUSTOMER_ORDER_ERP_UNAVAILABLE` on ERP outages
 
 ## Auth environment variables
 
@@ -30,6 +32,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `JWT_SHIFT_TOKEN_TTL` (optional): shift token TTL (`8h` default, supports `s|m|h|d`)
 - `JWT_ISSUER` (optional): JWT issuer claim (`meatland-api` default)
 - `CORS_ALLOWED_ORIGINS` (optional): comma-separated allowed origins for browser clients (defaults include `localhost:8080` and `localhost:8081`)
+- `API_BODY_LIMIT_BYTES` (optional): request body limit in bytes (`1048576` default)
 
 ## Catalog environment variables
 
