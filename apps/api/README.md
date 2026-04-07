@@ -16,7 +16,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 ## Operational routes
 
 - `GET /v1/health` — liveness contract
-- `GET /v1/ready` — readiness contract including ERP adapter health (Hashavshevet skeleton reports `degraded`)
+- `GET /v1/ready` — readiness contract with Postgres/Redis/ERP probes; returns `503` when required dependencies fail configured threshold
 - `POST /v1/agent/auth/login` — agent login with Argon2 verification + JWT shift token
 - `GET /v1/agent/customers` — assigned customer dashboard data for authenticated agents only
 - `GET /v1/agent/customers/:customerId/approved-items` — assigned-agent allowlist reads for a specific customer
@@ -37,6 +37,12 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 ## Catalog environment variables
 
 - `CATALOG_CACHE_TTL_SECONDS` (optional): API catalog cache max-age in seconds (`300` default)
+
+## Readiness environment variables
+
+- `READY_PROBE_TIMEOUT_MS` (optional): per-dependency probe timeout in milliseconds (`1500` default)
+- `READY_DEGRADED_LATENCY_MS` (optional): probe latency threshold above which successful checks become `degraded` (`400` default)
+- `READY_REQUIRED_MIN_STATUS` (optional): minimum required status for required dependencies (`degraded` default, set `up` for strict fail-on-degraded gates)
 
 ## Magic link environment variables
 

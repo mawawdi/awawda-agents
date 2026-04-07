@@ -3,6 +3,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApiApp } from './server';
 
+type ReadyRouteBody = {
+  status: 'ready' | 'not_ready';
+  service: 'api';
+  version: 'v1';
+  timestamp: string;
+  readinessPolicy: {
+    requiredMinimumStatus: 'degraded' | 'up';
+  };
+  checks: {
+    postgres: { status: 'up' | 'degraded' | 'down'; required: boolean };
+    redis: { status: 'up' | 'degraded' | 'down'; required: boolean };
+    erp: { status: 'up' | 'degraded' | 'down'; required: boolean };
+  };
+};
+
 describe('API bootstrap', () => {
   let app: NestFastifyApplication;
   const originalJwtSecret = process.env.JWT_SECRET;
@@ -44,7 +59,16 @@ describe('API bootstrap', () => {
 
     expect(response.statusCode).toBe(200);
 
-    const body = response.json();
+    const body = response.json() as {
+      status: 'ok';
+      service: 'api';
+      version: 'v1';
+      timestamp: string;
+      uptimeSeconds: number;
+      checks: {
+        api: 'up';
+      };
+    };
     expect(body).toMatchObject({
       status: 'ok',
       service: 'api',
@@ -63,29 +87,38 @@ describe('API bootstrap', () => {
       url: '/v1/ready',
     });
 
-    expect(response.statusCode).toBe(200);
-
-    const body = response.json();
+    const body = response.json() as ReadyRouteBody;
     expect(body).toMatchObject({
-      status: 'ready',
       service: 'api',
       version: 'v1',
+      readinessPolicy: {
+        requiredMinimumStatus: expect.stringMatching(/^(degraded|up)$/),
+      },
       checks: {
-        database: {
-          status: 'unknown',
+        postgres: {
+          status: expect.stringMatching(/^(up|degraded|down)$/),
+          required: true,
+        },
+        redis: {
+          status: expect.stringMatching(/^(up|degraded|down)$/),
           required: true,
         },
         erp: {
-          status: 'degraded',
+          status: expect.stringMatching(/^(up|degraded|down)$/),
           required: true,
-        },
-        queue: {
-          status: 'unknown',
-          required: false,
         },
       },
     });
     expect(typeof body.timestamp).toBe('string');
+
+    const scoreByStatus = { down: 0, degraded: 1, up: 2 } as const;
+    const minimumScore = scoreByStatus[body.readinessPolicy.requiredMinimumStatus];
+    const requiredChecksReady = Object.values(body.checks)
+      .filter((check) => check.required === true)
+      .every((check) => scoreByStatus[check.status] >= minimumScore);
+
+    expect(response.statusCode).toBe(requiredChecksReady ? 200 : 503);
+    expect(body.status).toBe(requiredChecksReady ? 'ready' : 'not_ready');
   });
 
   it('allows CORS preflight for Expo web origin', async () => {
