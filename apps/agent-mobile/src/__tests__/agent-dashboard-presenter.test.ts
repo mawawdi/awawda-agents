@@ -14,8 +14,8 @@ import {
 
 describe('agent dashboard presenter', () => {
   it('formats assigned customer metadata for dashboard rendering', () => {
-    expect(formatLastOrderLabel('2026-04-06T18:45:00.000Z')).toContain('Last order')
-    expect(formatLastOrderLabel(null)).toBe('No recent order')
+    expect(formatLastOrderLabel('2026-04-06T18:45:00.000Z')).toContain('הזמנה אחרונה')
+    expect(formatLastOrderLabel(null)).toBe('ללא הזמנה קודמת')
   })
 
   it('merges add-item mutation for deterministic approved-item rendering', () => {
@@ -72,10 +72,10 @@ describe('agent dashboard presenter', () => {
   })
 
   it('prioritizes resilience messaging for failures and slow-network hints', () => {
-    expect(getResilienceHint(false, 'Unable to load assigned customers.')).toBe(
-      'Unable to load assigned customers.',
+    expect(getResilienceHint(false, 'לא הצלחנו לטעון לקוחות משויכים.')).toBe(
+      'לא הצלחנו לטעון לקוחות משויכים.',
     )
-    expect(getResilienceHint(true, null)).toContain('Network is slower than usual')
+    expect(getResilienceHint(true, null)).toContain('הרשת איטית מהרגיל')
     expect(getResilienceHint(false, null)).toBeNull()
   })
 
@@ -92,7 +92,7 @@ describe('agent dashboard presenter', () => {
 
     const deepLink = buildWhatsAppDeepLink(shareMessage)
     expect(deepLink).toContain('whatsapp://send?text=')
-    expect(decodeURIComponent(deepLink.split('text=')[1] ?? '')).toContain('Meatland ordering link')
+    expect(decodeURIComponent(deepLink.split('text=')[1] ?? '')).toContain('קישור ההזמנה שלך')
   })
 
   it('normalizes localhost https links to http before sharing', () => {
@@ -110,8 +110,8 @@ describe('agent dashboard presenter', () => {
   })
 
   it('renders expiry metadata with graceful fallback for invalid backend timestamps', () => {
-    expect(formatMagicLinkExpiry('2026-04-07T11:30:00.000Z')).not.toBe('Expiry unavailable')
-    expect(formatMagicLinkExpiry('not-a-date')).toBe('Expiry unavailable')
+    expect(formatMagicLinkExpiry('2026-04-07T11:30:00.000Z')).not.toBe('מועד תפוגה לא זמין')
+    expect(formatMagicLinkExpiry('not-a-date')).toBe('מועד תפוגה לא זמין')
   })
 
   it('flags copy-link fallback when WhatsApp cannot launch or dispatch throws', () => {

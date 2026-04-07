@@ -31,15 +31,15 @@ export function LoginScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Agent Sign in</Text>
-      <Text style={styles.subtitle}>Use your Meatland credentials to continue your shift workflow.</Text>
+      <Text style={styles.title}>הספר האומנותי</Text>
+      <Text style={styles.subtitle}>כניסת סוכן להפעלת משמרת המכירות והלקוחות.</Text>
 
       <TextInput
         accessibilityLabel="Phone or email"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="email-address"
-        placeholder="+972500000000 or name@meatland.example"
+        placeholder="טלפון או אימייל ארגוני"
         value={phoneOrEmail}
         onChangeText={(value) => {
           setPhoneOrEmail(value)
@@ -54,7 +54,7 @@ export function LoginScreen(): React.JSX.Element {
       <TextInput
         accessibilityLabel="Password"
         secureTextEntry
-        placeholder="••••••••"
+        placeholder="סיסמה"
         value={password}
         onChangeText={(value) => {
           setPassword(value)
@@ -76,7 +76,7 @@ export function LoginScreen(): React.JSX.Element {
         style={({ pressed }) => [styles.button, (pressed || !canSubmit) && styles.buttonDisabled]}
         disabled={!canSubmit}
       >
-        {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign in</Text>}
+        {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>כניסה למערכת</Text>}
       </Pressable>
     </View>
   )
@@ -86,21 +86,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
     padding: spacing.xl,
     backgroundColor: palette.background,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     color: palette.primaryContainer,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitle: {
-    marginBottom: 12,
+    marginBottom: 6,
     color: palette.textMuted,
     fontSize: 14,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   input: {
     borderWidth: 0,
@@ -127,6 +129,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   error: {
     color: palette.danger,

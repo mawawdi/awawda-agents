@@ -485,7 +485,8 @@ function OrderRoute({
     <main className="portal-shell" data-testid="portal-shell" dir="rtl" lang="he">
       <div className="portal-frame">
         <header className="portal-header">
-          <div>
+          <div className="portal-brand-stack">
+            <p className="portal-kicker">The Artisanal Ledger</p>
             <h1 className="portal-brand" data-testid="portal-heading">קטלוג מובחר</h1>
             <p className="portal-meta">
               לקוח: <bdi dir="ltr">{session?.customerId ?? 'unknown-customer'}</bdi> · סשן מאובטח
@@ -508,8 +509,11 @@ function OrderRoute({
 
         <div className="portal-content">
           <section className="portal-column">
-            <section className="panel">
-              <h2>{state.sections.recent.title}</h2>
+            <section className="panel" data-section="recent">
+              <div className="panel-heading">
+                <h2>{state.sections.recent.title}</h2>
+                <span className="panel-chip">קבועים</span>
+              </div>
               {state.sections.recent.items.length === 0 ? (
                 <p>{state.sections.recent.emptyMessage}</p>
               ) : (
@@ -517,8 +521,11 @@ function OrderRoute({
               )}
             </section>
 
-            <section className="panel">
-              <h2>{state.sections.approved.title}</h2>
+            <section className="panel" data-section="approved">
+              <div className="panel-heading">
+                <h2>{state.sections.approved.title}</h2>
+                <span className="panel-chip">מאושר</span>
+              </div>
               {state.sections.approved.items.length === 0 ? (
                 <p>{state.sections.approved.emptyMessage}</p>
               ) : (

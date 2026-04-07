@@ -72,7 +72,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setCustomers([])
       setSelectedCustomerId(null)
       setIsCustomersLoading(false)
-      setCustomersError('Your session is missing. Sign in again to continue.')
+      setCustomersError('הסשן חסר. התחברו מחדש כדי להמשיך.')
       return
     }
 
@@ -91,7 +91,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         return response.customers[0]?.customerId ?? null
       })
     } catch (error) {
-      setCustomersError(error instanceof Error ? error.message : 'Unable to load assigned customers.')
+      setCustomersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את רשימת הלקוחות.')
       setCustomers([])
       setSelectedCustomerId(null)
     } finally {
@@ -104,7 +104,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     async (customerId: string) => {
       if (!token) {
         setApprovedItems([])
-        setApprovedItemsError('Your session is missing. Sign in again to continue.')
+        setApprovedItemsError('הסשן חסר. התחברו מחדש כדי להמשיך.')
         return
       }
 
@@ -117,7 +117,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         setApprovedItems(response.items)
       } catch (error) {
         setApprovedItems([])
-        setApprovedItemsError(error instanceof Error ? error.message : 'Unable to load approved items.')
+        setApprovedItemsError(error instanceof Error ? error.message : 'לא הצלחנו לטעון פריטים מאושרים.')
       } finally {
         clearSlowState()
         setIsApprovedItemsLoading(false)
@@ -142,12 +142,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const submitApprovedItem = useCallback(async () => {
     if (!token) {
-      setAddError('Session expired. Please sign in again.')
+        setAddError('הסשן פג. התחברו מחדש.')
       return
     }
 
     if (!selectedCustomerId) {
-      setAddError('Select a customer before adding an approved item.')
+      setAddError('בחרו לקוח לפני הוספת פריט מאושר.')
       return
     }
 
@@ -162,10 +162,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setCustomers((current) => applyApprovedCountMutation(current, selectedCustomerId, mutation.created))
       setNewItemId('')
       setAddInfoMessage(
-        mutation.created ? 'Approved item added successfully.' : 'Item already existed in this customer list.',
+         mutation.created ? 'הפריט נוסף בהצלחה.' : 'הפריט כבר קיים ברשימת הלקוח.',
       )
     } catch (error) {
-      setAddError(error instanceof Error ? error.message : 'Unable to add approved item.')
+      setAddError(error instanceof Error ? error.message : 'לא הצלחנו להוסיף פריט מאושר.')
     } finally {
       clearSlowState()
       setIsAddingItem(false)
@@ -183,19 +183,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     await Clipboard.setStringAsync(pendingCopyLink)
-    setMagicLinkInfo('Link copied. Share it manually if WhatsApp is unavailable.')
+      setMagicLinkInfo('הקישור הועתק. ניתן לשלוח ידנית אם וואטסאפ לא זמין.')
     setMagicLinkError(null)
     setPendingCopyLink(null)
   }, [pendingCopyLink])
 
   const generateAndShareLink = useCallback(async () => {
     if (!token) {
-      setMagicLinkError('Session expired. Please sign in again.')
+      setMagicLinkError('הסשן פג. התחברו מחדש.')
       return
     }
 
     if (!selectedCustomerId) {
-      setMagicLinkError('Select a customer before generating a link.')
+      setMagicLinkError('בחרו לקוח לפני יצירת קישור.')
       return
     }
 
@@ -217,14 +217,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
       if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
         setPendingCopyLink(normalizedPayload.linkUrl)
-        setMagicLinkError('WhatsApp is unavailable on this device. Copy the link instead.')
+        setMagicLinkError('וואטסאפ לא זמין במכשיר הזה. העתיקו את הקישור במקום.')
         return
       }
 
       await Linking.openURL(deepLink)
-      setMagicLinkInfo('Magic link generated and ready to send in WhatsApp.')
+      setMagicLinkInfo('הקישור נוצר ומוכן לשליחה בוואטסאפ.')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to generate customer link.'
+      const message = error instanceof Error ? error.message : 'לא הצלחנו ליצור קישור ללקוח.'
       setMagicLinkError(message)
       setPendingCopyLink(
         shouldUseCopyLinkFallback(true, error)
@@ -240,8 +240,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Customer Dashboard</Text>
-          <Text style={styles.subtitle}>{profile ? `Signed in as ${profile.name}` : 'Signed in for field shift'}</Text>
+          <Text style={styles.title}>לוח לקוחות</Text>
+          <Text style={styles.subtitle}>{profile ? `מחובר/ת כעת: ${profile.name}` : 'מחובר/ת למשמרת השטח'}</Text>
         </View>
 
         <Pressable
@@ -251,12 +251,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           }}
           style={styles.secondaryButton}
         >
-          <Text style={styles.secondaryButtonText}>Logout</Text>
+          <Text style={styles.secondaryButtonText}>התנתקות</Text>
         </Pressable>
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Assigned customers</Text>
+        <Text style={styles.sectionTitle}>לקוחות משויכים</Text>
         <Pressable
           accessibilityRole="button"
           disabled={isCustomersLoading}
@@ -265,7 +265,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           }}
           style={({ pressed }) => [styles.linkButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
         >
-          <Text style={styles.linkButtonText}>{isCustomersLoading ? 'Syncing…' : 'Refresh'}</Text>
+          <Text style={styles.linkButtonText}>{isCustomersLoading ? 'מסנכרן…' : 'רענון'}</Text>
         </Pressable>
       </View>
 
@@ -278,11 +278,11 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       {isCustomersLoading && customers.length === 0 ? (
         <View style={styles.loadingState}>
           <ActivityIndicator />
-          <Text style={styles.mutedText}>Loading your customer assignments…</Text>
+          <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
         </View>
       ) : customers.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>No assigned customers yet.</Text>
+          <Text style={styles.mutedText}>אין עדיין לקוחות משויכים.</Text>
         </View>
       ) : (
         <ScrollView style={styles.customerList} contentContainerStyle={styles.customerListContent}>
@@ -305,7 +305,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               >
                 <Text style={styles.customerId}>{customer.customerId}</Text>
                 <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-                <Text style={styles.customerMeta}>Approved items: {customer.approvedItemsCount}</Text>
+                <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
               </Pressable>
             )
           })}
@@ -315,7 +315,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       <View style={styles.divider} />
 
       <View style={styles.addItemPanel}>
-        <Text style={styles.addItemTitle}>Share customer order link</Text>
+        <Text style={styles.addItemTitle}>שליחת קישור הזמנה ללקוח</Text>
         <Pressable
           accessibilityRole="button"
           disabled={isGeneratingLink || !selectedCustomer}
@@ -330,7 +330,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           {isGeneratingLink ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.primaryButtonText}>Generate & send via WhatsApp</Text>
+            <Text style={styles.primaryButtonText}>יצירה ושליחה דרך וואטסאפ</Text>
           )}
         </Pressable>
         {magicLinkError ? <Text style={styles.errorText}>{magicLinkError}</Text> : null}
@@ -343,12 +343,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             }}
             style={({ pressed }) => [styles.linkButton, pressed && styles.linkButtonDisabled]}
           >
-            <Text style={styles.linkButtonText}>Copy link fallback</Text>
+            <Text style={styles.linkButtonText}>העתקת קישור חלופי</Text>
           </Pressable>
         ) : null}
         {latestMagicLink ? (
           <Text style={styles.customerMeta}>
-            Expires {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · TTL {latestMagicLink.expiresInSeconds}s ·{' '}
+            פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · תוקף {latestMagicLink.expiresInSeconds} שנ׳ ·{' '}
             {latestMagicLink.lifecycle}
           </Text>
         ) : null}
@@ -357,7 +357,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       <View style={styles.divider} />
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Approved items</Text>
+        <Text style={styles.sectionTitle}>פריטים מאושרים</Text>
         {selectedCustomer ? <Text style={styles.sectionMeta}>{selectedCustomer.customerId}</Text> : null}
       </View>
 
@@ -369,23 +369,23 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
       {!selectedCustomer ? (
         <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>Select a customer to manage approved items.</Text>
+          <Text style={styles.mutedText}>בחרו לקוח כדי לנהל פריטים מאושרים.</Text>
         </View>
       ) : isApprovedItemsLoading ? (
         <View style={styles.loadingState}>
           <ActivityIndicator />
-          <Text style={styles.mutedText}>Loading approved items…</Text>
+          <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
         </View>
       ) : approvedItems.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>No approved items yet for this customer.</Text>
+          <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
         </View>
       ) : (
         <ScrollView style={styles.approvedItemsList} contentContainerStyle={styles.approvedItemsListContent}>
           {approvedItems.map((item) => (
             <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedItemRow}>
               <Text style={styles.approvedItemId}>{item.hashItemId}</Text>
-              <Text style={styles.approvedItemMeta}>Added by {item.addedByAgentId}</Text>
+              <Text style={styles.approvedItemMeta}>נוסף על ידי {item.addedByAgentId}</Text>
               <Text style={styles.approvedItemMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
             </View>
           ))}
@@ -393,13 +393,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       )}
 
       <View style={styles.addItemPanel}>
-        <Text style={styles.addItemTitle}>Add approved item</Text>
+        <Text style={styles.addItemTitle}>הוספת פריט מאושר</Text>
         <TextInput
           accessibilityLabel="Approved item ID"
           autoCapitalize="none"
           autoCorrect={false}
           editable={!isAddingItem}
-          placeholder="itm-123"
+          placeholder="מזהה פריט (לדוגמה itm-123)"
           value={newItemId}
           onChangeText={(value) => {
             setNewItemId(value)
@@ -429,7 +429,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             (pressed || isAddingItem || !selectedCustomer || !newItemId.trim()) && styles.primaryButtonDisabled,
           ]}
         >
-          {isAddingItem ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Add item</Text>}
+          {isAddingItem ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>הוספת פריט</Text>}
         </Pressable>
       </View>
     </View>
@@ -443,19 +443,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: palette.background,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   headerRow: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: palette.surface,
+    backgroundColor: palette.surfaceMid,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: palette.primaryContainer,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: palette.primary,
   },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: radius.md,
     backgroundColor: palette.surface,
-    padding: 12,
+    padding: 14,
     gap: 4,
     minHeight: touchTarget.comfortable,
     justifyContent: 'center',
@@ -559,10 +559,10 @@ const styles = StyleSheet.create({
   },
   addItemPanel: {
     marginTop: 2,
-    backgroundColor: palette.surfaceMid,
+    backgroundColor: palette.surfaceLow,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: 8,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   addItemTitle: {
     fontWeight: '700',
@@ -593,6 +593,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#fff',
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   secondaryButton: {
     borderRadius: radius.md,

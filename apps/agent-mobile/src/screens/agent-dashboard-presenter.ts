@@ -23,24 +23,24 @@ function normalizeLocalMagicLinkUrl(linkUrl: string): string {
 
 export function formatLastOrderLabel(lastOrderAt: string | null): string {
   if (!lastOrderAt) {
-    return 'No recent order'
+    return 'ללא הזמנה קודמת'
   }
 
   const parsed = Date.parse(lastOrderAt)
   if (Number.isNaN(parsed)) {
-    return 'Last order date unavailable'
+    return 'תאריך הזמנה אחרונה לא זמין'
   }
 
-  return `Last order ${new Date(parsed).toLocaleDateString()}`
+  return `הזמנה אחרונה ${new Date(parsed).toLocaleDateString('he-IL')}`
 }
 
 export function formatApprovedItemTimestamp(createdAt: string): string {
   const parsed = Date.parse(createdAt)
   if (Number.isNaN(parsed)) {
-    return 'Added recently'
+    return 'נוסף לאחרונה'
   }
 
-  return new Date(parsed).toLocaleString()
+  return new Date(parsed).toLocaleString('he-IL')
 }
 
 export function mergeApprovedItems(
@@ -76,7 +76,7 @@ export function getResilienceHint(isSlow: boolean, errorMessage: string | null):
   }
 
   if (isSlow) {
-    return 'Network is slower than usual. Keep this screen open while we sync.'
+    return 'הרשת איטית מהרגיל. השאירו את המסך פתוח בזמן הסנכרון.'
   }
 
   return null
@@ -85,14 +85,14 @@ export function getResilienceHint(isSlow: boolean, errorMessage: string | null):
 export function formatMagicLinkExpiry(expiresAt: string): string {
   const parsed = Date.parse(expiresAt)
   if (Number.isNaN(parsed)) {
-    return 'Expiry unavailable'
+    return 'מועד תפוגה לא זמין'
   }
 
-  return new Date(parsed).toLocaleString()
+  return new Date(parsed).toLocaleString('he-IL')
 }
 
 export function buildMagicLinkShareMessage(customerId: string, payload: AgentMagicLinkIssueResponse): string {
-  return `Hi! Here is your Meatland ordering link for ${customerId}: ${normalizeLocalMagicLinkUrl(payload.linkUrl)} (expires ${formatMagicLinkExpiry(payload.expiresAt)}).`
+  return `שלום, מצורף קישור ההזמנה שלך עבור לקוח ${customerId}: ${normalizeLocalMagicLinkUrl(payload.linkUrl)} (בתוקף עד ${formatMagicLinkExpiry(payload.expiresAt)}).`
 }
 
 export function normalizeMagicLinkForShare(payload: AgentMagicLinkIssueResponse): AgentMagicLinkIssueResponse {
