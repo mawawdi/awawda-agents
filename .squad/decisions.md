@@ -197,3 +197,19 @@ Portal users need deterministic recovery when ERP snapshots diverge and must nev
 
 **Consequences**
 Mismatch remediation is now user-visible and test-enforced (Vitest + Playwright), while submit retries preserve idempotency guarantees and post-success duplicate prevention without backend contract drift.
+
+---
+
+### 2026-04-07 — Decision Inbox: Orders Repository Idempotency Typing Stabilization (Parker)
+
+**Context**
+Main branch lint/build failed in `apps/api/src/orders/orders.repository.ts` because `idempotencyKey` delegate typings no longer exposed submit-idempotency fields used by reserve/replay/finalize persistence paths.
+
+**Decision**
+Keep idempotency semantics unchanged while replacing only the `idempotency_keys` reserve/replay/finalize operations in `PrismaOrdersRepository` with parameterized SQL (`$queryRaw`/`$executeRaw`), plus strict replay JSON shape parsing before returning replay payloads.
+
+**Rationale**
+This restores strict TypeScript compatibility without unsafe cast hacks and keeps the fix scoped to the orders repository persistence typing root cause.
+
+**Consequences**
+`pnpm lint`, `pnpm test`, and `pnpm build` pass from root again, and app-level test commands for API/customer-portal/agent-mobile remain green after the change.
