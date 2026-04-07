@@ -240,6 +240,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
+          <Text style={styles.brandEyebrow}>The Artisanal Ledger</Text>
           <Text style={styles.title}>לוח לקוחות</Text>
           <Text style={styles.subtitle}>{profile ? `מחובר/ת כעת: ${profile.name}` : 'מחובר/ת למשמרת השטח'}</Text>
         </View>
@@ -255,62 +256,69 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         </Pressable>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>לקוחות משויכים</Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isCustomersLoading}
-          onPress={() => {
-            void loadCustomers()
-          }}
-          style={({ pressed }) => [styles.linkButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
-        >
-          <Text style={styles.linkButtonText}>{isCustomersLoading ? 'מסנכרן…' : 'רענון'}</Text>
-        </Pressable>
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>לקוחות משויכים</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isCustomersLoading}
+            onPress={() => {
+              void loadCustomers()
+            }}
+            style={({ pressed }) => [styles.linkButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
+          >
+            <Text style={styles.linkButtonText}>{isCustomersLoading ? 'מסנכרן…' : 'רענון'}</Text>
+          </Pressable>
+        </View>
+
+        {getResilienceHint(isCustomersSlow, customersError) ? (
+          <Text style={customersError ? styles.errorBanner : styles.noticeBanner}>
+            {getResilienceHint(isCustomersSlow, customersError)}
+          </Text>
+        ) : null}
+
+        {isCustomersLoading && customers.length === 0 ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator />
+            <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
+          </View>
+        ) : customers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.mutedText}>אין עדיין לקוחות משויכים.</Text>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.customerList}
+            contentContainerStyle={styles.customerListContent}
+          >
+            {customers.map((customer) => {
+              const isSelected = customer.customerId === selectedCustomerId
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={customer.customerId}
+                  onPress={() => {
+                    setSelectedCustomerId(customer.customerId)
+                    setAddError(null)
+                    setAddInfoMessage(null)
+                  }}
+                  style={({ pressed }) => [
+                    styles.customerCard,
+                    isSelected && styles.customerCardSelected,
+                    pressed && styles.customerCardPressed,
+                  ]}
+                >
+                  <Text style={styles.customerId}>{customer.customerId}</Text>
+                  <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
+                  <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        )}
       </View>
-
-      {getResilienceHint(isCustomersSlow, customersError) ? (
-        <Text style={customersError ? styles.errorBanner : styles.noticeBanner}>
-          {getResilienceHint(isCustomersSlow, customersError)}
-        </Text>
-      ) : null}
-
-      {isCustomersLoading && customers.length === 0 ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator />
-          <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
-        </View>
-      ) : customers.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>אין עדיין לקוחות משויכים.</Text>
-        </View>
-      ) : (
-        <ScrollView style={styles.customerList} contentContainerStyle={styles.customerListContent}>
-          {customers.map((customer) => {
-            const isSelected = customer.customerId === selectedCustomerId
-            return (
-              <Pressable
-                accessibilityRole="button"
-                key={customer.customerId}
-                onPress={() => {
-                  setSelectedCustomerId(customer.customerId)
-                  setAddError(null)
-                  setAddInfoMessage(null)
-                }}
-                style={({ pressed }) => [
-                  styles.customerCard,
-                  isSelected && styles.customerCardSelected,
-                  pressed && styles.customerCardPressed,
-                ]}
-              >
-                <Text style={styles.customerId}>{customer.customerId}</Text>
-                <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-                <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
-              </Pressable>
-            )
-          })}
-        </ScrollView>
-      )}
 
       <View style={styles.divider} />
 
@@ -356,41 +364,43 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
       <View style={styles.divider} />
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>פריטים מאושרים</Text>
-        {selectedCustomer ? <Text style={styles.sectionMeta}>{selectedCustomer.customerId}</Text> : null}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>פריטים מאושרים</Text>
+          {selectedCustomer ? <Text style={styles.sectionMeta}>{selectedCustomer.customerId}</Text> : null}
+        </View>
+
+        {getResilienceHint(isApprovedItemsSlow, approvedItemsError) ? (
+          <Text style={approvedItemsError ? styles.errorBanner : styles.noticeBanner}>
+            {getResilienceHint(isApprovedItemsSlow, approvedItemsError)}
+          </Text>
+        ) : null}
+
+        {!selectedCustomer ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.mutedText}>בחרו לקוח כדי לנהל פריטים מאושרים.</Text>
+          </View>
+        ) : isApprovedItemsLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator />
+            <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
+          </View>
+        ) : approvedItems.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
+          </View>
+        ) : (
+          <ScrollView style={styles.approvedItemsList} contentContainerStyle={styles.approvedItemsListContent}>
+            {approvedItems.map((item) => (
+              <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedItemRow}>
+                <Text style={styles.approvedItemId}>{item.hashItemId}</Text>
+                <Text style={styles.approvedItemMeta}>נוסף על ידי {item.addedByAgentId}</Text>
+                <Text style={styles.approvedItemMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
-
-      {getResilienceHint(isApprovedItemsSlow, approvedItemsError) ? (
-        <Text style={approvedItemsError ? styles.errorBanner : styles.noticeBanner}>
-          {getResilienceHint(isApprovedItemsSlow, approvedItemsError)}
-        </Text>
-      ) : null}
-
-      {!selectedCustomer ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>בחרו לקוח כדי לנהל פריטים מאושרים.</Text>
-        </View>
-      ) : isApprovedItemsLoading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator />
-          <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
-        </View>
-      ) : approvedItems.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
-        </View>
-      ) : (
-        <ScrollView style={styles.approvedItemsList} contentContainerStyle={styles.approvedItemsListContent}>
-          {approvedItems.map((item) => (
-            <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedItemRow}>
-              <Text style={styles.approvedItemId}>{item.hashItemId}</Text>
-              <Text style={styles.approvedItemMeta}>נוסף על ידי {item.addedByAgentId}</Text>
-              <Text style={styles.approvedItemMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      )}
 
       <View style={styles.addItemPanel}>
         <Text style={styles.addItemTitle}>הוספת פריט מאושר</Text>
@@ -452,6 +462,18 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surfaceMid,
     borderRadius: radius.lg,
     padding: spacing.lg,
+    shadowColor: palette.secondary,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 2,
+  },
+  brandEyebrow: {
+    color: palette.secondary,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   title: {
     fontSize: 32,
@@ -468,7 +490,7 @@ const styles = StyleSheet.create({
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   sectionHeader: {
-    marginTop: 4,
+    marginTop: 2,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -481,6 +503,12 @@ const styles = StyleSheet.create({
   sectionMeta: {
     color: palette.secondary,
     fontWeight: '600',
+  },
+  sectionBlock: {
+    backgroundColor: palette.surfaceLow,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   mutedText: {
     color: palette.textMuted,
@@ -503,22 +531,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   customerList: {
-    maxHeight: 190,
+    maxHeight: 212,
   },
   customerListContent: {
-    gap: 8,
+    gap: spacing.md,
+    paddingHorizontal: 2,
   },
   customerCard: {
     borderWidth: 0,
     borderRadius: radius.md,
     backgroundColor: palette.surface,
     padding: 14,
-    gap: 4,
+    gap: spacing.xs,
+    width: 284,
     minHeight: touchTarget.comfortable,
     justifyContent: 'center',
+    shadowColor: palette.secondary,
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
   customerCardSelected: {
-    backgroundColor: palette.surfaceHighest,
+    backgroundColor: palette.primaryFixed,
   },
   customerCardPressed: {
     opacity: 0.85,
@@ -537,17 +572,22 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   approvedItemsList: {
-    maxHeight: 170,
+    maxHeight: 220,
   },
   approvedItemsListContent: {
-    gap: 8,
+    gap: spacing.sm,
   },
   approvedItemRow: {
     borderWidth: 0,
     borderRadius: radius.md,
     backgroundColor: palette.surface,
-    padding: 10,
-    gap: 2,
+    padding: 12,
+    gap: 3,
+    shadowColor: palette.secondary,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
   },
   approvedItemId: {
     fontWeight: '700',
@@ -586,6 +626,11 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.comfortable,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: palette.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
   primaryButtonDisabled: {
     opacity: 0.6,
