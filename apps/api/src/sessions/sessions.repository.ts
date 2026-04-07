@@ -3,6 +3,7 @@ import { AuditActorType, MagicLinkStatus, PrismaClient, SessionStatus } from '@p
 import type { CustomerApprovedItem } from '@meatland/shared-types';
 
 import type {
+  RecordActivationAttemptInput,
   CustomerSessionValidationResult,
   CustomerSessionsRepository,
   SessionActivationResult,
@@ -232,6 +233,29 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
     });
   }
 
+  async recordActivationAttempt(input: RecordActivationAttemptInput): Promise<void> {
+    const normalizedIp = normalizeAuditValue(input.clientIp, 64);
+    await this.prisma.auditLog.create({
+      data: {
+        actorType: AuditActorType.SYSTEM,
+        actorId: normalizeAuditValue(
+          input.customerId ? `customer:${input.customerId}` : `activation-ip:${normalizedIp}`,
+          128,
+        ),
+        eventType: 'customer_session.activation_attempt',
+        eventPayloadJson: {
+          tokenHash: input.tokenHash,
+          clientIp: normalizedIp,
+          outcome: input.outcome,
+          occurredAt: input.occurredAt.toISOString(),
+          ...(input.customerId === undefined ? {} : { customerId: input.customerId }),
+          ...(input.retryAfterSeconds === undefined ? {} : { retryAfterSeconds: input.retryAfterSeconds }),
+          ...(input.failureReason === undefined ? {} : { failureReason: input.failureReason }),
+        },
+      },
+    });
+  }
+
   async listApprovedItems(customerId: string): Promise<CustomerApprovedItem[]> {
     const items = await this.prisma.approvedItem.findMany({
       where: {
@@ -251,4 +275,13 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
       createdAt: item.createdAt.toISOString(),
     }));
   }
+}
+
+function normalizeAuditValue(value: string, maxLength: number): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return 'unknown';
+  }
+
+  return trimmed.length <= maxLength ? trimmed : trimmed.slice(0, maxLength);
 }

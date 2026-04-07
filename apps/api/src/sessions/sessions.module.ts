@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { AuthModule } from '../auth/auth.module';
 import { ErpModule } from '../erp/erp.module';
+import { ActivationRateLimiter } from './activation-rate-limiter';
 import { CustomerSessionAuthGuard } from './customer-session-auth.guard';
 import { JwtCustomerSessionTokenSigner } from './customer-session-token-signer';
 import { loadSessionsConfig } from './sessions.config';
@@ -17,6 +18,7 @@ import { SessionsService } from './sessions.service';
   providers: [
     PrismaClient,
     SessionsService,
+    ActivationRateLimiter,
     PrismaCustomerSessionsRepository,
     JwtCustomerSessionTokenSigner,
     CustomerSessionAuthGuard,

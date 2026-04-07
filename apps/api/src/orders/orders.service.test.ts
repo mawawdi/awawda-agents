@@ -51,6 +51,7 @@ describe('OrdersService', () => {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
       deactivateCustomerSession: vi.fn(),
+      recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([
         {
           hashItemId: 'item-1',
@@ -132,6 +133,7 @@ describe('OrdersService', () => {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
       deactivateCustomerSession: vi.fn(),
+      recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([]),
     };
 
@@ -195,6 +197,7 @@ describe('OrdersService', () => {
       activateMagicToken: vi.fn(),
       validateCustomerSession: vi.fn(),
       deactivateCustomerSession: vi.fn(),
+      recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn(),
     };
 
@@ -261,6 +264,7 @@ describe('OrdersService', () => {
         activateMagicToken: vi.fn(),
         validateCustomerSession: vi.fn(),
         deactivateCustomerSession: vi.fn(),
+        recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn(),
       },
       {
@@ -311,6 +315,7 @@ describe('OrdersService', () => {
         activateMagicToken: vi.fn(),
         validateCustomerSession: vi.fn(),
         deactivateCustomerSession: vi.fn(),
+        recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn().mockResolvedValue([]),
       },
       {

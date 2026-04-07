@@ -34,6 +34,11 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `CORS_ALLOWED_ORIGINS` (optional): comma-separated allowed origins for browser clients (defaults include `localhost:8080` and `localhost:8081`)
 - `API_BODY_LIMIT_BYTES` (optional): request body limit in bytes (`1048576` default)
 
+## Customer session activation guardrail env variables
+
+- `CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_BURST` (optional): max activation attempts per client IP in a single window (`5` default)
+- `CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_WINDOW_SECONDS` (optional): rolling window length for activation rate limiting (`60` default)
+
 ## Catalog environment variables
 
 - `CATALOG_CACHE_TTL_SECONDS` (optional): API catalog cache max-age in seconds (`300` default)

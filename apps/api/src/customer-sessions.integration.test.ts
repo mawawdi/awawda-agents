@@ -12,11 +12,15 @@ describe('Customer session endpoints', () => {
   const originalJwtSecret = process.env.JWT_SECRET;
   const originalJwtIssuer = process.env.JWT_ISSUER;
   const originalSessionTtl = process.env.CUSTOMER_SESSION_TOKEN_TTL;
+  const originalActivationRateLimitBurst = process.env.CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_BURST;
+  const originalActivationRateLimitWindowSeconds = process.env.CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_WINDOW_SECONDS;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = 'integration-test-secret';
     process.env.JWT_ISSUER = 'integration-suite';
     process.env.CUSTOMER_SESSION_TOKEN_TTL = '2h';
+    process.env.CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_BURST = '2';
+    process.env.CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_WINDOW_SECONDS = '1';
 
     app = await createApiApp();
     await app.init();
@@ -25,6 +29,8 @@ describe('Customer session endpoints', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    const repository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    vi.spyOn(repository, 'recordActivationAttempt').mockResolvedValue(undefined);
   });
 
   afterAll(async () => {
@@ -32,6 +38,8 @@ describe('Customer session endpoints', () => {
     restoreEnv('JWT_SECRET', originalJwtSecret);
     restoreEnv('JWT_ISSUER', originalJwtIssuer);
     restoreEnv('CUSTOMER_SESSION_TOKEN_TTL', originalSessionTtl);
+    restoreEnv('CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_BURST', originalActivationRateLimitBurst);
+    restoreEnv('CUSTOMER_SESSION_ACTIVATION_RATE_LIMIT_WINDOW_SECONDS', originalActivationRateLimitWindowSeconds);
   });
 
   it('activates valid token and returns portal payload contract', async () => {
@@ -78,6 +86,9 @@ describe('Customer session endpoints', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '198.51.100.10',
+      },
       payload: {
         token: 'plain-token',
       },
@@ -118,6 +129,9 @@ describe('Customer session endpoints', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '198.51.100.11',
+      },
       payload: {
         token: 'bad-token',
       },
@@ -137,6 +151,9 @@ describe('Customer session endpoints', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '198.51.100.12',
+      },
       payload: {
         token: 'expired-token',
       },
@@ -286,6 +303,107 @@ describe('Customer session endpoints', () => {
       code: 'AUTH_CUSTOMER_SESSION_TOKEN_INVALID',
       message: 'Customer session token is invalid',
     });
+  });
+
+  it('throttles repeated activation attempts from the same IP with stable 429 payload', async () => {
+    const repository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    vi.spyOn(repository, 'activateMagicToken').mockResolvedValue({ kind: 'invalid' });
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.77',
+      },
+      payload: {
+        token: 'invalid-1',
+      },
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.77',
+      },
+      payload: {
+        token: 'invalid-2',
+      },
+    });
+    const third = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.77',
+      },
+      payload: {
+        token: 'invalid-3',
+      },
+    });
+
+    expect(first.statusCode).toBe(401);
+    expect(second.statusCode).toBe(401);
+    expect(third.statusCode).toBe(429);
+    expect(third.json()).toEqual({
+      code: 'CUSTOMER_SESSION_ACTIVATION_RATE_LIMITED',
+      message: 'Too many activation attempts. Try again later.',
+      retryAfterSeconds: 1,
+    });
+  });
+
+  it('allows activation attempts again after the rate-limit window resets', async () => {
+    const repository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
+    vi.spyOn(repository, 'activateMagicToken').mockResolvedValue({ kind: 'invalid' });
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.88',
+      },
+      payload: {
+        token: 'invalid-1',
+      },
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.88',
+      },
+      payload: {
+        token: 'invalid-2',
+      },
+    });
+    const throttled = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.88',
+      },
+      payload: {
+        token: 'invalid-3',
+      },
+    });
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 1_100);
+    });
+
+    const afterWindowReset = await app.inject({
+      method: 'POST',
+      url: '/v1/customer/sessions/activate',
+      headers: {
+        'x-forwarded-for': '203.0.113.88',
+      },
+      payload: {
+        token: 'invalid-4',
+      },
+    });
+
+    expect(first.statusCode).toBe(401);
+    expect(second.statusCode).toBe(401);
+    expect(throttled.statusCode).toBe(429);
+    expect(afterWindowReset.statusCode).toBe(401);
   });
 });
 

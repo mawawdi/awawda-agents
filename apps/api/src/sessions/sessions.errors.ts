@@ -59,3 +59,16 @@ export class CustomerSessionExpiredError extends HttpException {
     );
   }
 }
+
+export class CustomerActivationRateLimitedError extends HttpException {
+  constructor(retryAfterSeconds: number) {
+    super(
+      {
+        code: 'CUSTOMER_SESSION_ACTIVATION_RATE_LIMITED',
+        message: 'Too many activation attempts. Try again later.',
+        retryAfterSeconds,
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+}

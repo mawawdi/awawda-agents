@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Req, UseGuards } from '@nestjs/common';
 import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@meatland/shared-types';
 
 import { CustomerSessionAuthGuard } from './customer-session-auth.guard';
@@ -13,8 +13,16 @@ export class SessionsController {
   @HttpCode(200)
   activateSession(
     @Body() activationRequest: CustomerSessionActivationDto,
+    @Req()
+    request: {
+      ip?: string;
+      headers: Record<string, string | string[] | undefined>;
+    },
   ): Promise<CustomerSessionActivateResponse> {
-    return this.sessionsService.activateSession(activationRequest.token);
+    return this.sessionsService.activateSession(
+      activationRequest.token,
+      resolveClientIp(request),
+    );
   }
 
   @Get('portal-data')
@@ -35,4 +43,23 @@ export class SessionsController {
   ): Promise<void> {
     await this.sessionsService.logoutSession(customerSessionId, customerId);
   }
+}
+
+function resolveClientIp(request: { ip?: string; headers: Record<string, string | string[] | undefined> }): string {
+  const forwardedForHeader = request.headers['x-forwarded-for'];
+  const forwardedForValue = Array.isArray(forwardedForHeader) ? forwardedForHeader[0] : forwardedForHeader;
+  if (forwardedForValue) {
+    const [firstIp] = forwardedForValue.split(',');
+    if (firstIp && firstIp.trim().length > 0) {
+      return firstIp.trim();
+    }
+  }
+
+  const realIpHeader = request.headers['x-real-ip'];
+  const realIpValue = Array.isArray(realIpHeader) ? realIpHeader[0] : realIpHeader;
+  if (realIpValue && realIpValue.trim().length > 0) {
+    return realIpValue.trim();
+  }
+
+  return request.ip ?? 'unknown';
 }
