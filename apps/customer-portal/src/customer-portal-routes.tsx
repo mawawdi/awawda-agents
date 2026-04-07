@@ -162,12 +162,12 @@ function ActivationRoute({
 
   if (state.status === 'error') {
     return (
-      <main className="status-screen">
+      <main className="status-screen" dir="rtl" lang="he">
         <section className="status-card" data-kind="error">
-          <h1>Activation failed</h1>
+          <h1>הפעלת הקישור נכשלה</h1>
           <p>{state.message}</p>
           <button onClick={() => setState(createActivationIdleState(token))} type="button">
-            Retry activation
+            נסו להפעיל שוב
           </button>
         </section>
       </main>
@@ -176,22 +176,22 @@ function ActivationRoute({
 
   if (state.status === 'ready') {
     return (
-      <main className="status-screen">
+      <main className="status-screen" dir="rtl" lang="he">
         <section className="status-card" data-kind="ready">
-          <h1>Opening your order…</h1>
-          <p>Your secure session is ready.</p>
+          <h1>פותחים את ההזמנה שלך…</h1>
+          <p>הסשן המאובטח מוכן.</p>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="status-screen">
+    <main className="status-screen" dir="rtl" lang="he">
       <section className="status-card" data-kind="loading">
-        <h1>Activating your order link…</h1>
-        <p>Please wait while we load your account.</p>
+        <h1>מפעילים את קישור ההזמנה…</h1>
+        <p>טוענים את פרטי החשבון שלך, רגע.</p>
         {state.status === 'activating' && state.weakNetworkHint ? (
-          <p data-testid="activation-weak-network">Slow network detected. Keep this page open.</p>
+          <p data-testid="activation-weak-network">זוהתה רשת איטית. השאירו את העמוד פתוח.</p>
         ) : null}
       </section>
     </main>
@@ -224,7 +224,7 @@ function OrderRoute({
   const loadPortalData = useCallback(
     async (preservedQuantities: Record<string, number> = {}): Promise<void> => {
       if (!session) {
-        setState(createOrderErrorState('Session missing. Open your magic link again.'));
+        setState(createOrderErrorState('הסשן לא נמצא. פתחו שוב את קישור ההזמנה.'));
         return;
       }
 
@@ -262,7 +262,7 @@ function OrderRoute({
 
   useEffect(() => {
     if (!session) {
-      setState(createOrderErrorState('Session missing. Open your magic link again.'));
+      setState(createOrderErrorState('הסשן לא נמצא. פתחו שוב את קישור ההזמנה.'));
       return;
     }
 
@@ -335,12 +335,12 @@ function OrderRoute({
     });
 
     if (submitLines.some((line) => line === null)) {
-      setSubmitState(markSubmitError('Some lines are missing pricing. Refresh prices and try again.'));
+      setSubmitState(markSubmitError('לחלק מהשורות חסר מחיר. רעננו מחירים ונסו שוב.'));
       return;
     }
 
     if (submitLines.length === 0) {
-      setSubmitState(markSubmitError('Add at least one item before submitting.'));
+      setSubmitState(markSubmitError('צריך להוסיף לפחות פריט אחד לפני השליחה.'));
       return;
     }
 
@@ -413,13 +413,13 @@ function OrderRoute({
 
   if (state.status === 'loading') {
     return (
-      <main className="status-screen">
+      <main className="status-screen" dir="rtl" lang="he">
         <section className="status-card" data-kind="loading">
-          <h1>Loading order page…</h1>
+          <h1>טוענים את עמוד ההזמנה…</h1>
           {state.weakNetworkHint ? (
-            <p data-testid="order-weak-network">Network is slow. Content will appear soon.</p>
+            <p data-testid="order-weak-network">הרשת איטית. התוכן יופיע מיד.</p>
           ) : (
-            <p>Preparing your latest prices and approved items.</p>
+            <p>מכינים את המחירים המעודכנים והקטלוג המאושר.</p>
           )}
         </section>
       </main>
@@ -428,9 +428,9 @@ function OrderRoute({
 
   if (state.status === 'error') {
     return (
-      <main className="status-screen">
+      <main className="status-screen" dir="rtl" lang="he">
         <section className="status-card" data-kind="error">
-          <h1>Could not load your order</h1>
+          <h1>לא הצלחנו לטעון את ההזמנה</h1>
           <p>{state.message}</p>
         </section>
       </main>
@@ -439,15 +439,19 @@ function OrderRoute({
 
   const renderItem = (item: OrderSectionItem): ReactElement => (
     <li className="item-card" key={item.itemId}>
-      <h3 className="item-title">{item.name}</h3>
-      <p className="item-pricing">
-        {item.unitPrice === null
-          ? 'Price unavailable'
-          : `${formatCurrency(item.currency, item.unitPrice)} / unit`}
-      </p>
+        <h3 className="item-title">{item.name}</h3>
+        <p className="item-pricing">
+          {item.unitPrice === null
+            ? 'המחיר לא זמין'
+            : (
+              <>
+                <bdi dir="ltr">{formatCurrency(item.currency, item.unitPrice)}</bdi> / יחידה
+              </>
+            )}
+        </p>
       <div className="qty-row">
         <button
-          aria-label={`Decrease ${item.name}`}
+          aria-label={`הקטנת כמות ${item.name}`}
           className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'decrement')}
@@ -456,7 +460,7 @@ function OrderRoute({
           −
         </button>
         <input
-          aria-label={`Quantity ${item.name}`}
+          aria-label={`כמות ${item.name}`}
           className="qty-input"
           disabled={state.isSubmitting || submitState.status === 'success'}
           inputMode="numeric"
@@ -465,7 +469,7 @@ function OrderRoute({
           value={item.quantity}
         />
         <button
-          aria-label={`Increase ${item.name}`}
+          aria-label={`הגדלת כמות ${item.name}`}
           className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'increment')}
@@ -478,16 +482,18 @@ function OrderRoute({
   );
 
   return (
-    <main className="portal-shell">
+    <main className="portal-shell" data-testid="portal-shell" dir="rtl" lang="he">
       <div className="portal-frame">
         <header className="portal-header">
           <div>
-            <h1 className="portal-brand">Compose order</h1>
-            <p className="portal-meta">Customer: {session?.customerId ?? 'Unknown customer'} · Session secured</p>
+            <h1 className="portal-brand" data-testid="portal-heading">קטלוג מובחר</h1>
+            <p className="portal-meta">
+              לקוח: <bdi dir="ltr">{session?.customerId ?? 'unknown-customer'}</bdi> · סשן מאובטח
+            </p>
           </div>
           <div className="portal-header-actions">
             <span className="layout-badge" data-testid="layout-state">
-              Layout: {state.layout}
+              תצוגה: {state.layout === 'mobile' ? 'מובייל' : 'דסקטופ'}
             </span>
             <button
               className="ghost-action"
@@ -495,7 +501,7 @@ function OrderRoute({
               onClick={() => void handleLogout()}
               type="button"
             >
-              {isLoggingOut ? 'Closing session…' : 'Logout session'}
+              {isLoggingOut ? 'סוגרים סשן…' : 'התנתקות מהסשן'}
             </button>
           </div>
         </header>
@@ -522,20 +528,25 @@ function OrderRoute({
           </section>
 
           <aside className="portal-column">
-            <section aria-label="Cart summary" className="summary-card">
-              <h2>Cart summary</h2>
+            <section aria-label="סיכום הזמנה" className="summary-card">
+              <h2>סיכום הזמנה ואישור</h2>
               <div className="summary-line">
-                <span>Total units: {state.cart.totalUnits}</span>
+                <span>סה״כ יחידות: {state.cart.totalUnits}</span>
               </div>
               <div className="summary-line summary-total">
-                <span>Estimated total: {state.cart.estimatedTotal.toFixed(2)}</span>
+                <span>
+                  סה״כ משוער: <bdi dir="ltr">{state.cart.estimatedTotal.toFixed(2)}</bdi>
+                </span>
               </div>
               <div className="summary-line summary-total">
-                <span>Estimated total ({state.cart.currency ?? 'N/A'}): {formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</span>
+                <span>
+                  סה״כ משוער ({state.cart.currency ? <bdi dir="ltr">{state.cart.currency}</bdi> : 'לא זמין'}):{' '}
+                  <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
+                </span>
               </div>
               <p>{state.submitBar.summaryLabel}</p>
               <p className="summary-microcopy">
-                Final invoice reflects exact shipped weight for variable-weight products.
+                כפוף לשקילה סופית (משקל משתנה).
               </p>
               {state.cart.lines.length > 0 ? (
                 <ul className="summary-lines">
@@ -543,10 +554,10 @@ function OrderRoute({
                     <li className="summary-line" key={line.itemId}>
                       <span>{line.name}</span>
                       <span>
-                        {line.quantity} ·{' '}
+                        <bdi dir="ltr">{line.quantity}</bdi> ·{' '}
                         {line.lineEstimate === null
-                          ? 'Pending'
-                          : formatCurrency(line.currency, line.lineEstimate)}
+                          ? 'ממתין'
+                          : <bdi dir="ltr">{formatCurrency(line.currency, line.lineEstimate)}</bdi>}
                       </span>
                     </li>
                   ))}
@@ -556,21 +567,21 @@ function OrderRoute({
 
             {submitState.status === 'mismatch' ? (
               <section aria-live="polite" className="feedback" data-kind="mismatch" data-testid="submit-mismatch">
-                <h2>Prices changed before submission</h2>
-                <p>Review the highlighted lines, then refresh prices or reconfirm your order.</p>
+                <h2>המחירים השתנו לפני השליחה</h2>
+                <p>בדקו את השורות שסומנו, ואז רעננו מחירים או אשרו מחדש את ההזמנה.</p>
                 <ul>
                   {submitState.lines.map((line) => (
                     <li key={`${line.itemId}-${line.lineIndex}`}>
-                      {line.itemId}: {line.reason}
+                      <bdi dir="ltr">{line.itemId}</bdi>: {line.reason}
                     </li>
                   ))}
                 </ul>
                 <div className="feedback-actions">
                   <button onClick={() => void refreshAfterMismatch()} type="button">
-                    Refresh prices
+                    רענון מחירים
                   </button>
                   <button onClick={() => void handleSubmit(true)} type="button">
-                    Reconfirm and submit
+                    אישור מחדש ושליחה
                   </button>
                 </div>
               </section>
@@ -578,16 +589,23 @@ function OrderRoute({
 
             {submitState.status === 'error' ? (
               <section aria-live="polite" className="feedback" data-kind="error" data-testid="submit-error">
-                <h2>Submission failed</h2>
+                <h2>שליחת ההזמנה נכשלה</h2>
                 <p>{submitState.message}</p>
+                <div className="feedback-actions">
+                  <button onClick={() => void handleSubmit()} type="button">
+                    נסו לשלוח שוב
+                  </button>
+                </div>
               </section>
             ) : null}
 
             {submitState.status === 'success' ? (
               <section aria-live="polite" className="feedback" data-kind="success" data-testid="submit-success">
-                <h2>Order submitted successfully</h2>
-                <p>Reference: {submitState.orderRef}</p>
-                <p>This order is confirmed. Duplicate submissions are disabled.</p>
+                <h2>ההזמנה נשלחה בהצלחה</h2>
+                <p>
+                  אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi>
+                </p>
+                <p>ההזמנה אושרה. שליחה כפולה חסומה.</p>
               </section>
             ) : null}
           </aside>
@@ -622,24 +640,28 @@ function toActivationErrorReason(error: unknown): 'invalid_token' | 'expired_tok
 
 function toOrderErrorMessage(error: unknown): string {
   if (error instanceof PortalApiError && error.kind === 'network') {
-    return 'Connection is unstable. Check your signal and retry.';
+    return 'החיבור לא יציב. בדקו קליטה ונסו שוב.';
   }
 
-  return 'Unable to load order data right now. Please retry in a moment.';
+  return 'לא ניתן לטעון את נתוני ההזמנה כרגע. נסו שוב בעוד רגע.';
 }
 
 function toOrderSubmitErrorMessage(error: unknown): string {
   if (error instanceof PortalApiError) {
     if (error.kind === 'network') {
-      return 'Connection dropped while submitting. Retry to confirm your order status.';
+      return 'החיבור נותק בזמן השליחה. נסו שוב כדי לאשר את סטטוס ההזמנה.';
+    }
+
+    if (error.kind === 'erp_unavailable') {
+      return 'ההזמנות זמנית לא זמינות בגלל תקלה ב-ERP. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".';
     }
 
     if (error.kind === 'idempotency_conflict') {
-      return 'Submission key expired. Please review your cart and submit again.';
+      return 'מפתח השליחה פג תוקף. בדקו את הסל ושלחו שוב.';
     }
   }
 
-  return 'Could not submit order right now. Please try again.';
+  return 'לא ניתן לשלוח הזמנה כרגע. נסו שוב.';
 }
 
 function formatCurrency(currency: string | null, amount: number): string {

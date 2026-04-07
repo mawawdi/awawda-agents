@@ -11,6 +11,7 @@ export type PortalRequestFailure =
   | 'expired_token'
   | 'network'
   | 'server'
+  | 'erp_unavailable'
   | 'order_mismatch'
   | 'idempotency_conflict';
 
@@ -110,6 +111,12 @@ export class PortalApiClient {
           throw new PortalApiError('expired_token', 'Customer session expired');
         }
         throw new PortalApiError('invalid_token', 'Customer session token invalid');
+      }
+      if (response.status === 503) {
+        const errorCode = await this.readErrorCode(response);
+        if (errorCode === 'CUSTOMER_ORDER_ERP_UNAVAILABLE') {
+          throw new PortalApiError('erp_unavailable', 'ERP is temporarily unavailable for order submission');
+        }
       }
       throw new PortalApiError('server', 'Order submit request failed');
     }

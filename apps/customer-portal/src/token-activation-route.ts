@@ -125,12 +125,12 @@ export function markActivationError(
 function activationErrorMessage(reason: ActivationErrorReason): string {
   switch (reason) {
     case 'invalid_token':
-      return 'This activation link is invalid. Request a new link from your sales rep.';
+      return 'קישור ההפעלה לא תקין. בקשו קישור חדש מנציג המכירות שלכם.';
     case 'expired_token':
-      return 'This activation link has expired. Request a fresh link to continue.';
+      return 'תוקף קישור ההפעלה פג. בקשו קישור חדש כדי להמשיך.';
     case 'network':
-      return 'Connection is unstable. Check your signal and retry.';
+      return 'החיבור לא יציב. בדקו קליטה ונסו שוב.';
     case 'server':
-      return 'We could not open your order right now. Please try again shortly.';
+      return 'לא הצלחנו לפתוח את ההזמנה כרגע. נסו שוב בעוד רגע.';
   }
 }

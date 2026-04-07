@@ -67,7 +67,7 @@ describe('token activation bootstrap state', () => {
       canRetry: true,
       weakNetworkHint: true,
       reason: 'network',
-      message: 'Connection is unstable. Check your signal and retry.',
+      message: 'החיבור לא יציב. בדקו קליטה ונסו שוב.',
     });
   });
 });

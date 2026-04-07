@@ -69,20 +69,22 @@ describe('customer portal runtime routes', () => {
 
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-abc');
 
-    expect(screen.getByRole('heading', { name: 'Activating your order link…' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'מפעילים את קישור ההזמנה…' })).toBeTruthy();
 
     await waitFor(() => {
-      expect(screen.getByTestId('activation-weak-network').textContent).toContain('Slow network detected');
+      expect(screen.getByTestId('activation-weak-network').textContent).toContain('זוהתה רשת איטית');
     });
 
     activationDeferred.resolve(activationResponse);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
-    expect(screen.getByText('Recent items')).toBeTruthy();
-    expect(screen.getByText('Approved by your rep')).toBeTruthy();
-    expect(screen.getByTestId('layout-state').textContent).toContain('mobile');
+    expect(screen.getByText('הנתחים הקבועים שלכם')).toBeTruthy();
+    expect(screen.getByText('קטלוג מאושר')).toBeTruthy();
+    expect(screen.getByTestId('layout-state').textContent).toContain('מובייל');
+    expect(screen.getByTestId('portal-shell').getAttribute('dir')).toBe('rtl');
+    expect(screen.getByTestId('portal-shell').getAttribute('lang')).toBe('he');
     expect(activateSession).toHaveBeenCalledWith('token-abc');
   });
 
@@ -94,7 +96,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m?token=token-query-123');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-query-123');
@@ -112,7 +114,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-storage-fallback');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-storage-fallback');
@@ -135,13 +137,13 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder, logoutSession }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Logout session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'התנתקות מהסשן' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Activation failed' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'הפעלת הקישור נכשלה' })).toBeTruthy();
     });
     expect(logoutSession).toHaveBeenCalledWith('session-123');
   });
@@ -161,18 +163,21 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Increase Ribeye Steak' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Increase Approved item item-2' }));
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות פריט מאושר item-2' }));
 
-    expect(screen.getByText('Total units: 2')).toBeTruthy();
-    expect(screen.getByText('Estimated total: 92.50')).toBeTruthy();
+    expect(screen.getByText('סה״כ יחידות: 2')).toBeTruthy();
+    expect(
+      screen.getAllByText((_, element) => element?.textContent?.includes('סה״כ משוער: 92.50') ?? false)
+        .length,
+    ).toBeGreaterThan(0);
 
     const stickyBar = screen.getByTestId('sticky-submit-bar');
-    expect(stickyBar.textContent).toContain('Estimated total ₪92.50');
-    expect(stickyBar.textContent).toContain('Submit order (2 units)');
+    expect(stickyBar.textContent).toContain('סה"כ משוער ₪92.50');
+    expect(stickyBar.textContent).toContain('שליחת הזמנה למפעל (2 יחידות)');
   });
 
   it('shows weak-network then resilient error state on /order load failure', async () => {
@@ -191,14 +196,14 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('order-weak-network').textContent).toContain('Network is slow');
+      expect(screen.getByTestId('order-weak-network').textContent).toContain('הרשת איטית');
     });
 
     loadDeferred.reject(new Error('offline'));
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Could not load your order' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'לא הצלחנו לטעון את ההזמנה' })).toBeTruthy();
     });
-    expect(screen.getByText('Unable to load order data right now. Please retry in a moment.')).toBeTruthy();
+    expect(screen.getByText('לא ניתן לטעון את נתוני ההזמנה כרגע. נסו שוב בעוד רגע.')).toBeTruthy();
   });
 
   it('clears stale session and routes to activation when portal token is rejected', async () => {
@@ -218,7 +223,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Activation failed' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'הפעלת הקישור נכשלה' })).toBeTruthy();
     });
     expect(getPortalData).toHaveBeenCalledTimes(1);
   });
@@ -263,14 +268,14 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Increase Ribeye Steak' }));
-    const submitButton = screen.getByRole('button', { name: 'Submit order (1 units)' });
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
+    const submitButton = screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' });
 
     await userEvent.click(submitButton);
-    expect(screen.getByRole('button', { name: 'Submitting order…' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'שולחים הזמנה…' }).hasAttribute('disabled')).toBe(true);
 
     submitDeferred.reject(mismatchError);
 
@@ -279,7 +284,7 @@ describe('customer portal runtime routes', () => {
     });
 
     expect(screen.getByTestId('submit-mismatch').textContent).toContain('ERP unit price changed from 42.50 to 49.90');
-    await userEvent.click(screen.getByRole('button', { name: 'Reconfirm and submit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'אישור מחדש ושליחה' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('submit-success')).toBeTruthy();
@@ -288,6 +293,53 @@ describe('customer portal runtime routes', () => {
     expect(submitOrder).toHaveBeenCalledTimes(2);
     const reconfirmRequest = submitOrder.mock.calls[1][2];
     expect(reconfirmRequest.lines[0].clientUnitPrice).toBe(49.9);
+  });
+
+  it('shows ERP outage guidance and supports retrying submit without reloading', async () => {
+    __setPortalSessionForTests({
+      sessionToken: 'session-123',
+      customerId: 'cust-1',
+      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      payload: portalDataResponse,
+    });
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi
+      .fn<(sessionToken: string, idempotencyKey: string, request: CustomerOrderSubmitRequest) => Promise<CustomerOrderSubmitResponse>>()
+      .mockRejectedValueOnce(new PortalApiError('erp_unavailable', 'ERP down'))
+      .mockResolvedValueOnce({
+        orderId: 'order-1',
+        orderRef: 'ORD-2026-00999',
+        status: 'submitted',
+      });
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-error')).toBeTruthy();
+    });
+    expect(screen.getByTestId('submit-error').textContent).toContain(
+      'ההזמנות זמנית לא זמינות בגלל תקלה ב-ERP. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".',
+    );
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(false);
+
+    await userEvent.click(screen.getByRole('button', { name: 'נסו לשלוח שוב' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-success')).toBeTruthy();
+    });
+    expect(screen.getByTestId('submit-success').querySelector('bdi')?.getAttribute('dir')).toBe('ltr');
+
+    expect(getPortalData).toHaveBeenCalledTimes(1);
+    expect(submitOrder).toHaveBeenCalledTimes(2);
   });
 
   it('prevents duplicate submit action after success confirmation', async () => {
@@ -309,20 +361,20 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Compose order' })).toBeTruthy();
+      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Increase Ribeye Steak' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Submit order (1 units)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('submit-success')).toBeTruthy();
     });
 
-    expect(screen.getByRole('button', { name: 'Submit order (1 units)' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: 'Increase Ribeye Steak' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }).hasAttribute('disabled')).toBe(true);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Submit order (1 units)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
     expect(submitOrder).toHaveBeenCalledTimes(1);
   });
 });

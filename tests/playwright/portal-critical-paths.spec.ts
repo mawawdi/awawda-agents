@@ -141,23 +141,87 @@ test.describe('customer portal browser critical paths', () => {
     expect(activationRequestToken).toBe('token-abc');
     expect(activationCallCount).toBe(1);
     expect(portalDataCallCount).toBeGreaterThan(0);
-    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
+    await expect(page.getByTestId('portal-heading')).toContainText('קטלוג');
+    await expect(page.getByTestId('portal-shell')).toHaveAttribute('dir', 'rtl');
+    await expect(page.getByTestId('portal-shell')).toHaveAttribute('lang', 'he');
 
-    await page.getByRole('button', { name: 'Increase Ribeye Steak' }).click();
-    await expect(page.getByText('Total units: 1')).toBeVisible();
-    await expect(page.getByText('Estimated total: 42.50')).toBeVisible();
+    await page.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }).click();
+    await expect(page.getByText('סה״כ יחידות: 1')).toBeVisible();
+    await expect(page.getByLabel('סיכום הזמנה')).toContainText('42.50');
 
-    await page.getByRole('button', { name: 'Submit order (1 units)' }).click();
+    await page.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).click();
     await expect(page.getByTestId('submit-mismatch')).toContainText('ERP unit price changed from 42.50 to 49.90');
 
-    await page.getByRole('button', { name: 'Reconfirm and submit' }).click();
-    await expect(page.getByTestId('submit-success')).toContainText('Reference: ORD-2026-00077');
-    await expect(page.getByRole('button', { name: 'Submit order (1 units)' })).toBeDisabled();
+    await page.getByRole('button', { name: 'אישור מחדש ושליחה' }).click();
+    await expect(page.getByTestId('submit-success')).toContainText('אסמכתא: ORD-2026-00077');
+    await expect(page.locator('[data-testid="submit-success"] bdi')).toHaveAttribute('dir', 'ltr');
+    await expect(page.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' })).toBeDisabled();
 
     expect(submitCallCount).toBe(2);
     expect(idempotencyKeys[0]).toBeTruthy();
     expect(idempotencyKeys[1]).toBeTruthy();
     expect(idempotencyKeys[0]).not.toBe(idempotencyKeys[1]);
+  });
+
+  test('submit shows ERP outage guidance and allows retry without reload', async ({ page }) => {
+    let submitCallCount = 0;
+
+    await page.route('**/v1/customer/sessions/activate', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(activationResponse),
+      });
+    });
+
+    await page.route('**/v1/customer/portal-data', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(portalDataResponse),
+      });
+    });
+
+    await page.route('**/v1/customer/orders', async (route) => {
+      submitCallCount += 1;
+
+      if (submitCallCount === 1) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE' }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          orderId: 'order-78',
+          orderRef: 'ORD-2026-00078',
+          status: 'submitted',
+        }),
+      });
+    });
+
+    await page.goto(`${portalBaseUrl}/m/token-erp-outage`);
+    await expect(page).toHaveURL(`${portalBaseUrl}/order`);
+    await expect(page.getByTestId('portal-heading')).toContainText('קטלוג');
+
+    await page.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }).click();
+    await page.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).click();
+
+    await expect(page.getByTestId('submit-error')).toContainText(
+      'ההזמנות זמנית לא זמינות בגלל תקלה ב-ERP. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".',
+    );
+    await expect(page.getByRole('button', { name: 'נסו לשלוח שוב' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'נסו לשלוח שוב' }).click();
+
+    await expect(page.getByTestId('submit-success')).toContainText('אסמכתא: ORD-2026-00078');
+    expect(submitCallCount).toBe(2);
   });
 
   test('activation route accepts query-token links', async ({ page }) => {
@@ -183,7 +247,7 @@ test.describe('customer portal browser critical paths', () => {
     await page.goto(`${portalBaseUrl}/m?token=query-token-123`);
 
     await expect(page).toHaveURL(`${portalBaseUrl}/order`);
-    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
+    await expect(page.getByTestId('portal-heading')).toContainText('קטלוג');
     expect(activationRequestToken).toBe('query-token-123');
   });
 
@@ -208,9 +272,9 @@ test.describe('customer portal browser critical paths', () => {
 
     await page.goto(`${portalBaseUrl}/order`);
 
-    await expect(page.getByTestId('order-weak-network')).toContainText('Network is slow');
-    await expect(page.getByRole('heading', { name: 'Could not load your order' })).toBeVisible();
-    await expect(page.getByText('Unable to load order data right now. Please retry in a moment.')).toBeVisible();
+    await expect(page.getByTestId('order-weak-network')).toContainText('הרשת איטית');
+    await expect(page.getByRole('heading', { name: 'לא הצלחנו לטעון את ההזמנה' })).toBeVisible();
+    await expect(page.getByText('לא ניתן לטעון את נתוני ההזמנה כרגע. נסו שוב בעוד רגע.')).toBeVisible();
   });
 
   test('logout clears active session and routes back to activation state', async ({ page }) => {
@@ -242,11 +306,11 @@ test.describe('customer portal browser critical paths', () => {
 
     await page.goto(`${portalBaseUrl}/order`);
 
-    await expect(page.getByRole('heading', { name: 'Compose order' })).toBeVisible();
-    await page.getByRole('button', { name: 'Logout session' }).click();
+    await expect(page.getByTestId('portal-heading')).toContainText('קטלוג');
+    await page.getByRole('button', { name: 'התנתקות מהסשן' }).click();
 
     await expect(page).toHaveURL(`${portalBaseUrl}/m`);
-    await expect(page.getByRole('heading', { name: 'Activation failed' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'הפעלת הקישור נכשלה' })).toBeVisible();
     expect(logoutCalls).toBe(1);
   });
 });

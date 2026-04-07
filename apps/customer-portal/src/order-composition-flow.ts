@@ -252,7 +252,7 @@ function buildReadyState(
 
   const approvedSection = input.approvedItems.map((item) => {
     const catalogLine = lineById.get(item.hashItemId);
-    const name = catalogLine?.name ?? `Approved item ${item.hashItemId}`;
+    const name = catalogLine?.name ?? `פריט מאושר ${item.hashItemId}`;
     const price = pricingMap.get(item.hashItemId);
 
     return {
@@ -307,14 +307,14 @@ function buildReadyState(
     layout,
     sections: {
       recent: {
-        title: 'Recent items',
+        title: 'הנתחים הקבועים שלכם',
         items: recentSection,
-        emptyMessage: 'No recent items yet.',
+        emptyMessage: 'עדיין אין פריטים מהזמנות קודמות.',
       },
       approved: {
-        title: 'Approved by your rep',
+        title: 'קטלוג מאושר',
         items: approvedSection,
-        emptyMessage: 'No approved items yet.',
+        emptyMessage: 'עדיין אין פריטים מאושרים.',
       },
     },
     cart,
@@ -344,7 +344,7 @@ function buildCatalog(input: OrderCompositionInput): CatalogLine[] {
 
     catalog.set(approved.hashItemId, {
       itemId: approved.hashItemId,
-      name: existing?.name ?? `Approved item ${approved.hashItemId}`,
+       name: existing?.name ?? `פריט מאושר ${approved.hashItemId}`,
       unitPrice: price?.unitPrice ?? existing?.unitPrice ?? null,
       currency: price?.currency ?? existing?.currency ?? null,
     });
@@ -371,9 +371,9 @@ function buildStickySubmitBar(
     submitEnabled: hasItems && !isSubmitting,
     summaryLabel:
       cart.unknownPriceLineCount > 0
-        ? 'Estimated total unavailable for some items'
-        : `Estimated total ${totalLabel}`,
-    submitLabel: isSubmitting ? 'Submitting order…' : `Submit order (${cart.totalUnits} units)`,
+        ? 'לא ניתן לחשב סכום משוער עבור חלק מהפריטים'
+        : `סה"כ משוער ${totalLabel}`,
+    submitLabel: isSubmitting ? 'שולחים הזמנה…' : `שליחת הזמנה למפעל (${cart.totalUnits} יחידות)`,
   };
 }
 

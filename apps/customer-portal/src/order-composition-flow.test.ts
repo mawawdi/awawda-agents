@@ -50,7 +50,7 @@ describe('order composition interactions and UX states', () => {
         approved: {
           items: [
             { itemId: 'item-1', quantity: 0 },
-            { itemId: 'item-2', name: 'Approved item item-2', quantity: 0 },
+            { itemId: 'item-2', name: 'פריט מאושר item-2', quantity: 0 },
           ],
         },
       },
@@ -75,8 +75,8 @@ describe('order composition interactions and UX states', () => {
       submitBar: {
         visible: true,
         submitEnabled: true,
-        summaryLabel: 'Estimated total ₪85.00',
-        submitLabel: 'Submit order (2 units)',
+        summaryLabel: 'סה"כ משוער ₪85.00',
+        submitLabel: 'שליחת הזמנה למפעל (2 יחידות)',
       },
     });
 
@@ -145,7 +145,7 @@ describe('order composition interactions and UX states', () => {
         visible: true,
         mobileOptimized: true,
         submitEnabled: false,
-        submitLabel: 'Submitting order…',
+        submitLabel: 'שולחים הזמנה…',
       },
     });
 
@@ -154,7 +154,7 @@ describe('order composition interactions and UX states', () => {
       isSubmitting: false,
       submitBar: {
         submitEnabled: true,
-        submitLabel: 'Submit order (1 units)',
+        submitLabel: 'שליחת הזמנה למפעל (1 יחידות)',
       },
     });
   });
