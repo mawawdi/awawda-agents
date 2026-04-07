@@ -14,6 +14,7 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
 	"http://localhost:8081",
 	"http://127.0.0.1:8081",
 	"exp://10.0.0.25:8081",
+	"http://127.0.0.1:3000",
 ]
 
 function resolveCorsAllowedOrigins(): Set<string> {
@@ -47,14 +48,17 @@ export async function createApiApp(): Promise<NestFastifyApplication> {
 	const allowedOrigins = resolveCorsAllowedOrigins()
 	const fastify = app.getHttpAdapter().getInstance()
 
-	fastify.addHook("onSend", async (_request: unknown, reply: { header(name: string, value: string): void }, payload: unknown) => {
-		reply.header("x-content-type-options", "nosniff")
-		reply.header("x-frame-options", "DENY")
-		reply.header("referrer-policy", "no-referrer")
-		reply.header("permissions-policy", "camera=(), microphone=(), geolocation=()")
-		reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
-		return payload
-	})
+	fastify.addHook(
+		"onSend",
+		async (_request: unknown, reply: { header(name: string, value: string): void }, payload: unknown) => {
+			reply.header("x-content-type-options", "nosniff")
+			reply.header("x-frame-options", "DENY")
+			reply.header("referrer-policy", "no-referrer")
+			reply.header("permissions-policy", "camera=(), microphone=(), geolocation=()")
+			reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+			return payload
+		},
+	)
 
 	app.enableCors({
 		origin: (origin, callback) => {
