@@ -103,6 +103,8 @@ or:
 
 ```bash
 pnpm deploy:up
+pnpm deploy:up:test
+pnpm deploy:up:prod
 ```
 
 ## Verify deployment

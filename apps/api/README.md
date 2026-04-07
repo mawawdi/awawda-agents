@@ -43,6 +43,33 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 
 - `CATALOG_CACHE_TTL_SECONDS` (optional): API catalog cache max-age in seconds (`300` default)
 
+## Hashavshevet pull environment variables
+
+- `HASH_ENV` (optional): `testing` or `production` (`testing` default)
+- `HASH_TEST_API_URL` / `HASH_TEST_API_KEY` (optional): testing endpoint credentials
+- `HASH_PROD_API_URL` / `HASH_PROD_API_KEY` (optional): production endpoint credentials
+- `HASH_API_URL` / `HASH_API_KEY` (optional): explicit override for current environment
+- `HASH_REQUEST_TIMEOUT_MS` (optional): outbound Hashavshevet timeout in ms (`8000` default)
+- `HASH_HEALTH_PATH` (optional): health endpoint path (`/health` default)
+- `HASH_ASSIGNED_CUSTOMERS_PATH` (optional): assigned-customer path template (`/agents/{agentId}/customers` default)
+- `HASH_CATALOG_PATH` (optional): catalog path (`/catalog/items` default)
+- `HASH_RECENT_ITEMS_PATH` (optional): recent-items path template (`/customers/{customerId}/recent-items` default)
+- `HASH_PRICING_PATH` (optional): pricing path template (`/customers/{customerId}/pricing` default)
+
+Quick switch:
+
+```bash
+pnpm api:dev:test
+pnpm api:dev:prod
+```
+
+Deploy with explicit Hash mode from repo root:
+
+```bash
+pnpm deploy:up:test
+pnpm deploy:up:prod
+```
+
 ## Readiness environment variables
 
 - `READY_PROBE_TIMEOUT_MS` (optional): per-dependency probe timeout in milliseconds (`1500` default)

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { createApiApp } from './server';
 import { AGENT_CUSTOMERS_REPOSITORY } from './customers/customers.constants';
 import type { AgentCustomersRepository } from './customers/customers.types';
+import { ERP_ERROR_CODES, ErpGatewayError } from './erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from './erp/erp.gateway';
 
 describe('Agent read endpoints', () => {
@@ -50,6 +51,7 @@ describe('Agent read endpoints', () => {
 
   it('returns only assigned customers for the authenticated agent', async () => {
     const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
     vi.spyOn(customersRepository, 'listAssignedCustomers').mockResolvedValue([
       {
         customerId: 'cust-alpha',
@@ -62,6 +64,11 @@ describe('Agent read endpoints', () => {
         lastOrderAt: null,
       },
     ]);
+    vi.spyOn(erpGateway, 'getAssignedCustomers').mockResolvedValue({
+      source: 'hashavshevet',
+      syncedAt: '2026-04-06T18:00:00.000Z',
+      customers: [],
+    });
 
     const response = await app.inject({
       method: 'GET',
@@ -88,6 +95,43 @@ describe('Agent read endpoints', () => {
       ],
     });
     expect(vi.mocked(customersRepository.listAssignedCustomers)).toHaveBeenCalledWith('agent-42');
+    expect(vi.mocked(erpGateway.getAssignedCustomers)).toHaveBeenCalledWith('agent-42');
+  });
+
+  it('keeps customers response stable when Hash assigned-customer pull fails', async () => {
+    const customersRepository = app.get<AgentCustomersRepository>(AGENT_CUSTOMERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
+    vi.spyOn(customersRepository, 'listAssignedCustomers').mockResolvedValue([
+      {
+        customerId: 'cust-alpha',
+        approvedItemsCount: 3,
+        lastOrderAt: '2026-04-06T18:00:00.000Z',
+      },
+    ]);
+    vi.spyOn(erpGateway, 'getAssignedCustomers').mockRejectedValue(
+      new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'hash down'),
+    );
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/customers',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      total: 1,
+      customers: [
+        {
+          customerId: 'cust-alpha',
+          approvedItemsCount: 3,
+          lastOrderAt: '2026-04-06T18:00:00.000Z',
+        },
+      ],
+    });
+    expect(vi.mocked(erpGateway.getAssignedCustomers)).toHaveBeenCalledWith('agent-42');
   });
 
   it('returns catalog with cache headers and cache metadata', async () => {

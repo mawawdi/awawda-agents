@@ -21,6 +21,7 @@ describe('OrdersService', () => {
         acceptedAt: '2026-04-10T11:00:00.000Z',
       }),
       getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
       getMasterCatalog: vi.fn(),
       getCustomerRecentItems: vi.fn().mockResolvedValue({
         source: 'hashavshevet',
@@ -109,6 +110,7 @@ describe('OrdersService', () => {
     const erpGateway: ErpGateway = {
       handoffOrder: vi.fn(),
       getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
       getMasterCatalog: vi.fn(),
       getCustomerRecentItems: vi.fn().mockResolvedValue({
         source: 'hashavshevet',
@@ -188,6 +190,7 @@ describe('OrdersService', () => {
     const erpGateway: ErpGateway = {
       handoffOrder: vi.fn(),
       getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
       getMasterCatalog: vi.fn(),
       getCustomerRecentItems: vi.fn(),
       getCustomerPricing: vi.fn(),
@@ -256,6 +259,7 @@ describe('OrdersService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn(),
         getCustomerPricing: vi.fn(),
@@ -301,6 +305,7 @@ describe('OrdersService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn().mockResolvedValue({
           source: 'hashavshevet',

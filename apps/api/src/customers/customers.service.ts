@@ -1,22 +1,38 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   AgentApprovedItemMutationResponse,
   AgentApprovedItemsResponse,
   AgentCustomersResponse,
 } from '@meatland/shared-types';
 
+import { isErpGatewayError } from '../erp/erp.errors';
+import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { AGENT_CUSTOMERS_REPOSITORY } from './customers.constants';
 import { AgentAssignmentRequiredError } from './customers.errors';
 import type { AgentCustomersRepository } from './customers.types';
 
 @Injectable()
 export class CustomersService {
+  private readonly logger = new Logger(CustomersService.name);
+
   constructor(
     @Inject(AGENT_CUSTOMERS_REPOSITORY) private readonly customersRepository: AgentCustomersRepository,
+    @Inject(ERP_GATEWAY) private readonly erpGateway: ErpGateway,
   ) {}
 
   async getAssignedCustomers(agentId: string): Promise<AgentCustomersResponse> {
-    const customers = await this.customersRepository.listAssignedCustomers(agentId);
+    const [customers] = await Promise.all([
+      this.customersRepository.listAssignedCustomers(agentId),
+      this.erpGateway.getAssignedCustomers(agentId).catch((error: unknown) => {
+        if (!isErpGatewayError(error)) {
+          throw error;
+        }
+
+        const detail = error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(`Hashavshevet assigned-customer pull failed for agent ${agentId}: ${detail}`);
+        return null;
+      }),
+    ]);
 
     return {
       customers,

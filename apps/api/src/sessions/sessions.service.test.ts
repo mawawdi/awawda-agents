@@ -32,6 +32,7 @@ describe('SessionsService', () => {
     const erpGateway: ErpGateway = {
       handoffOrder: vi.fn(),
       getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
       getMasterCatalog: vi.fn(),
       getCustomerRecentItems: vi.fn().mockResolvedValue({
         source: 'hashavshevet',
@@ -123,6 +124,7 @@ describe('SessionsService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn(),
         getCustomerPricing: vi.fn(),
@@ -149,6 +151,7 @@ describe('SessionsService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn(),
         getCustomerPricing: vi.fn(),
@@ -177,6 +180,7 @@ describe('SessionsService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn(),
         getCustomerPricing: vi.fn(),
@@ -212,6 +216,7 @@ describe('SessionsService', () => {
       {
         handoffOrder: vi.fn(),
         getHealth: vi.fn(),
+        getAssignedCustomers: vi.fn(),
         getMasterCatalog: vi.fn(),
         getCustomerRecentItems: vi.fn(),
         getCustomerPricing: vi.fn(),

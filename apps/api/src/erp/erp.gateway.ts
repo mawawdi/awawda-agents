@@ -2,6 +2,11 @@ import type { AgentCatalogItem, CustomerPricingLine, CustomerRecentItem } from '
 
 export const ERP_GATEWAY = Symbol('ERP_GATEWAY');
 
+export type ErpGatewayAssignedCustomer = {
+  customerId: string;
+  isActive: boolean;
+};
+
 export type ErpOrderLine = {
   itemId: string;
   quantity: number;
@@ -37,6 +42,12 @@ export type ErpGatewayCatalogSnapshot = {
   source: 'hashavshevet';
 };
 
+export type ErpGatewayAssignedCustomersSnapshot = {
+  customers: ErpGatewayAssignedCustomer[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
 export type ErpGatewayCustomerRecentItemsSnapshot = {
   items: CustomerRecentItem[];
   syncedAt: string;
@@ -53,6 +64,7 @@ export type ErpGatewayCustomerPricingSnapshot = {
 export interface ErpGateway {
   handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse>;
   getHealth(): Promise<ErpGatewayHealth>;
+  getAssignedCustomers(agentId: string): Promise<ErpGatewayAssignedCustomersSnapshot>;
   getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot>;
   getCustomerRecentItems(customerId: string): Promise<ErpGatewayCustomerRecentItemsSnapshot>;
   getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot>;

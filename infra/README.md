@@ -23,10 +23,12 @@ Or use workspace scripts:
 
 1. Copy `infra/compose/deploy.env.example` to `infra/compose/deploy.env`.
 2. Set production-safe secrets and host values in `deploy.env` (`JWT_SECRET`, DB password, and `MAGIC_LINK_BASE_URL` at minimum).
-3. Start the deployment:
+3. Start the deployment (defaults to `HASH_ENV` from env/deploy file), or use explicit Hash mode scripts:
 
 ```bash
 pnpm deploy:up
+pnpm deploy:up:test
+pnpm deploy:up:prod
 ```
 
 4. Check service state:

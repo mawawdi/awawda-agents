@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 import { AuthModule } from '../auth/auth.module';
+import { ErpModule } from '../erp/erp.module';
 import { AGENT_CUSTOMERS_REPOSITORY } from './customers.constants';
 import { CustomersController } from './customers.controller';
 import { PrismaAgentCustomersRepository } from './customers.repository';
 import { CustomersService } from './customers.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ErpModule],
   controllers: [CustomersController],
   providers: [
     PrismaClient,
