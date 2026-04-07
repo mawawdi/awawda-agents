@@ -69,3 +69,53 @@ Current init script provisions:
 
 - `meatland` (primary DB via `POSTGRES_DB`)
 - `meatland_test` (created via `01-create-test-db.sql`)
+
+---
+
+# Deploy compose (API + Customer Portal)
+
+Production-like container deployment is defined in `infra/compose/deploy.yml`.
+
+## Prerequisites
+
+- Docker Engine with Compose v2
+- `infra/compose/deploy.env` file (copy from `deploy.env.example`)
+
+## First-time setup
+
+```bash
+cp infra/compose/deploy.env.example infra/compose/deploy.env
+```
+
+Update at least:
+
+- `POSTGRES_PASSWORD`
+- `JWT_SECRET`
+- `MAGIC_LINK_BASE_URL`
+
+## Start deployment
+
+```bash
+docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml up -d --build
+```
+
+or:
+
+```bash
+pnpm deploy:up
+```
+
+## Verify deployment
+
+```bash
+docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml ps
+```
+
+- Portal: `http://localhost:8080`
+- API health: `http://localhost:3000/v1/health`
+
+## Stop deployment
+
+```bash
+docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans
+```

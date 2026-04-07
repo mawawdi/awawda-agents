@@ -7,7 +7,15 @@
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
-    "test:portal-e2e": "playwright test tests/playwright/portal-critical-paths.spec.ts"
+    "test:portal-e2e": "playwright test tests/playwright/portal-critical-paths.spec.ts",
+    "infra:local:up": "docker compose -f infra/compose/local.yml up -d",
+    "infra:local:ps": "docker compose -f infra/compose/local.yml ps",
+    "infra:local:down": "docker compose -f infra/compose/local.yml down --remove-orphans",
+    "infra:local:reset": "docker compose -f infra/compose/local.yml down --volumes --remove-orphans",
+    "deploy:up": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml up -d --build",
+    "deploy:ps": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml ps",
+    "deploy:logs": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml logs --tail=200",
+    "deploy:down": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2"

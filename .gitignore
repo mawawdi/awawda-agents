@@ -13,3 +13,6 @@ dist/
 .next/
 .expo/
 coverage/
+
+# Deployment environment overrides
+infra/compose/deploy.env

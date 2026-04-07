@@ -1,0 +1,12 @@
+.git
+.github
+.squad
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.expo
+test-results
+coverage
+.pnpm-store
+worktrees

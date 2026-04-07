@@ -22,11 +22,7 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 
 @Injectable()
 export class HashavshevetAdapter {
-  private readonly retryPolicy: RetryPolicy;
-
-  constructor(retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY) {
-    this.retryPolicy = retryPolicy;
-  }
+  private readonly retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY;
 
   async handoffOrder(_request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse> {
     return this.withRetry('hashavshevet.handoffOrder', async () => {

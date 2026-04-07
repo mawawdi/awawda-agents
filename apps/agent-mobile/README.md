@@ -22,6 +22,24 @@ Copy `.env.example` to `.env` and set:
 - `pnpm --filter @meatland/agent-mobile lint`
 - `pnpm --filter @meatland/agent-mobile test`
 
+## Deployment (Expo EAS)
+
+`eas.json` is now configured with `development`, `preview`, and `production` profiles.
+
+From `apps/agent-mobile`:
+
+```bash
+pnpm dlx eas login
+pnpm dlx eas build --platform ios --profile preview
+pnpm dlx eas build --platform android --profile preview
+```
+
+For production builds:
+
+```bash
+pnpm dlx eas build --platform all --profile production
+```
+
 ## Reviewer validation baseline
 
 Use `pnpm dlx playwright test tests/playwright/agent-auth-flow.spec.ts` at repo root to run auth-flow simulation evidence for sign-in, persisted token restore, and logout clear.

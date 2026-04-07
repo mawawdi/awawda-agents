@@ -18,3 +18,11 @@ Phase 1 lightweight customer ordering portal using magic-link activation.
 
 - `pnpm --filter @meatland/customer-portal lint`
 - `pnpm --filter @meatland/customer-portal test`
+- `pnpm --filter @meatland/customer-portal build`
+
+## Runtime API configuration
+
+The portal reads API base URL from `globalThis.__CUSTOMER_PORTAL_API_BASE_URL__` in `runtime-config.js`.
+
+- Local/dev default: `/v1` (`public/runtime-config.js`)
+- Container deploy override: `CUSTOMER_PORTAL_API_BASE_URL` env var (in `infra/compose/deploy.env`)

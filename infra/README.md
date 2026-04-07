@@ -11,3 +11,32 @@ For local API dependencies (PostgreSQL + Redis), use:
 - `docker compose -f infra/compose/local.yml ps`
 - `docker compose -f infra/compose/local.yml down --remove-orphans`
 - `docker compose -f infra/compose/local.yml down --volumes --remove-orphans`
+
+Or use workspace scripts:
+
+- `pnpm infra:local:up`
+- `pnpm infra:local:ps`
+- `pnpm infra:local:down`
+- `pnpm infra:local:reset`
+
+## Deploy stack (API + Customer Portal + PostgreSQL + Redis)
+
+1. Copy `infra/compose/deploy.env.example` to `infra/compose/deploy.env`.
+2. Set production-safe secrets and host values in `deploy.env` (`JWT_SECRET`, DB password, and `MAGIC_LINK_BASE_URL` at minimum).
+3. Start the deployment:
+
+```bash
+pnpm deploy:up
+```
+
+4. Check service state:
+
+```bash
+pnpm deploy:ps
+```
+
+5. Stop the deployment:
+
+```bash
+pnpm deploy:down
+```

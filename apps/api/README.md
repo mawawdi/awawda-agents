@@ -11,6 +11,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @meatland/api dev` — run API locally (default `0.0.0.0:3000`)
 - `pnpm --filter @meatland/api test` — run API tests
 - `pnpm --filter @meatland/api build` — compile TypeScript to `dist/`
+- `pnpm --filter @meatland/api prisma:migrate:deploy` — run migrations in deploy environments
 
 ## Operational routes
 
@@ -58,7 +59,7 @@ From repo root, start local runtime dependencies:
 pnpm infra:local:up
 ```
 
-`apps/api/.env.example` already points to this stack (`localhost:5432` and `localhost:6379`).
+`apps/api/.env.example` points to this stack (`localhost:5432` and `localhost:6379`).
 Use `pnpm infra:local:ps` to verify health before running API flows.
 
 ## Prisma domain schema (T06)
