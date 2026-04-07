@@ -32,7 +32,7 @@ export function RootNavigator(): React.JSX.Element {
         <Stack.Screen
           name="AgentHome"
           component={AuthenticatedHomeScreen}
-          options={{ title: 'Meatland Agent' }}
+          options={{ headerShown: false }}
         />
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />

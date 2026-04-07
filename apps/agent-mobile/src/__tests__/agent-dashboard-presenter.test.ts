@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyApprovedCountMutation,
+  buildRecentTransactions,
   buildMagicLinkShareMessage,
   buildWhatsAppDeepLink,
   formatMagicLinkExpiry,
@@ -118,5 +119,40 @@ describe('agent dashboard presenter', () => {
     expect(shouldUseCopyLinkFallback(false)).toBe(true)
     expect(shouldUseCopyLinkFallback(true, new Error('cannot open app'))).toBe(true)
     expect(shouldUseCopyLinkFallback(true)).toBe(false)
+  })
+
+  it('builds a recent transactions feed from real customer and approved-item events', () => {
+    const feed = buildRecentTransactions({
+      customers: [
+        {
+          customerId: 'cust-order',
+          approvedItemsCount: 2,
+          lastOrderAt: '2026-04-08T10:30:00.000Z',
+        },
+      ],
+      approvedItems: [
+        {
+          hashItemId: 'itm-55',
+          addedByAgentId: 'agent-5',
+          createdAt: '2026-04-08T11:45:00.000Z',
+        },
+      ],
+      selectedCustomerId: 'cust-order',
+      latestMagicLink: {
+        linkUrl: 'https://portal.example.test/m?token=abc123',
+        expiresAt: '2026-04-08T15:00:00.000Z',
+        expiresInSeconds: 3600,
+        lifecycle: 'issued',
+      },
+      latestMagicLinkCustomerId: 'cust-order',
+      latestMagicLinkIssuedAt: '2026-04-08T12:00:00.000Z',
+      nowMs: Date.parse('2026-04-08T12:30:00.000Z'),
+    })
+
+    expect(feed).toHaveLength(3)
+    expect(feed[0]?.kind).toBe('magic_link')
+    expect(feed[1]?.kind).toBe('approved_item')
+    expect(feed[2]?.kind).toBe('order')
+    expect(feed[1]?.reference).toBe('itm-55')
   })
 })

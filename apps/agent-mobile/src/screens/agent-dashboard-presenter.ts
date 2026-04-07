@@ -5,6 +5,20 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
+export type AgentDashboardTabId = 'home' | 'customers' | 'catalog' | 'settings'
+
+export type AgentRecentTransactionKind = 'magic_link' | 'order' | 'approved_item'
+
+export interface AgentRecentTransaction {
+  id: string
+  customerId: string
+  kind: AgentRecentTransactionKind
+  title: string
+  detail: string
+  reference: string
+  sortTimestamp: number
+}
+
 function normalizeLocalMagicLinkUrl(linkUrl: string): string {
   try {
     const parsed = new URL(linkUrl)
@@ -108,4 +122,103 @@ export function buildWhatsAppDeepLink(message: string): string {
 
 export function shouldUseCopyLinkFallback(canOpenWhatsApp: boolean, dispatchError: unknown = null): boolean {
   return !canOpenWhatsApp || dispatchError instanceof Error
+}
+
+function parseTimestamp(value: string | null): number | null {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Date.parse(value)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function formatRelativeTimestampHebrew(timestampMs: number, nowMs: number): string {
+  const elapsedMinutes = Math.max(1, Math.floor((nowMs - timestampMs) / 60000))
+
+  if (elapsedMinutes < 60) {
+    return `לפני ${elapsedMinutes} דקות`
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60)
+  if (elapsedHours < 24) {
+    return `לפני ${elapsedHours} שעות`
+  }
+
+  return new Date(timestampMs).toLocaleDateString('he-IL')
+}
+
+export function buildRecentTransactions(input: {
+  customers: AgentAssignedCustomer[]
+  approvedItems: AgentApprovedItem[]
+  selectedCustomerId: string | null
+  latestMagicLink: AgentMagicLinkIssueResponse | null
+  latestMagicLinkCustomerId: string | null
+  latestMagicLinkIssuedAt: string | null
+  nowMs?: number
+  limit?: number
+}): AgentRecentTransaction[] {
+  const {
+    customers,
+    approvedItems,
+    selectedCustomerId,
+    latestMagicLink,
+    latestMagicLinkCustomerId,
+    latestMagicLinkIssuedAt,
+    nowMs = Date.now(),
+    limit = 6,
+  } = input
+
+  const timeline: AgentRecentTransaction[] = []
+
+  const magicLinkTimestamp = parseTimestamp(latestMagicLinkIssuedAt)
+  if (latestMagicLink && latestMagicLinkCustomerId && magicLinkTimestamp) {
+    timeline.push({
+      id: `magic-link-${latestMagicLinkCustomerId}-${magicLinkTimestamp}`,
+      customerId: latestMagicLinkCustomerId,
+      kind: 'magic_link',
+      title: `קישור נשלח ללקוח ${latestMagicLinkCustomerId}`,
+      detail: `${formatRelativeTimestampHebrew(magicLinkTimestamp, nowMs)} • תוקף ${latestMagicLink.expiresInSeconds} שנ׳`,
+      reference: latestMagicLink.lifecycle,
+      sortTimestamp: magicLinkTimestamp,
+    })
+  }
+
+  for (const customer of customers) {
+    const orderTimestamp = parseTimestamp(customer.lastOrderAt)
+    if (!orderTimestamp) {
+      continue
+    }
+
+    timeline.push({
+      id: `order-${customer.customerId}-${orderTimestamp}`,
+      customerId: customer.customerId,
+      kind: 'order',
+      title: `הזמנה עודכנה עבור ${customer.customerId}`,
+      detail: `${formatRelativeTimestampHebrew(orderTimestamp, nowMs)} • פריטים מאושרים ${customer.approvedItemsCount}`,
+      reference: '#ORDER',
+      sortTimestamp: orderTimestamp,
+    })
+  }
+
+  if (selectedCustomerId) {
+    for (const item of approvedItems) {
+      const createdAtTimestamp = parseTimestamp(item.createdAt)
+      if (!createdAtTimestamp) {
+        continue
+      }
+
+      timeline.push({
+        id: `approved-${selectedCustomerId}-${item.hashItemId}-${createdAtTimestamp}`,
+        customerId: selectedCustomerId,
+        kind: 'approved_item',
+        title: `פריט אושר עבור ${selectedCustomerId}`,
+        detail: `${formatRelativeTimestampHebrew(createdAtTimestamp, nowMs)} • נוסף ע״י ${item.addedByAgentId}`,
+        reference: item.hashItemId,
+        sortTimestamp: createdAtTimestamp,
+      })
+    }
+  }
+
+  return timeline.sort((left, right) => right.sortTimestamp - left.sortTimestamp).slice(0, limit)
 }

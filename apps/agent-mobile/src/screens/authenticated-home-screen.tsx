@@ -17,12 +17,14 @@ import { addApprovedItem, generateMagicLink, listApprovedItems, listAssignedCust
 import { useAuth } from '../auth/auth-provider'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 import {
+  type AgentDashboardTabId,
   applyApprovedCountMutation,
   buildMagicLinkShareMessage,
+  buildRecentTransactions,
   buildWhatsAppDeepLink,
-  formatMagicLinkExpiry,
   formatApprovedItemTimestamp,
   formatLastOrderLabel,
+  formatMagicLinkExpiry,
   getResilienceHint,
   mergeApprovedItems,
   normalizeMagicLinkForShare,
@@ -31,14 +33,44 @@ import {
 
 const SLOW_NETWORK_THRESHOLD_MS = 1800
 
+const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: string }> = [
+  { id: 'home', label: 'בית', icon: '⌂' },
+  { id: 'customers', label: 'לקוחות', icon: '◉' },
+  { id: 'catalog', label: 'קטלוג', icon: '≡' },
+  { id: 'settings', label: 'הגדרות', icon: '⚙' },
+]
+
+function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; tone: 'success' | 'warning' } {
+  if (customer.approvedItemsCount === 0) {
+    return { label: 'דורש פעולה', tone: 'warning' }
+  }
+
+  return { label: 'פעיל', tone: 'success' }
+}
+
+function getTransactionDotColor(kind: ReturnType<typeof buildRecentTransactions>[number]['kind']): string {
+  if (kind === 'magic_link') {
+    return palette.primaryContainer
+  }
+  if (kind === 'approved_item') {
+    return palette.secondary
+  }
+
+  return palette.success
+}
+
 export function AuthenticatedHomeScreen(): React.JSX.Element {
   const { signOut, profile, token } = useAuth()
+  const [activeTab, setActiveTab] = useState<AgentDashboardTabId>('home')
+  const [searchQuery, setSearchQuery] = useState('')
+
   const [customers, setCustomers] = useState<AgentAssignedCustomer[]>([])
   const [isCustomersLoading, setIsCustomersLoading] = useState(true)
   const [customersError, setCustomersError] = useState<string | null>(null)
   const [isCustomersSlow, setIsCustomersSlow] = useState(false)
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+  const [isCustomerDetailOpen, setIsCustomerDetailOpen] = useState(false)
   const [approvedItems, setApprovedItems] = useState<AgentApprovedItem[]>([])
   const [isApprovedItemsLoading, setIsApprovedItemsLoading] = useState(false)
   const [approvedItemsError, setApprovedItemsError] = useState<string | null>(null)
@@ -49,10 +81,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [isAddSlow, setIsAddSlow] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [addInfoMessage, setAddInfoMessage] = useState<string | null>(null)
+
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
   const [magicLinkError, setMagicLinkError] = useState<string | null>(null)
   const [magicLinkInfo, setMagicLinkInfo] = useState<string | null>(null)
   const [latestMagicLink, setLatestMagicLink] = useState<AgentMagicLinkIssueResponse | null>(null)
+  const [latestMagicLinkCustomerId, setLatestMagicLinkCustomerId] = useState<string | null>(null)
+  const [latestMagicLinkIssuedAt, setLatestMagicLinkIssuedAt] = useState<string | null>(null)
   const [pendingCopyLink, setPendingCopyLink] = useState<string | null>(null)
 
   const beginSlowNetworkTimer = useCallback((setSlowState: (value: boolean) => void): (() => void) => {
@@ -90,10 +125,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
         return response.customers[0]?.customerId ?? null
       })
+      if (response.customers.length === 0) {
+        setIsCustomerDetailOpen(false)
+      }
     } catch (error) {
       setCustomersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את רשימת הלקוחות.')
       setCustomers([])
       setSelectedCustomerId(null)
+      setIsCustomerDetailOpen(false)
     } finally {
       clearSlowState()
       setIsCustomersLoading(false)
@@ -140,9 +179,50 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     void loadApprovedItemsForCustomer(selectedCustomerId)
   }, [loadApprovedItemsForCustomer, selectedCustomerId])
 
+  const selectedCustomer = useMemo(
+    () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
+    [customers, selectedCustomerId],
+  )
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredCustomers = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return customers
+    }
+
+    return customers.filter((customer) => customer.customerId.toLowerCase().includes(normalizedSearchQuery))
+  }, [customers, normalizedSearchQuery])
+
+  const priorityQueueCustomers = useMemo(() => {
+    return [...filteredCustomers]
+      .sort((left, right) => {
+        if (left.lastOrderAt && !right.lastOrderAt) {
+          return 1
+        }
+        if (!left.lastOrderAt && right.lastOrderAt) {
+          return -1
+        }
+        return left.approvedItemsCount - right.approvedItemsCount
+      })
+      .slice(0, 4)
+  }, [filteredCustomers])
+
+  const recentTransactions = useMemo(
+    () =>
+      buildRecentTransactions({
+        customers,
+        approvedItems,
+        selectedCustomerId,
+        latestMagicLink,
+        latestMagicLinkCustomerId,
+        latestMagicLinkIssuedAt,
+      }),
+    [approvedItems, customers, latestMagicLink, latestMagicLinkCustomerId, latestMagicLinkIssuedAt, selectedCustomerId],
+  )
+
   const submitApprovedItem = useCallback(async () => {
     if (!token) {
-        setAddError('הסשן פג. התחברו מחדש.')
+      setAddError('הסשן פג. התחברו מחדש.')
       return
     }
 
@@ -161,9 +241,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setApprovedItems((current) => mergeApprovedItems(current, mutation))
       setCustomers((current) => applyApprovedCountMutation(current, selectedCustomerId, mutation.created))
       setNewItemId('')
-      setAddInfoMessage(
-         mutation.created ? 'הפריט נוסף בהצלחה.' : 'הפריט כבר קיים ברשימת הלקוח.',
-      )
+      setAddInfoMessage(mutation.created ? 'הפריט נוסף בהצלחה.' : 'הפריט כבר קיים ברשימת הלקוח.')
     } catch (error) {
       setAddError(error instanceof Error ? error.message : 'לא הצלחנו להוסיף פריט מאושר.')
     } finally {
@@ -172,10 +250,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
   }, [beginSlowNetworkTimer, newItemId, selectedCustomerId, token])
 
-  const selectedCustomer = useMemo(
-    () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
-    [customers, selectedCustomerId],
-  )
+  const openCustomerDetail = useCallback((customerId: string) => {
+    setSelectedCustomerId(customerId)
+    setIsCustomerDetailOpen(true)
+    setActiveTab('customers')
+    setAddError(null)
+    setAddInfoMessage(null)
+  }, [])
+
+  const openCustomerCatalog = useCallback((customerId: string) => {
+    setSelectedCustomerId(customerId)
+    setIsCustomerDetailOpen(false)
+    setActiveTab('catalog')
+  }, [])
 
   const copyFallbackLink = useCallback(async () => {
     if (!pendingCopyLink) {
@@ -183,163 +270,84 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     await Clipboard.setStringAsync(pendingCopyLink)
-      setMagicLinkInfo('הקישור הועתק. ניתן לשלוח ידנית אם וואטסאפ לא זמין.')
+    setMagicLinkInfo('הקישור הועתק. ניתן לשלוח ידנית אם וואטסאפ לא זמין.')
     setMagicLinkError(null)
     setPendingCopyLink(null)
   }, [pendingCopyLink])
 
-  const generateAndShareLink = useCallback(async () => {
-    if (!token) {
-      setMagicLinkError('הסשן פג. התחברו מחדש.')
-      return
-    }
+  const generateAndShareLink = useCallback(
+    async (customerIdOverride?: string) => {
+      const targetCustomerId = customerIdOverride ?? selectedCustomerId
 
-    if (!selectedCustomerId) {
-      setMagicLinkError('בחרו לקוח לפני יצירת קישור.')
-      return
-    }
-
-    setIsGeneratingLink(true)
-    setMagicLinkError(null)
-    setMagicLinkInfo(null)
-    setPendingCopyLink(null)
-
-    let generatedLink: AgentMagicLinkIssueResponse | null = null
-
-    try {
-      const payload = await generateMagicLink(token, selectedCustomerId)
-      const normalizedPayload = normalizeMagicLinkForShare(payload)
-      generatedLink = normalizedPayload
-      setLatestMagicLink(normalizedPayload)
-      const message = buildMagicLinkShareMessage(selectedCustomerId, normalizedPayload)
-      const deepLink = buildWhatsAppDeepLink(message)
-      const canOpenWhatsApp = await Linking.canOpenURL(deepLink)
-
-      if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
-        setPendingCopyLink(normalizedPayload.linkUrl)
-        setMagicLinkError('וואטסאפ לא זמין במכשיר הזה. העתיקו את הקישור במקום.')
+      if (!token) {
+        setMagicLinkError('הסשן פג. התחברו מחדש.')
         return
       }
 
-      await Linking.openURL(deepLink)
-      setMagicLinkInfo('הקישור נוצר ומוכן לשליחה בוואטסאפ.')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'לא הצלחנו ליצור קישור ללקוח.'
-      setMagicLinkError(message)
-      setPendingCopyLink(
-        shouldUseCopyLinkFallback(true, error)
-          ? generatedLink?.linkUrl ?? null
-          : null,
-      )
-    } finally {
-      setIsGeneratingLink(false)
+      if (!targetCustomerId) {
+        setMagicLinkError('בחרו לקוח לפני יצירת קישור.')
+        return
+      }
+
+      setSelectedCustomerId(targetCustomerId)
+      setIsGeneratingLink(true)
+      setMagicLinkError(null)
+      setMagicLinkInfo(null)
+      setPendingCopyLink(null)
+
+      let generatedLink: AgentMagicLinkIssueResponse | null = null
+
+      try {
+        const payload = await generateMagicLink(token, targetCustomerId)
+        const normalizedPayload = normalizeMagicLinkForShare(payload)
+        generatedLink = normalizedPayload
+        setLatestMagicLink(normalizedPayload)
+        setLatestMagicLinkCustomerId(targetCustomerId)
+        setLatestMagicLinkIssuedAt(new Date().toISOString())
+        const message = buildMagicLinkShareMessage(targetCustomerId, normalizedPayload)
+        const deepLink = buildWhatsAppDeepLink(message)
+        const canOpenWhatsApp = await Linking.canOpenURL(deepLink)
+
+        if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
+          setPendingCopyLink(normalizedPayload.linkUrl)
+          setMagicLinkError('וואטסאפ לא זמין במכשיר הזה. העתיקו את הקישור במקום.')
+          return
+        }
+
+        await Linking.openURL(deepLink)
+        setMagicLinkInfo(`הקישור נוצר ונשלח עבור ${targetCustomerId}.`)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'לא הצלחנו ליצור קישור ללקוח.'
+        setMagicLinkError(message)
+        setPendingCopyLink(shouldUseCopyLinkFallback(true, error) ? generatedLink?.linkUrl ?? null : null)
+      } finally {
+        setIsGeneratingLink(false)
+      }
+    },
+    [selectedCustomerId, token],
+  )
+
+  const renderBanner = (message: string | null, isError = false): React.JSX.Element | null => {
+    if (!message) {
+      return null
     }
-  }, [selectedCustomerId, token])
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.brandEyebrow}>The Artisanal Ledger</Text>
-          <Text style={styles.title}>לוח לקוחות</Text>
-          <Text style={styles.subtitle}>{profile ? `מחובר/ת כעת: ${profile.name}` : 'מחובר/ת למשמרת השטח'}</Text>
-        </View>
+    return <Text style={isError ? styles.errorBanner : styles.noticeBanner}>{message}</Text>
+  }
 
+  const renderMagicLinkActions = (customerId: string | null): React.JSX.Element => {
+    return (
+      <View style={styles.panelSection}>
+        <Text style={styles.panelTitle}>שליחת קישור הזמנה</Text>
         <Pressable
           accessibilityRole="button"
+          disabled={isGeneratingLink || !customerId}
           onPress={() => {
-            void signOut()
+            void generateAndShareLink(customerId ?? undefined)
           }}
-          style={styles.secondaryButton}
+          style={({ pressed }) => [styles.primaryButton, (pressed || isGeneratingLink || !customerId) && styles.primaryButtonDisabled]}
         >
-          <Text style={styles.secondaryButtonText}>התנתקות</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>לקוחות משויכים</Text>
-          <Pressable
-            accessibilityRole="button"
-            disabled={isCustomersLoading}
-            onPress={() => {
-              void loadCustomers()
-            }}
-            style={({ pressed }) => [styles.linkButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
-          >
-            <Text style={styles.linkButtonText}>{isCustomersLoading ? 'מסנכרן…' : 'רענון'}</Text>
-          </Pressable>
-        </View>
-
-        {getResilienceHint(isCustomersSlow, customersError) ? (
-          <Text style={customersError ? styles.errorBanner : styles.noticeBanner}>
-            {getResilienceHint(isCustomersSlow, customersError)}
-          </Text>
-        ) : null}
-
-        {isCustomersLoading && customers.length === 0 ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator />
-            <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
-          </View>
-        ) : customers.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.mutedText}>אין עדיין לקוחות משויכים.</Text>
-          </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.customerList}
-            contentContainerStyle={styles.customerListContent}
-          >
-            {customers.map((customer) => {
-              const isSelected = customer.customerId === selectedCustomerId
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  key={customer.customerId}
-                  onPress={() => {
-                    setSelectedCustomerId(customer.customerId)
-                    setAddError(null)
-                    setAddInfoMessage(null)
-                  }}
-                  style={({ pressed }) => [
-                    styles.customerCard,
-                    isSelected && styles.customerCardSelected,
-                    pressed && styles.customerCardPressed,
-                  ]}
-                >
-                  <Text style={styles.customerId}>{customer.customerId}</Text>
-                  <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-                  <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
-                </Pressable>
-              )
-            })}
-          </ScrollView>
-        )}
-      </View>
-
-      <View style={styles.divider} />
-
-      <View style={styles.addItemPanel}>
-        <Text style={styles.addItemTitle}>שליחת קישור הזמנה ללקוח</Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isGeneratingLink || !selectedCustomer}
-          onPress={() => {
-            void generateAndShareLink()
-          }}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            (pressed || isGeneratingLink || !selectedCustomer) && styles.primaryButtonDisabled,
-          ]}
-        >
-          {isGeneratingLink ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryButtonText}>יצירה ושליחה דרך וואטסאפ</Text>
-          )}
+          {isGeneratingLink ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>יצירה ושליחה בוואטסאפ</Text>}
         </Pressable>
         {magicLinkError ? <Text style={styles.errorText}>{magicLinkError}</Text> : null}
         {magicLinkInfo ? <Text style={styles.noticeText}>{magicLinkInfo}</Text> : null}
@@ -349,98 +357,446 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             onPress={() => {
               void copyFallbackLink()
             }}
-            style={({ pressed }) => [styles.linkButton, pressed && styles.linkButtonDisabled]}
+            style={({ pressed }) => [styles.linkButtonInline, pressed && styles.linkButtonDisabled]}
           >
             <Text style={styles.linkButtonText}>העתקת קישור חלופי</Text>
           </Pressable>
         ) : null}
-        {latestMagicLink ? (
+        {latestMagicLink && latestMagicLinkCustomerId === customerId ? (
           <Text style={styles.customerMeta}>
-            פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · תוקף {latestMagicLink.expiresInSeconds} שנ׳ ·{' '}
-            {latestMagicLink.lifecycle}
+            לקוח {latestMagicLinkCustomerId} · פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · {latestMagicLink.lifecycle}
           </Text>
         ) : null}
       </View>
+    )
+  }
 
-      <View style={styles.divider} />
+  const renderCustomersList = (isCompact = false): React.JSX.Element => {
+    if (isCustomersLoading && customers.length === 0) {
+      return (
+        <View style={styles.loadingState}>
+          <ActivityIndicator />
+          <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
+        </View>
+      )
+    }
 
-      <View style={styles.sectionBlock}>
+    if (filteredCustomers.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>
+            {customers.length === 0 ? 'אין עדיין לקוחות משויכים.' : 'לא נמצאו לקוחות שמתאימים לחיפוש.'}
+          </Text>
+        </View>
+      )
+    }
+
+    return (
+      <View style={styles.customerGrid}>
+        {filteredCustomers.map((customer) => {
+          const status = getCustomerStatus(customer)
+          return (
+            <View key={customer.customerId} style={[styles.customerCard, isCompact && styles.customerCardCompact]}>
+              <View style={styles.customerCardHeader}>
+                <View style={styles.statusRow}>
+                  <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
+                  <Text style={styles.statusText}>{status.label}</Text>
+                </View>
+                <Text style={styles.customerCode}>#{customer.customerId}</Text>
+              </View>
+              <Text style={styles.customerId}>{customer.customerId}</Text>
+              <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
+              <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
+              <View style={styles.customerActionRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void generateAndShareLink(customer.customerId)
+                  }}
+                  style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+                >
+                  <Text style={styles.primaryButtonText}>שליחת קישור</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    openCustomerDetail(customer.customerId)
+                  }}
+                  style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+                >
+                  <Text style={styles.secondaryButtonText}>פרטי לקוח</Text>
+                </Pressable>
+              </View>
+            </View>
+          )
+        })}
+      </View>
+    )
+  }
+
+  const renderDashboardTab = (): React.JSX.Element => (
+    <View style={styles.tabSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>תור פעולות דחופות</Text>
+        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} לקוחות ממתינים לקישור</Text>
+      </View>
+      {priorityQueueCustomers.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>אין לקוחות בתור כרגע. אפשר לרענן או לבדוק חיפוש.</Text>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.queueScrollerContent}
+          style={styles.queueScroller}
+        >
+          {priorityQueueCustomers.map((customer) => (
+            <View key={`queue-${customer.customerId}`} style={styles.queueCard}>
+              <Text style={styles.queueCardTitle}>{customer.customerId}</Text>
+              <Text style={styles.queueCardMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
+              <Text style={styles.queueCardMeta}>מאושרים: {customer.approvedItemsCount}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void generateAndShareLink(customer.customerId)
+                }}
+                style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+              >
+                <Text style={styles.primaryButtonText}>שלח קישור להזמנה</Text>
+              </Pressable>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      <View style={styles.panelSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>פריטים מאושרים</Text>
-          {selectedCustomer ? <Text style={styles.sectionMeta}>{selectedCustomer.customerId}</Text> : null}
+          <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
+          <Text style={styles.iconSecondary}>◷</Text>
         </View>
 
-        {getResilienceHint(isApprovedItemsSlow, approvedItemsError) ? (
-          <Text style={approvedItemsError ? styles.errorBanner : styles.noticeBanner}>
-            {getResilienceHint(isApprovedItemsSlow, approvedItemsError)}
-          </Text>
-        ) : null}
-
-        {!selectedCustomer ? (
+        {recentTransactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.mutedText}>בחרו לקוח כדי לנהל פריטים מאושרים.</Text>
-          </View>
-        ) : isApprovedItemsLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator />
-            <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
-          </View>
-        ) : approvedItems.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
+            <Text style={styles.mutedText}>אין עדיין תנועות אחרונות להצגה. ברגע שתשלחו קישורים או תעדכנו לקוחות הפעילות תופיע כאן.</Text>
           </View>
         ) : (
-          <ScrollView style={styles.approvedItemsList} contentContainerStyle={styles.approvedItemsListContent}>
-            {approvedItems.map((item) => (
-              <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedItemRow}>
-                <Text style={styles.approvedItemId}>{item.hashItemId}</Text>
-                <Text style={styles.approvedItemMeta}>נוסף על ידי {item.addedByAgentId}</Text>
-                <Text style={styles.approvedItemMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+          <View style={styles.activityList}>
+            {recentTransactions.map((transaction) => (
+              <View key={transaction.id} style={styles.activityRow}>
+                <View style={[styles.activityDot, { backgroundColor: getTransactionDotColor(transaction.kind) }]} />
+                <View style={styles.activityTextGroup}>
+                  <Text style={styles.activityTitle}>{transaction.title}</Text>
+                  <Text style={styles.activityMeta}>{transaction.detail}</Text>
+                </View>
+                <Text style={styles.activityRef}>{transaction.reference}</Text>
               </View>
             ))}
-          </ScrollView>
+          </View>
         )}
       </View>
 
-      <View style={styles.addItemPanel}>
-        <Text style={styles.addItemTitle}>הוספת פריט מאושר</Text>
-        <TextInput
-          accessibilityLabel="Approved item ID"
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isAddingItem}
-          placeholder="מזהה פריט (לדוגמה itm-123)"
-          value={newItemId}
-          onChangeText={(value) => {
-            setNewItemId(value)
-            if (addError) {
-              setAddError(null)
-            }
-            if (addInfoMessage) {
-              setAddInfoMessage(null)
-            }
-          }}
-          style={styles.input}
-        />
+      {renderCustomersList(true)}
+    </View>
+  )
 
-        {getResilienceHint(isAddSlow, addError) ? (
-          <Text style={addError ? styles.errorText : styles.noticeText}>{getResilienceHint(isAddSlow, addError)}</Text>
-        ) : null}
-        {addInfoMessage ? <Text style={styles.noticeText}>{addInfoMessage}</Text> : null}
+  const renderCustomerDetail = (): React.JSX.Element => {
+    if (!selectedCustomer) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>בחרו לקוח כדי לראות את מסך הפרטים המלא.</Text>
+        </View>
+      )
+    }
 
+    const status = getCustomerStatus(selectedCustomer)
+
+    return (
+      <View style={styles.tabSection}>
+        <View style={styles.sectionHeader}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setIsCustomerDetailOpen(false)
+            }}
+            style={({ pressed }) => [styles.backButton, pressed && styles.linkButtonDisabled]}
+          >
+            <Text style={styles.iconPrimary}>←</Text>
+            <Text style={styles.linkButtonText}>חזרה לרשימה</Text>
+          </Pressable>
+          <Text style={styles.sectionMeta}>מסך לקוח</Text>
+        </View>
+
+        <View style={styles.detailCard}>
+          <View style={styles.customerCardHeader}>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
+              <Text style={styles.statusText}>{status.label}</Text>
+            </View>
+            <Text style={styles.customerCode}>#{selectedCustomer.customerId}</Text>
+          </View>
+          <Text style={styles.detailTitle}>{selectedCustomer.customerId}</Text>
+          <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
+          <Text style={styles.customerMeta}>סה״כ פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
+          <View style={styles.detailActionRow}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void generateAndShareLink(selectedCustomer.customerId)
+              }}
+              style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+            >
+              <Text style={styles.primaryButtonText}>שלח קישור הזמנה</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                openCustomerCatalog(selectedCustomer.customerId)
+              }}
+              style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+            >
+              <Text style={styles.secondaryButtonText}>מעבר לקטלוג</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {renderMagicLinkActions(selectedCustomer.customerId)}
+
+        <View style={styles.panelSection}>
+          <Text style={styles.panelTitle}>פריטים מאושרים של הלקוח</Text>
+          {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
+          {isApprovedItemsLoading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator />
+              <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
+            </View>
+          ) : approvedItems.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור הלקוח הזה.</Text>
+            </View>
+          ) : (
+            <View style={styles.approvedList}>
+              {approvedItems.slice(0, 8).map((item) => (
+                <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
+                  <Text style={styles.approvedTitle}>{item.hashItemId}</Text>
+                  <Text style={styles.approvedMeta}>נוסף על ידי {item.addedByAgentId}</Text>
+                  <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+    )
+  }
+
+  const renderCustomersTab = (): React.JSX.Element => (
+    <View style={styles.tabSection}>
+      {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
+      {isCustomerDetailOpen ? renderCustomerDetail() : renderCustomersList()}
+    </View>
+  )
+
+  const renderCatalogTab = (): React.JSX.Element => (
+    <View style={styles.tabSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>קטלוג מאושר</Text>
         <Pressable
           accessibilityRole="button"
-          disabled={isAddingItem || !selectedCustomer || !newItemId.trim()}
           onPress={() => {
-            void submitApprovedItem()
+            setActiveTab('customers')
+            setIsCustomerDetailOpen(false)
           }}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            (pressed || isAddingItem || !selectedCustomer || !newItemId.trim()) && styles.primaryButtonDisabled,
-          ]}
+          style={({ pressed }) => [styles.linkButtonInline, pressed && styles.linkButtonDisabled]}
         >
-          {isAddingItem ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>הוספת פריט</Text>}
+          <Text style={styles.linkButtonText}>בחירת לקוח</Text>
         </Pressable>
+      </View>
+
+      {!selectedCustomer ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>אין לקוח פעיל כרגע. עברו ללשונית לקוחות ובחרו לקוח כדי לנהל את הקטלוג המאושר.</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailTitle}>{selectedCustomer.customerId}</Text>
+            <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
+            <Text style={styles.customerMeta}>פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
+          </View>
+          {renderMagicLinkActions(selectedCustomer.customerId)}
+          <View style={styles.panelSection}>
+            <Text style={styles.panelTitle}>פריטים מאושרים</Text>
+            {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
+            {isApprovedItemsLoading ? (
+              <View style={styles.loadingState}>
+                <ActivityIndicator />
+                <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
+              </View>
+            ) : approvedItems.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
+              </View>
+            ) : (
+              <View style={styles.approvedList}>
+                {approvedItems.map((item) => (
+                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
+                    <Text style={styles.approvedTitle}>{item.hashItemId}</Text>
+                    <Text style={styles.approvedMeta}>נוסף על ידי {item.addedByAgentId}</Text>
+                    <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={styles.panelSection}>
+            <Text style={styles.panelTitle}>הוספת פריט מאושר</Text>
+            <TextInput
+              accessibilityLabel="Approved item ID"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isAddingItem}
+              placeholder="מזהה פריט (לדוגמה itm-123)"
+              value={newItemId}
+              onChangeText={(value) => {
+                setNewItemId(value)
+                if (addError) {
+                  setAddError(null)
+                }
+                if (addInfoMessage) {
+                  setAddInfoMessage(null)
+                }
+              }}
+              style={styles.input}
+            />
+            {renderBanner(getResilienceHint(isAddSlow, addError), Boolean(addError))}
+            {addInfoMessage ? <Text style={styles.noticeText}>{addInfoMessage}</Text> : null}
+            <Pressable
+              accessibilityRole="button"
+              disabled={isAddingItem || !newItemId.trim()}
+              onPress={() => {
+                void submitApprovedItem()
+              }}
+              style={({ pressed }) => [styles.primaryButton, (pressed || isAddingItem || !newItemId.trim()) && styles.primaryButtonDisabled]}
+            >
+              {isAddingItem ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>הוספת פריט</Text>}
+            </Pressable>
+          </View>
+        </>
+      )}
+    </View>
+  )
+
+  const renderSettingsTab = (): React.JSX.Element => (
+    <View style={styles.tabSection}>
+      <View style={styles.panelSection}>
+        <Text style={styles.panelTitle}>פרופיל נציג</Text>
+        <View style={styles.settingsRow}>
+          <Text style={styles.settingsLabel}>שם</Text>
+          <Text style={styles.settingsValue}>{profile?.name ?? 'לא זמין'}</Text>
+        </View>
+        <View style={styles.settingsRow}>
+          <Text style={styles.settingsLabel}>טלפון</Text>
+          <Text style={styles.settingsValue}>{profile?.phone ?? 'לא זמין'}</Text>
+        </View>
+        <View style={styles.settingsRow}>
+          <Text style={styles.settingsLabel}>אימייל</Text>
+          <Text style={styles.settingsValue}>{profile?.email ?? 'לא הוגדר'}</Text>
+        </View>
+      </View>
+
+      <View style={styles.panelSection}>
+        <Text style={styles.panelTitle}>מצב סנכרון</Text>
+        {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
+        {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
+        {!customersError && !approvedItemsError && !isCustomersSlow && !isApprovedItemsSlow ? (
+          <Text style={styles.noticeText}>המערכת מסונכרנת והנתונים מעודכנים.</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.settingsActionRow}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void loadCustomers()
+          }}
+          style={({ pressed }) => [styles.secondaryButtonLarge, pressed && styles.primaryButtonDisabled]}
+        >
+          <Text style={styles.secondaryButtonText}>{isCustomersLoading ? 'מסנכרן…' : 'רענון נתונים'}</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void signOut()
+          }}
+          style={({ pressed }) => [styles.dangerButton, pressed && styles.primaryButtonDisabled]}
+        >
+          <Text style={styles.dangerButtonText}>התנתקות</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <View style={styles.topBarIdentity}>
+          <Text style={styles.brandEyebrow}>The Artisanal Ledger</Text>
+          <Text style={styles.title}>לוח הסוכן</Text>
+          <Text style={styles.subtitle}>{profile ? `מחובר/ת: ${profile.name}` : 'מחובר/ת למשמרת השטח'}</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void loadCustomers()
+          }}
+          style={({ pressed }) => [styles.refreshButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
+        >
+          <Text style={styles.iconPrimary}>↻</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.searchBlock}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          accessibilityLabel="Search customers"
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="חיפוש לפי מזהה לקוח"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+        />
+      </View>
+
+      <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
+        {activeTab === 'home' ? renderDashboardTab() : null}
+        {activeTab === 'customers' ? renderCustomersTab() : null}
+        {activeTab === 'catalog' ? renderCatalogTab() : null}
+        {activeTab === 'settings' ? renderSettingsTab() : null}
+      </ScrollView>
+
+      <View style={styles.bottomTabs}>
+        {TAB_ITEMS.map((tab) => {
+          const isActive = tab.id === activeTab
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={tab.id}
+              onPress={() => {
+                setActiveTab(tab.id)
+                if (tab.id !== 'customers') {
+                  setIsCustomerDetailOpen(false)
+                }
+              }}
+              style={({ pressed }) => [styles.tabButton, isActive && styles.tabButtonActive, pressed && styles.tabButtonPressed]}
+            >
+              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>{tab.icon}</Text>
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+            </Pressable>
+          )
+        })}
       </View>
     </View>
   )
@@ -449,72 +805,300 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
     backgroundColor: palette.background,
-    gap: spacing.md,
   },
-  headerRow: {
+  topBar: {
+    marginTop: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: palette.surfaceMid,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.md,
-    backgroundColor: palette.surfaceMid,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    shadowColor: palette.secondary,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 2,
+  },
+  topBarIdentity: {
+    flex: 1,
   },
   brandEyebrow: {
     color: palette.secondary,
-    fontSize: 10,
-    letterSpacing: 1.2,
+    fontSize: 11,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 30,
     color: palette.primaryContainer,
+    fontWeight: '800',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     color: palette.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
+  refreshButton: {
+    minHeight: touchTarget.min,
+    minWidth: touchTarget.min,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.surface,
+  },
+  searchBlock: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: palette.surfaceLow,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    minHeight: touchTarget.comfortable,
+  },
+  searchIcon: {
+    marginHorizontal: 6,
+    color: palette.secondary,
+    fontSize: 17,
+  },
+  iconPrimary: {
+    color: palette.primaryContainer,
+    fontSize: 18,
+  },
+  iconSecondary: {
+    color: palette.secondary,
+    fontSize: 18,
+  },
+  searchInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 15,
+    paddingVertical: 10,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+  },
+  contentScroll: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+  },
+  contentScrollContainer: {
+    paddingBottom: 112,
+    gap: spacing.md,
+  },
+  tabSection: {
+    gap: spacing.md,
+  },
   sectionHeader: {
-    marginTop: 2,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
     color: palette.primary,
+    fontWeight: '700',
   },
   sectionMeta: {
     color: palette.secondary,
     fontWeight: '600',
+    fontSize: 13,
   },
-  sectionBlock: {
+  queueScroller: {
+    maxHeight: 220,
+  },
+  queueScrollerContent: {
+    gap: spacing.md,
+    paddingHorizontal: 2,
+  },
+  queueCard: {
+    width: 290,
+    borderRadius: radius.lg,
+    backgroundColor: palette.surface,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  queueCardTitle: {
+    color: palette.primary,
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  queueCardMeta: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  panelSection: {
     backgroundColor: palette.surfaceLow,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
   },
-  mutedText: {
+  panelTitle: {
+    color: palette.primary,
+    fontWeight: '700',
+    fontSize: 17,
+  },
+  activityList: {
+    gap: spacing.sm,
+  },
+  activityRow: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  activityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+  },
+  activityTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  activityTitle: {
+    color: palette.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  activityMeta: {
     color: palette.textMuted,
+    fontSize: 12,
+  },
+  activityRef: {
+    color: palette.primaryContainer,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  customerGrid: {
+    gap: spacing.md,
+  },
+  customerCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  customerCardCompact: {
+    padding: spacing.md,
+  },
+  customerCardHeader: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  customerCode: {
+    color: palette.secondary,
+    fontWeight: '600',
+    fontSize: 11,
+  },
+  statusRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
+  },
+  statusDotSuccess: {
+    backgroundColor: palette.success,
+  },
+  statusDotWarning: {
+    backgroundColor: palette.warning,
+  },
+  statusText: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  customerId: {
+    color: palette.primary,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  customerMeta: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  customerActionRow: {
+    marginTop: spacing.sm,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  detailCard: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    backgroundColor: palette.surface,
+    gap: spacing.xs,
+  },
+  detailTitle: {
+    color: palette.primary,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  detailActionRow: {
+    marginTop: spacing.sm,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  approvedList: {
+    gap: spacing.sm,
+  },
+  approvedRow: {
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: 2,
+  },
+  approvedTitle: {
+    color: palette.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  approvedMeta: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+  input: {
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: touchTarget.comfortable,
+    backgroundColor: palette.surface,
+    color: palette.text,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+  },
+  settingsRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  settingsLabel: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  settingsValue: {
+    color: palette.primary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  settingsActionRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
   },
   loadingState: {
-    minHeight: 70,
+    minHeight: 88,
     borderRadius: radius.md,
     backgroundColor: palette.surfaceLow,
     alignItems: 'center',
@@ -523,114 +1107,65 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   emptyState: {
-    minHeight: 70,
+    minHeight: 88,
     borderRadius: radius.md,
     backgroundColor: palette.surfaceLow,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.md,
   },
-  customerList: {
-    maxHeight: 212,
-  },
-  customerListContent: {
-    gap: spacing.md,
-    paddingHorizontal: 2,
-  },
-  customerCard: {
-    borderWidth: 0,
-    borderRadius: radius.md,
-    backgroundColor: palette.surface,
-    padding: 14,
-    gap: spacing.xs,
-    width: 284,
-    minHeight: touchTarget.comfortable,
-    justifyContent: 'center',
-    shadowColor: palette.secondary,
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
-  },
-  customerCardSelected: {
-    backgroundColor: palette.primaryFixed,
-  },
-  customerCardPressed: {
-    opacity: 0.85,
-  },
-  customerId: {
-    fontWeight: '700',
-    color: palette.primary,
-  },
-  customerMeta: {
+  mutedText: {
     color: palette.textMuted,
-    fontSize: 13,
-  },
-  divider: {
-    height: spacing.sm,
-    backgroundColor: 'transparent',
-    marginVertical: 2,
-  },
-  approvedItemsList: {
-    maxHeight: 220,
-  },
-  approvedItemsListContent: {
-    gap: spacing.sm,
-  },
-  approvedItemRow: {
-    borderWidth: 0,
-    borderRadius: radius.md,
-    backgroundColor: palette.surface,
-    padding: 12,
-    gap: 3,
-    shadowColor: palette.secondary,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 1,
-  },
-  approvedItemId: {
-    fontWeight: '700',
-    color: palette.primary,
-  },
-  approvedItemMeta: {
-    fontSize: 12,
-    color: palette.textMuted,
-  },
-  addItemPanel: {
-    marginTop: 2,
-    backgroundColor: palette.surfaceLow,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  addItemTitle: {
-    fontWeight: '700',
-    color: palette.primary,
-  },
-  input: {
-    borderWidth: 0,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: palette.surface,
-    color: palette.text,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    minHeight: touchTarget.comfortable,
   },
   primaryButton: {
-    marginTop: 2,
     borderRadius: radius.md,
-    backgroundColor: palette.primaryContainer,
     minHeight: touchTarget.comfortable,
+    backgroundColor: palette.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: palette.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    paddingHorizontal: spacing.md,
+  },
+  primaryButtonSmall: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.min,
+    backgroundColor: palette.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    flex: 1,
+  },
+  secondaryButtonSmall: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.min,
+    backgroundColor: palette.secondaryFixed,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    flex: 1,
+  },
+  secondaryButtonLarge: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.comfortable,
+    backgroundColor: palette.secondaryFixed,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    flex: 1,
+  },
+  dangerButton: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.comfortable,
+    backgroundColor: palette.dangerSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    flex: 1,
+  },
+  dangerButtonText: {
+    color: palette.danger,
+    fontWeight: '700',
   },
   primaryButtonDisabled: {
     opacity: 0.6,
@@ -638,36 +1173,39 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#fff',
     fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  secondaryButton: {
-    borderRadius: radius.md,
-    minHeight: touchTarget.min,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0,
-    backgroundColor: palette.secondaryFixed,
+    fontSize: 13,
+    textAlign: 'center',
   },
   secondaryButtonText: {
-    fontWeight: '600',
     color: palette.primary,
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'center',
   },
-  linkButton: {
+  backButton: {
     minHeight: touchTarget.min,
-    paddingHorizontal: 10,
+    borderRadius: radius.md,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  linkButtonInline: {
+    minHeight: touchTarget.min,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
     justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   linkButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
   linkButtonText: {
     color: palette.primaryContainer,
     fontWeight: '600',
+    fontSize: 13,
   },
   errorBanner: {
-    borderWidth: 0,
     backgroundColor: palette.dangerSurface,
     borderRadius: radius.sm,
     padding: 10,
@@ -675,7 +1213,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   noticeBanner: {
-    borderWidth: 0,
     backgroundColor: '#f6efe5',
     borderRadius: radius.sm,
     padding: 10,
@@ -689,5 +1226,51 @@ const styles = StyleSheet.create({
   noticeText: {
     color: palette.warning,
     fontSize: 13,
+  },
+  bottomTabs: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    backgroundColor: palette.surface,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  tabButton: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  tabButtonActive: {
+    backgroundColor: palette.primaryContainer,
+  },
+  tabButtonPressed: {
+    opacity: 0.72,
+  },
+  tabLabel: {
+    color: palette.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tabIcon: {
+    color: palette.secondary,
+    fontSize: 18,
+    lineHeight: 18,
+  },
+  tabIconActive: {
+    color: '#fff',
+  },
+  tabLabelActive: {
+    color: '#fff',
   },
 })
