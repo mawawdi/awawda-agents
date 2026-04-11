@@ -56,6 +56,18 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `HASH_RECENT_ITEMS_PATH` (optional): recent-items path template (`/customers/{customerId}/recent-items` default)
 - `HASH_PRICING_PATH` (optional): pricing path template (`/customers/{customerId}/pricing` default)
 
+## Hashavshevet H-Connect environment variables
+
+- `HASH_HCONNECT_ENABLED` (optional): enables plugin-envelope mode for `ws.wizground.com` (`false` default)
+- `HASH_HCONNECT_ENDPOINT_URL` (optional): H-Connect API URL (`https://ws.wizground.com/api` default)
+- `HASH_HCONNECT_STATION` / `HASH_HCONNECT_COMPANY` / `HASH_HCONNECT_NET_PASSPORT_ID` (required when enabled): station/company/provider identity
+- `HASH_HCONNECT_SIGNATURE_TOKEN` (required when enabled): token used to build request signatures
+- `HASH_HCONNECT_REPORT_ASSIGNED_CUSTOMERS` / `HASH_HCONNECT_REPORT_CATALOG` / `HASH_HCONNECT_REPORT_RECENT_ITEMS` / `HASH_HCONNECT_REPORT_PRICING` (optional): encrypted report definitions for read flows
+- `HASH_HCONNECT_REPORT_*_PARAMS_JSON` (optional): raw JSON templates for `params_data`; supports `${agentId}` and `${customerId}` placeholders
+- `HASH_HCONNECT_HANDOFF_PLUGIN` (optional): import plugin for order handoff (`imovein` currently implemented)
+- `HASH_HCONNECT_HANDOFF_DOCUMENT_ID` (optional): `imovein` document id (`30` default)
+- `HASH_HCONNECT_HANDOFF_ACCOUNT_KEY` (optional): fixed account key override for handoff payloads
+
 Quick switch:
 
 ```bash

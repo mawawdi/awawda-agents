@@ -40,6 +40,15 @@ const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: string }>
   { id: 'settings', label: 'הגדרות', icon: '⚙' },
 ]
 
+type CustomerFilterId = 'all' | 'active' | 'needs_action' | 'pending_link'
+
+const CUSTOMER_FILTERS: Array<{ id: CustomerFilterId; label: string }> = [
+  { id: 'all', label: 'הכל' },
+  { id: 'active', label: 'פעיל' },
+  { id: 'needs_action', label: 'דורש פעולה' },
+  { id: 'pending_link', label: 'ממתין ללינק' },
+]
+
 function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; tone: 'success' | 'warning' } {
   if (customer.approvedItemsCount === 0) {
     return { label: 'דורש פעולה', tone: 'warning' }
@@ -63,6 +72,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const { signOut, profile, token } = useAuth()
   const [activeTab, setActiveTab] = useState<AgentDashboardTabId>('home')
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeCustomerFilter, setActiveCustomerFilter] = useState<CustomerFilterId>('all')
+  const [expandedCustomerIds, setExpandedCustomerIds] = useState<string[]>([])
 
   const [customers, setCustomers] = useState<AgentAssignedCustomer[]>([])
   const [isCustomersLoading, setIsCustomersLoading] = useState(true)
@@ -185,13 +196,38 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   )
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
-  const filteredCustomers = useMemo(() => {
-    if (!normalizedSearchQuery) {
-      return customers
-    }
+  const matchesCustomerFilter = useCallback(
+    (customer: AgentAssignedCustomer): boolean => {
+      if (activeCustomerFilter === 'all') {
+        return true
+      }
 
-    return customers.filter((customer) => customer.customerId.toLowerCase().includes(normalizedSearchQuery))
-  }, [customers, normalizedSearchQuery])
+      if (activeCustomerFilter === 'active') {
+        return customer.approvedItemsCount > 0
+      }
+
+      if (activeCustomerFilter === 'needs_action') {
+        return customer.approvedItemsCount === 0
+      }
+
+      return latestMagicLinkCustomerId !== customer.customerId
+    },
+    [activeCustomerFilter, latestMagicLinkCustomerId],
+  )
+
+  const filteredCustomers = useMemo(() => {
+    const scopedCustomers = normalizedSearchQuery
+      ? customers.filter((customer) => customer.customerId.toLowerCase().includes(normalizedSearchQuery))
+      : customers
+
+    return scopedCustomers.filter(matchesCustomerFilter)
+  }, [customers, matchesCustomerFilter, normalizedSearchQuery])
+
+  const toggleCustomerExpanded = useCallback((customerId: string) => {
+    setExpandedCustomerIds((current) =>
+      current.includes(customerId) ? current.filter((id) => id !== customerId) : [...current, customerId],
+    )
+  }, [])
 
   const priorityQueueCustomers = useMemo(() => {
     return [...filteredCustomers]
@@ -371,6 +407,44 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     )
   }
 
+  const renderCustomerInlineActions = (customerId: string, includeDetailAction = true): React.JSX.Element => {
+    return (
+      <View style={styles.customerActionStack}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void generateAndShareLink(customerId)
+          }}
+          style={({ pressed }) => [styles.primaryButtonSmallWide, pressed && styles.primaryButtonDisabled]}
+        >
+          <Text style={styles.primaryButtonText}>שלח לינק קסם</Text>
+        </Pressable>
+        <View style={styles.customerActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              openCustomerCatalog(customerId)
+            }}
+            style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+          >
+            <Text style={styles.secondaryButtonText}>קטלוג</Text>
+          </Pressable>
+          {includeDetailAction ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                openCustomerDetail(customerId)
+              }}
+              style={({ pressed }) => [styles.outlineButtonSmall, pressed && styles.primaryButtonDisabled]}
+            >
+              <Text style={styles.outlineButtonText}>פרטים</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    )
+  }
+
   const renderCustomersList = (isCompact = false): React.JSX.Element => {
     if (isCustomersLoading && customers.length === 0) {
       return (
@@ -392,44 +466,122 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     return (
-      <View style={styles.customerGrid}>
-        {filteredCustomers.map((customer) => {
-          const status = getCustomerStatus(customer)
-          return (
-            <View key={customer.customerId} style={[styles.customerCard, isCompact && styles.customerCardCompact]}>
-              <View style={styles.customerCardHeader}>
-                <View style={styles.statusRow}>
-                  <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
-                  <Text style={styles.statusText}>{status.label}</Text>
+      <View style={styles.customerListSection}>
+        {!isCompact ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.customerFilterScroller}
+            contentContainerStyle={styles.customerFilterContent}
+          >
+            {CUSTOMER_FILTERS.map((filter) => {
+              const isSelected = filter.id === activeCustomerFilter
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={filter.id}
+                  onPress={() => {
+                    setActiveCustomerFilter(filter.id)
+                  }}
+                  style={({ pressed }) => [
+                    styles.filterChip,
+                    isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                    pressed && styles.tabButtonPressed,
+                  ]}
+                >
+                  <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                    {filter.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        ) : null}
+
+        <View style={styles.customerGrid}>
+          {filteredCustomers.map((customer) => {
+            const status = getCustomerStatus(customer)
+            const isExpanded = expandedCustomerIds.includes(customer.customerId)
+            const hasRecentMagicLink = latestMagicLinkCustomerId === customer.customerId && latestMagicLink
+
+            return (
+              <View
+                key={customer.customerId}
+                style={[
+                  styles.customerCard,
+                  isCompact && styles.customerCardCompact,
+                  status.tone === 'success' ? styles.customerCardPrimaryBorder : styles.customerCardSecondaryBorder,
+                ]}
+              >
+                <View style={styles.customerCardHeader}>
+                  <View style={styles.statusRow}>
+                    <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
+                    <Text style={styles.statusText}>{status.label}</Text>
+                  </View>
+                  <Text style={styles.customerCode}>#{customer.customerId}</Text>
                 </View>
-                <Text style={styles.customerCode}>#{customer.customerId}</Text>
+
+                <Text style={styles.customerId}>{customer.customerId}</Text>
+                <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
+                <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
+
+                {isCompact ? (
+                  <View style={styles.customerActionRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        void generateAndShareLink(customer.customerId)
+                      }}
+                      style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+                    >
+                      <Text style={styles.primaryButtonText}>שליחת קישור</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        openCustomerDetail(customer.customerId)
+                      }}
+                      style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+                    >
+                      <Text style={styles.secondaryButtonText}>פרטי לקוח</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        toggleCustomerExpanded(customer.customerId)
+                      }}
+                      style={({ pressed }) => [styles.customerToggle, pressed && styles.linkButtonDisabled]}
+                    >
+                      <Text style={styles.customerToggleText}>{isExpanded ? 'הסתר פרטים' : 'הצג פרטים נוספים'}</Text>
+                      <Text style={styles.iconSecondary}>{isExpanded ? '⌃' : '⌄'}</Text>
+                    </Pressable>
+
+                    {isExpanded ? (
+                      <View style={styles.customerExpandedSection}>
+                        <View style={styles.customerDetailGrid}>
+                          <View style={styles.customerDetailCell}>
+                            <Text style={styles.customerDetailLabel}>מזהה לקוח</Text>
+                            <Text style={styles.customerDetailValue}>{customer.customerId}</Text>
+                          </View>
+                          <View style={styles.customerDetailCell}>
+                            <Text style={styles.customerDetailLabel}>סטטוס קישור</Text>
+                            <Text style={styles.customerDetailValue}>
+                              {hasRecentMagicLink ? `נשלח לאחרונה • ${formatMagicLinkExpiry(latestMagicLink.expiresAt)}` : 'ממתין לשליחה'}
+                            </Text>
+                          </View>
+                        </View>
+                        {renderCustomerInlineActions(customer.customerId)}
+                      </View>
+                    ) : null}
+                  </>
+                )}
               </View>
-              <Text style={styles.customerId}>{customer.customerId}</Text>
-              <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-              <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
-              <View style={styles.customerActionRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    void generateAndShareLink(customer.customerId)
-                  }}
-                  style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-                >
-                  <Text style={styles.primaryButtonText}>שליחת קישור</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    openCustomerDetail(customer.customerId)
-                  }}
-                  style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-                >
-                  <Text style={styles.secondaryButtonText}>פרטי לקוח</Text>
-                </Pressable>
-              </View>
-            </View>
-          )
-        })}
+            )
+          })}
+        </View>
       </View>
     )
   }
@@ -538,26 +690,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           <Text style={styles.detailTitle}>{selectedCustomer.customerId}</Text>
           <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
           <Text style={styles.customerMeta}>סה״כ פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
-          <View style={styles.detailActionRow}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                void generateAndShareLink(selectedCustomer.customerId)
-              }}
-              style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-            >
-              <Text style={styles.primaryButtonText}>שלח קישור הזמנה</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                openCustomerCatalog(selectedCustomer.customerId)
-              }}
-              style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-            >
-              <Text style={styles.secondaryButtonText}>מעבר לקטלוג</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              openCustomerCatalog(selectedCustomer.customerId)
+            }}
+            style={({ pressed }) => [styles.secondaryButtonLarge, pressed && styles.primaryButtonDisabled]}
+          >
+            <Text style={styles.secondaryButtonText}>מעבר לקטלוג המאושר</Text>
+          </Pressable>
         </View>
 
         {renderMagicLinkActions(selectedCustomer.customerId)}
@@ -624,7 +765,6 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
             <Text style={styles.customerMeta}>פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
           </View>
-          {renderMagicLinkActions(selectedCustomer.customerId)}
           <View style={styles.panelSection}>
             <Text style={styles.panelTitle}>פריטים מאושרים</Text>
             {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
@@ -762,7 +902,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           accessibilityLabel="Search customers"
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="חיפוש לפי מזהה לקוח"
+          placeholder="חיפוש לפי שם לקוח או מזהה..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchInput}
@@ -977,6 +1117,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 12,
   },
+  customerListSection: {
+    gap: spacing.sm,
+  },
+  customerFilterScroller: {
+    maxHeight: 44,
+  },
+  customerFilterContent: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: 2,
+  },
+  filterChip: {
+    borderRadius: radius.pill,
+    minHeight: 36,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterChipSelected: {
+    backgroundColor: palette.primaryContainer,
+  },
+  filterChipDefault: {
+    backgroundColor: palette.surfaceMid,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filterChipTextSelected: {
+    color: '#fff',
+  },
+  filterChipTextDefault: {
+    color: palette.secondary,
+  },
   customerGrid: {
     gap: spacing.md,
   },
@@ -985,6 +1160,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.xs,
+  },
+  customerCardPrimaryBorder: {
+    borderRightWidth: 4,
+    borderRightColor: palette.primaryContainer,
+  },
+  customerCardSecondaryBorder: {
+    borderRightWidth: 4,
+    borderRightColor: palette.secondary,
   },
   customerCardCompact: {
     padding: spacing.md,
@@ -1033,6 +1216,49 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     gap: spacing.sm,
+  },
+  customerActionStack: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  customerToggle: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  customerToggleText: {
+    color: palette.secondary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  customerExpandedSection: {
+    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: palette.outline,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  customerDetailGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  customerDetailCell: {
+    flexGrow: 1,
+    minWidth: 132,
+    gap: 2,
+  },
+  customerDetailLabel: {
+    color: palette.secondary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  customerDetailValue: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   detailCard: {
     borderRadius: radius.lg,
@@ -1136,6 +1362,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     flex: 1,
   },
+  primaryButtonSmallWide: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.min,
+    backgroundColor: palette.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
   secondaryButtonSmall: {
     borderRadius: radius.md,
     minHeight: touchTarget.min,
@@ -1144,6 +1378,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     flex: 1,
+  },
+  outlineButtonSmall: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.min,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    flex: 1,
+    backgroundColor: palette.surface,
+  },
+  outlineButtonText: {
+    color: palette.secondary,
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'center',
   },
   secondaryButtonLarge: {
     borderRadius: radius.md,

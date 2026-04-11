@@ -2,13 +2,14 @@ import { expect, test } from '@playwright/test';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 
 const portalBaseUrl = 'http://127.0.0.1:4173';
+const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 const activationResponse = {
   sessionToken: 'session-token-77',
   customer: {
     customerId: 'cust-777',
   },
-  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  sessionExpiresAt,
   recentItems: [
     {
       itemId: 'item-1',
@@ -34,7 +35,7 @@ const portalDataResponse = {
   customer: {
     customerId: 'cust-777',
   },
-  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  sessionExpiresAt,
   recentItems: activationResponse.recentItems,
   approvedItems: activationResponse.approvedItems,
   pricing: activationResponse.pricing,
@@ -262,7 +263,7 @@ test.describe('customer portal browser critical paths', () => {
     });
 
     await page.route('**/v1/customer/portal-data', async (route) => {
-      await page.waitForTimeout(3_000);
+      await page.waitForTimeout(4_500);
       await route.fulfill({
         status: 503,
         contentType: 'application/json',

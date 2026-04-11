@@ -18,7 +18,10 @@ const FALLBACK_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([
   ERP_ERROR_CODES.ERP_UNAVAILABLE,
   ERP_ERROR_CODES.ERP_TIMEOUT,
   ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
-  ERP_ERROR_CODES.ERP_ORDER_HANDOFF_FAILED,
+]);
+const NON_FALLBACK_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([
+  ERP_ERROR_CODES.ERP_AUTH_FAILED,
+  ERP_ERROR_CODES.ERP_VALIDATION_FAILED,
 ]);
 
 @Injectable()
@@ -30,10 +33,12 @@ export class CompositeErpGateway implements ErpGateway {
 
   async handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse> {
     try {
-      return await this.hashavshevetAdapter.handoffOrder(request);
+      const response = await this.hashavshevetAdapter.handoffOrder(request);
+      return this.toStableHandoffResponse(response);
     } catch (error) {
-      if (isErpGatewayError(error) && FALLBACK_ERROR_CODES.has(error.code)) {
-        return this.bmaxXmlAdapter.handoffOrder(request);
+      if (shouldFallbackToBmax(error)) {
+        const fallbackResponse = await this.bmaxXmlAdapter.handoffOrder(request);
+        return this.toStableHandoffResponse(fallbackResponse);
       }
 
       throw error;
@@ -59,4 +64,41 @@ export class CompositeErpGateway implements ErpGateway {
   async getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot> {
     return this.hashavshevetAdapter.getCustomerPricing(customerId);
   }
+
+  private toStableHandoffResponse(response: ErpOrderHandoffResponse): ErpOrderHandoffResponse {
+    return {
+      status: response.status,
+      provider: response.provider,
+      externalRef: response.externalRef,
+      acceptedAt: response.acceptedAt,
+    };
+  }
+}
+
+function shouldFallbackToBmax(error: unknown): boolean {
+  const errorCodes = collectErrorCodeChain(error);
+
+  if (errorCodes.length === 0) {
+    return false;
+  }
+
+  if (errorCodes.some((code) => NON_FALLBACK_ERROR_CODES.has(code))) {
+    return false;
+  }
+
+  return errorCodes.some((code) => FALLBACK_ERROR_CODES.has(code));
+}
+
+function collectErrorCodeChain(error: unknown): ErpErrorCode[] {
+  const codes: ErpErrorCode[] = [];
+  const seen = new Set<unknown>();
+  let currentError: unknown = error;
+
+  while (isErpGatewayError(currentError) && !seen.has(currentError)) {
+    codes.push(currentError.code);
+    seen.add(currentError);
+    currentError = currentError.cause;
+  }
+
+  return codes;
 }

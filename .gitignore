@@ -16,3 +16,5 @@ coverage/
 
 # Deployment environment overrides
 infra/compose/deploy.env
+
+test-results/
