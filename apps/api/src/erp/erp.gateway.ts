@@ -30,6 +30,20 @@ export type ErpOrderHandoffResponse = {
   acceptedAt: string;
 };
 
+export type ErpOrderCancelRequest = {
+  orderId: string;
+  orderRef: string | null;
+  customerId: string;
+  reason?: string;
+};
+
+export type ErpOrderCancelResponse = {
+  status: 'cancelled' | 'pending_retry';
+  provider: 'hashavshevet' | 'bmax_xml';
+  externalRef: string;
+  canceledAt: string;
+};
+
 export type ErpGatewayHealth = {
   provider: 'hashavshevet';
   status: 'up' | 'degraded' | 'down';
@@ -63,6 +77,7 @@ export type ErpGatewayCustomerPricingSnapshot = {
 
 export interface ErpGateway {
   handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse>;
+  cancelOrder?(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse>;
   getHealth(): Promise<ErpGatewayHealth>;
   getAssignedCustomers(agentId: string): Promise<ErpGatewayAssignedCustomersSnapshot>;
   getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot>;

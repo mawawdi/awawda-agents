@@ -88,6 +88,24 @@ type CatalogLine = {
   currency: string | null;
 };
 
+function deriveItemDisplayName(itemId: string): string {
+  const normalized = itemId.replace(/^itm-/, '').replace(/^item-/, '').replaceAll('-', ' ').trim();
+
+  if (!normalized) {
+    return 'מוצר';
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return `מוצר ${normalized}`;
+  }
+
+  return normalized
+    .split(' ')
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export function createOrderLoadingState(): OrderPageState {
   return { status: 'loading', canRetry: false, weakNetworkHint: false };
 }
@@ -252,7 +270,7 @@ function buildReadyState(
 
   const approvedSection = input.approvedItems.map((item) => {
     const catalogLine = lineById.get(item.hashItemId);
-    const name = catalogLine?.name ?? `פריט מאושר ${item.hashItemId}`;
+    const name = catalogLine?.name ?? deriveItemDisplayName(item.hashItemId);
     const price = pricingMap.get(item.hashItemId);
 
     return {
@@ -344,7 +362,7 @@ function buildCatalog(input: OrderCompositionInput): CatalogLine[] {
 
     catalog.set(approved.hashItemId, {
       itemId: approved.hashItemId,
-       name: existing?.name ?? `פריט מאושר ${approved.hashItemId}`,
+      name: existing?.name ?? deriveItemDisplayName(approved.hashItemId),
       unitPrice: price?.unitPrice ?? existing?.unitPrice ?? null,
       currency: price?.currency ?? existing?.currency ?? null,
     });

@@ -50,7 +50,7 @@ describe('order composition interactions and UX states', () => {
         approved: {
           items: [
             { itemId: 'item-1', quantity: 0 },
-            { itemId: 'item-2', name: 'פריט מאושר item-2', quantity: 0 },
+            { itemId: 'item-2', name: 'מוצר 2', quantity: 0 },
           ],
         },
       },
@@ -155,6 +155,60 @@ describe('order composition interactions and UX states', () => {
       submitBar: {
         submitEnabled: true,
         submitLabel: 'שליחת הזמנה למפעל (1 יחידות)',
+      },
+    });
+  });
+
+  it('derives readable fallback names for approved-only items', () => {
+    const ready = createOrderReadyState({
+      recentItems: [],
+      approvedItems: [
+        { hashItemId: 'itm-frozen-burger', createdAt: '2026-04-08T09:00:00.000Z' },
+        { hashItemId: 'item-45', createdAt: '2026-04-08T09:00:00.000Z' },
+        { hashItemId: 'item-', createdAt: '2026-04-08T09:00:00.000Z' },
+      ],
+      pricing: [],
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      sections: {
+        approved: {
+          items: [
+            { itemId: 'itm-frozen-burger', name: 'Frozen Burger' },
+            { itemId: 'item-45', name: 'מוצר 45' },
+            { itemId: 'item-', name: 'מוצר' },
+          ],
+        },
+      },
+    });
+  });
+
+  it('keeps unknown-price lines visible in summary when pricing is partially missing', () => {
+    const ready = createOrderReadyState({
+      viewportWidthPx: 1024,
+      recentItems: [{ itemId: 'itm-1', name: 'Ribeye', lastOrderedAt: '2026-04-08T10:00:00.000Z' }],
+      approvedItems: [{ hashItemId: 'itm-2', createdAt: '2026-04-08T10:00:00.000Z' }],
+      pricing: [{ itemId: 'itm-1', unitPrice: 100, currency: 'ILS' }],
+      initialQuantities: {
+        'itm-1': 1,
+        'itm-2': 2,
+      },
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      layout: 'desktop',
+      cart: {
+        lineCount: 2,
+        totalUnits: 3,
+        estimatedTotal: 100,
+        unknownPriceLineCount: 1,
+      },
+      submitBar: {
+        visible: true,
+        mobileOptimized: false,
+        summaryLabel: 'לא ניתן לחשב סכום משוער עבור חלק מהפריטים',
       },
     });
   });

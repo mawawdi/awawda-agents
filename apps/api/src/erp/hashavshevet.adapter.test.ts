@@ -343,6 +343,61 @@ describe.sequential('HashavshevetAdapter', () => {
     ]);
   });
 
+  it('uses H-Connect imovein plugin for order cancellation', async () => {
+    process.env.HASH_HCONNECT_ENABLED = 'true';
+    process.env.HASH_HCONNECT_ENDPOINT_URL = 'https://ws.wizground.com/api';
+    process.env.HASH_HCONNECT_STATION = 'station-2';
+    process.env.HASH_HCONNECT_COMPANY = 'demo';
+    process.env.HASH_HCONNECT_NET_PASSPORT_ID = '26666';
+    process.env.HASH_HCONNECT_SIGNATURE_TOKEN = 'handoff-secret';
+    process.env.HASH_HCONNECT_HANDOFF_PLUGIN = 'imovein';
+    process.env.HASH_HCONNECT_HANDOFF_DOCUMENT_ID = '31';
+    process.env.HASH_HCONNECT_HANDOFF_ACCOUNT_KEY = 'customer-override';
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createJsonResponse({
+        data: [{ reference: '123456789' }],
+      }),
+    );
+
+    const adapter = new HashavshevetAdapter();
+
+    await expect(
+      adapter.cancelOrder({
+        orderId: 'order-1234',
+        orderRef: 'ORD-1234',
+        customerId: 'cust-100',
+        reason: 'Customer requested cancellation',
+      }),
+    ).resolves.toMatchObject({
+      status: 'cancelled',
+      provider: 'hashavshevet',
+      externalRef: expect.any(String),
+      canceledAt: expect.any(String),
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [, calledInit] = fetchSpy.mock.calls[0] as [URL, RequestInit];
+    const body = JSON.parse(String(calledInit.body)) as {
+      plugin: string;
+      message: {
+        pluginData: Array<Record<string, string>>;
+      };
+    };
+    expect(body.plugin).toBe('imovein');
+    expect(body.message.pluginData).toEqual([
+      {
+        accountKey: 'customer-override',
+        documentid: '31',
+        reference: '1234',
+        action: 'cancel',
+        orderid: 'order-1234',
+        orderref: 'ORD-1234',
+        remarks: 'Customer requested cancellation',
+      },
+    ]);
+  });
+
   it('fails fast with ERP_NOT_IMPLEMENTED when H-Connect handoff is disabled', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const adapter = new HashavshevetAdapter();

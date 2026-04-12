@@ -125,4 +125,166 @@ describe('agent customers client', () => {
       },
     })
   })
+
+  it('loads paginated orders with date/search filters', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { listAgentOrders } = await import('../api/agent-customers-client')
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          orders: [
+            {
+              orderId: 'order-1',
+              orderRef: 'ORD-1',
+              customerId: 'cust-alpha',
+              customerName: 'Alpha',
+              submittedAt: '2026-04-12T09:00:00.000Z',
+              status: 'submitted',
+              estimatedTotal: 249.5,
+              currency: 'ILS',
+              canCancel: true,
+              items: [
+                {
+                  itemId: 'itm-1',
+                  itemName: 'Ribeye',
+                  quantity: 2,
+                  unit: 'kg',
+                  lineTotal: 249.5,
+                },
+              ],
+            },
+          ],
+          page: 2,
+          pageSize: 1,
+          total: 3,
+          totalPages: 3,
+          generatedAt: '2026-04-12T09:30:00.000Z',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    const response = await listAgentOrders('token-42', {
+      page: 2,
+      pageSize: 1,
+      fromDate: '2026-04-01',
+      toDate: '2026-04-30',
+      query: 'ribeye',
+    })
+
+    expect(response.totalPages).toBe(3)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/agent/orders?page=2&pageSize=1&fromDate=2026-04-01&toDate=2026-04-30&query=ribeye'),
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-42',
+        },
+      },
+    )
+  })
+
+  it('cancels an order and returns cancellation metadata', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { cancelAgentOrder } = await import('../api/agent-customers-client')
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          orderId: 'order-7',
+          removed: true,
+          status: 'cancelled',
+          canceledAt: '2026-04-12T10:00:00.000Z',
+          mode: 'testing_local_delete',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    const response = await cancelAgentOrder('token-42', 'order-7', 'לקוח ביטל')
+
+    expect(response).toMatchObject({
+      orderId: 'order-7',
+      status: 'cancelled',
+      mode: 'testing_local_delete',
+    })
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/orders/order-7/cancel'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: 'Bearer token-42',
+      },
+      body: JSON.stringify({
+        reason: 'לקוח ביטל',
+      }),
+    })
+  })
+
+  it('surfaces operator-friendly message when order cancellation target is missing', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { listAgentOrders } = await import('../api/agent-customers-client')
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          message: 'Order not found',
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    await expect(listAgentOrders('token-42')).rejects.toThrow('Order not found')
+  })
+
+  it('rejects cancel order when order ID is blank before making network call', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { cancelAgentOrder } = await import('../api/agent-customers-client')
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+    await expect(cancelAgentOrder('token-42', '   ')).rejects.toThrow(
+      'Order ID is required to cancel an order.',
+    )
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('sends cancel order request even when no reason is provided', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { cancelAgentOrder } = await import('../api/agent-customers-client')
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          orderId: 'order-8',
+          removed: true,
+          status: 'cancelled',
+          canceledAt: '2026-04-12T10:10:00.000Z',
+          mode: 'testing_local_delete',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    await cancelAgentOrder('token-42', 'order-8')
+
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/orders/order-8/cancel'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: 'Bearer token-42',
+      },
+      body: JSON.stringify({}),
+    })
+  })
 })

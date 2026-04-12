@@ -38,6 +38,10 @@ function isLocalLikeBaseUrl(baseUrl: string): boolean {
 function buildCandidateBaseUrls(baseUrl: string): string[] {
   const candidates = [baseUrl]
   if (isLocalLikeBaseUrl(baseUrl)) {
+    const expoGoHostFallback = resolveExpoGoHostFallbackUrl()
+    if (expoGoHostFallback && !candidates.includes(expoGoHostFallback)) {
+      candidates.push(expoGoHostFallback)
+    }
     for (const fallback of LOCAL_FALLBACK_BASE_URLS) {
       if (!candidates.includes(fallback)) {
         candidates.push(fallback)
@@ -45,6 +49,43 @@ function buildCandidateBaseUrls(baseUrl: string): string[] {
     }
   }
   return candidates
+}
+
+function resolveExpoGoHostFallbackUrl(): string | null {
+  const explicitExpoGoHost = process.env.EXPO_PUBLIC_EXPO_GO_HOST?.trim()
+  if (explicitExpoGoHost) {
+    const normalizedHost = explicitExpoGoHost
+      .replace(/^https?:\/\//i, '')
+      .replace(/:\d+$/, '')
+      .trim()
+    if (normalizedHost.length > 0) {
+      return `http://${normalizedHost}:3000`
+    }
+  }
+
+  try {
+    const reactNative = require('react-native') as {
+      NativeModules?: {
+        SourceCode?: {
+          scriptURL?: string
+        }
+      }
+    }
+
+    const scriptUrl = reactNative.NativeModules?.SourceCode?.scriptURL
+    if (!scriptUrl || typeof scriptUrl !== 'string') {
+      return null
+    }
+
+    const host = new URL(scriptUrl).hostname
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      return null
+    }
+
+    return `http://${host}:3000`
+  } catch {
+    return null
+  }
 }
 
 async function requestLogin(baseUrl: string, input: LoginInput): Promise<Response> {

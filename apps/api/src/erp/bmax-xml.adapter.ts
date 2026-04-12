@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
-import type { ErpOrderHandoffRequest, ErpOrderHandoffResponse } from './erp.gateway';
+import type {
+  ErpOrderCancelRequest,
+  ErpOrderCancelResponse,
+  ErpOrderHandoffRequest,
+  ErpOrderHandoffResponse,
+} from './erp.gateway';
 
 @Injectable()
 export class BMaxXmlAdapter {
@@ -13,6 +18,15 @@ export class BMaxXmlAdapter {
       provider: 'bmax_xml',
       externalRef: `bmax-queue:${request.orderId}:${payloadSize}`,
       acceptedAt: new Date().toISOString(),
+    };
+  }
+
+  async cancelOrder(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse> {
+    return {
+      status: 'pending_retry',
+      provider: 'bmax_xml',
+      externalRef: request.orderRef ?? request.orderId,
+      canceledAt: new Date().toISOString(),
     };
   }
 

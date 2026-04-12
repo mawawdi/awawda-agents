@@ -318,6 +318,7 @@ input {
   display: grid;
   gap: 22px;
   grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  align-items: start;
 }
 
 .portal-column {
@@ -395,9 +396,10 @@ input {
 }
 
 .summary-card {
-  padding: 20px;
+  padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
+  align-content: start;
 }
 
 .summary-card h2 {
@@ -426,7 +428,9 @@ input {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
 }
 
 .feedback {

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { AuditActorType, IdempotencyScope, MagicLinkStatus, OrderStatus, Prisma, PrismaClient, SessionStatus } from '@prisma/client';
 
+import type { AgentOrdersRepository } from './agent-orders.types';
 import { CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE } from './orders.errors';
 import type {
   OrderSubmitReplay,
@@ -13,7 +14,7 @@ import type {
 } from './orders.types';
 
 @Injectable()
-export class PrismaOrdersRepository implements OrdersRepository {
+export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async reserveIdempotencyKey(input: ReserveIdempotencyKeyInput): Promise<ReserveIdempotencyKeyResult> {
@@ -214,6 +215,162 @@ export class PrismaOrdersRepository implements OrdersRepository {
       });
     });
   }
+
+  async listAgentOrders(input: {
+    agentId: string;
+    page: number;
+    pageSize: number;
+    fromDate?: string;
+    toDate?: string;
+    query?: string;
+  }): Promise<{
+    orders: Array<{
+      orderId: string;
+      orderRef: string | null;
+      customerId: string;
+      customerName: string;
+      submittedAt: string;
+      status: 'submitted' | 'pending_retry' | 'failed';
+      estimatedTotal: number;
+      currency: string;
+      items: Array<{
+        itemId: string;
+        itemName: string;
+        quantity: number;
+        unit: 'kg' | 'unit';
+        lineTotal: number;
+      }>;
+      canCancel: boolean;
+      orderStatus: 'submitted' | 'pending_retry' | 'failed';
+    }>;
+    total: number;
+  }> {
+    const assignments = await this.prisma.assignment.findMany({
+      where: { agentId: input.agentId },
+      select: { hashCustomerId: true },
+    });
+    const assignedCustomerIds = [...new Set(assignments.map((assignment) => assignment.hashCustomerId))];
+    if (assignedCustomerIds.length === 0) {
+      return { orders: [], total: 0 };
+    }
+
+    const where: Prisma.OrderWhereInput = {
+      hashCustomerId: { in: assignedCustomerIds },
+    };
+
+    const submittedAtFilter = buildSubmittedAtFilter(input.fromDate, input.toDate);
+    if (submittedAtFilter) {
+      where.submittedAt = submittedAtFilter;
+    }
+
+    const searchFilter = buildOrderSearchFilter(input.query?.trim() ?? '');
+    if (searchFilter) {
+      where.OR = searchFilter;
+    }
+
+    const [total, rows] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+        skip: Math.max(0, (input.page - 1) * input.pageSize),
+        take: input.pageSize,
+        select: {
+          id: true,
+          hashOrderRef: true,
+          hashCustomerId: true,
+          submittedAt: true,
+          status: true,
+          estimatedTotal: true,
+          currency: true,
+          orderLines: {
+            select: {
+              hashItemId: true,
+              itemNameSnapshot: true,
+              quantity: true,
+              unit: true,
+              lineTotalSnapshot: true,
+            },
+            orderBy: [{ id: 'asc' }],
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      orders: rows.map((row) => {
+        const status = toContractOrderStatus(row.status);
+        return {
+          orderId: row.id,
+          orderRef: row.hashOrderRef,
+          customerId: row.hashCustomerId,
+          customerName: humanizeCustomerId(row.hashCustomerId),
+          submittedAt: row.submittedAt.toISOString(),
+          status,
+          orderStatus: status,
+          estimatedTotal: Number(row.estimatedTotal),
+          currency: row.currency,
+          items: row.orderLines.map((line) => ({
+            itemId: line.hashItemId,
+            itemName: line.itemNameSnapshot,
+            quantity: Number(line.quantity),
+            unit: line.unit === 'kg' ? 'kg' : 'unit',
+            lineTotal: Number(line.lineTotalSnapshot),
+          })),
+          canCancel: status !== 'failed',
+        };
+      }),
+    };
+  }
+
+  async findAgentOrderForCancel(
+    agentId: string,
+    orderId: string,
+  ): Promise<{
+    orderId: string;
+    orderRef: string | null;
+    customerId: string;
+    status: 'submitted' | 'pending_retry' | 'failed';
+  } | null> {
+    const assignments = await this.prisma.assignment.findMany({
+      where: { agentId },
+      select: { hashCustomerId: true },
+    });
+    const assignedCustomerIds = [...new Set(assignments.map((assignment) => assignment.hashCustomerId))];
+    if (assignedCustomerIds.length === 0) {
+      return null;
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        hashCustomerId: { in: assignedCustomerIds },
+      },
+      select: {
+        id: true,
+        hashOrderRef: true,
+        hashCustomerId: true,
+        status: true,
+      },
+    });
+    if (!order) {
+      return null;
+    }
+
+    return {
+      orderId: order.id,
+      orderRef: order.hashOrderRef,
+      customerId: order.hashCustomerId,
+      status: toContractOrderStatus(order.status),
+    };
+  }
+
+  async deleteOrder(orderId: string): Promise<void> {
+    await this.prisma.order.delete({
+      where: { id: orderId },
+    });
+  }
 }
 
 function toOrderStatus(status: PersistOrderSubmissionInput['status']): OrderStatus {
@@ -308,6 +465,112 @@ function toReplayBody(value: Prisma.JsonValue): OrderSubmitReplay['body'] | null
 
 function isJsonRecord(value: Prisma.JsonValue): value is Prisma.JsonObject {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function buildSubmittedAtFilter(fromDate?: string, toDate?: string): Prisma.DateTimeFilter | null {
+  const filter: Prisma.DateTimeFilter = {};
+  const parsedFrom = parseDateOrNull(fromDate);
+  if (parsedFrom) {
+    filter.gte = parsedFrom;
+  }
+
+  const parsedTo = parseDateOrNull(toDate);
+  if (parsedTo) {
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(toDate ?? '');
+    if (isDateOnly) {
+      parsedTo.setUTCHours(23, 59, 59, 999);
+    }
+    filter.lte = parsedTo;
+  }
+
+  return Object.keys(filter).length > 0 ? filter : null;
+}
+
+function parseDateOrNull(value?: string): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function buildOrderSearchFilter(query: string): Prisma.OrderWhereInput['OR'] | null {
+  if (!query) {
+    return null;
+  }
+
+  const customerQueryCandidates = new Set<string>([
+    query,
+    query.toLowerCase().replace(/\s+/g, '-'),
+    `cust-${query.toLowerCase().replace(/\s+/g, '-')}`,
+  ]);
+
+  const customerIdFilters: Prisma.OrderWhereInput[] = [...customerQueryCandidates]
+    .map((candidate) => candidate.trim())
+    .filter((candidate) => candidate.length > 0)
+    .map((candidate) => ({
+      hashCustomerId: {
+        contains: candidate,
+        mode: 'insensitive',
+      },
+    }));
+
+  return [
+    ...customerIdFilters,
+    {
+      hashOrderRef: {
+        contains: query,
+        mode: 'insensitive',
+      },
+    },
+    {
+      orderLines: {
+        some: {
+          OR: [
+            {
+              hashItemId: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+            {
+              itemNameSnapshot: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        },
+      },
+    },
+  ];
+}
+
+function humanizeCustomerId(customerId: string): string {
+  const normalized = customerId
+    .trim()
+    .replace(/^cust-/, '')
+    .replaceAll('-', ' ')
+    .replace(/\s+/g, ' ');
+  if (!normalized) {
+    return customerId;
+  }
+
+  return normalized
+    .split(' ')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}
+
+function toContractOrderStatus(status: OrderStatus): 'submitted' | 'pending_retry' | 'failed' {
+  if (status === OrderStatus.SUBMITTED) {
+    return 'submitted';
+  }
+  if (status === OrderStatus.PENDING_RETRY) {
+    return 'pending_retry';
+  }
+  return 'failed';
 }
 
 export function createResponseHash(replay: OrderSubmitReplay): string {

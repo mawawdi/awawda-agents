@@ -153,6 +153,6 @@ describe('agent dashboard presenter', () => {
     expect(feed[0]?.kind).toBe('magic_link')
     expect(feed[1]?.kind).toBe('approved_item')
     expect(feed[2]?.kind).toBe('order')
-    expect(feed[1]?.reference).toBe('itm-55')
+    expect(feed[1]?.reference).toBe('עדכון קטלוג')
   })
 })

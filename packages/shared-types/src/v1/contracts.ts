@@ -54,12 +54,54 @@ export interface AgentApprovedItemMutationResponse {
   created: boolean;
 }
 
+export interface AgentOrderCardLine {
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  unit: 'kg' | 'unit';
+  lineTotal: number;
+}
+
+export interface AgentOrderCard {
+  orderId: string;
+  orderRef: string | null;
+  customerId: string;
+  customerName: string;
+  submittedAt: string;
+  status: 'submitted' | 'pending_retry' | 'failed';
+  estimatedTotal: number;
+  currency: string;
+  items: AgentOrderCardLine[];
+  canCancel: boolean;
+}
+
+export interface AgentOrdersResponse {
+  orders: AgentOrderCard[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  generatedAt: string;
+}
+
+export interface AgentOrderCancelResponse {
+  orderId: string;
+  removed: boolean;
+  status: 'cancelled';
+  canceledAt: string;
+  mode: 'testing_local_delete' | 'hashavshevet';
+}
+
 export interface AgentCatalogItem {
   itemId: string;
   sku: string;
   name: string;
   unit: 'kg' | 'unit';
   isActive: boolean;
+  category?: 'beef' | 'chicken' | 'lamb' | 'turkey' | 'veal' | 'offal' | 'prepared' | 'seafood';
+  iconEmoji?: string;
+  imageUrl?: string;
+  isTestingOnly?: boolean;
 }
 
 export interface AgentCatalogCacheMetadata {

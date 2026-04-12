@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import { ERP_ERROR_CODES, isErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
+  ErpOrderCancelRequest,
+  ErpOrderCancelResponse,
   ErpGateway,
   ErpGatewayAssignedCustomersSnapshot,
   ErpGatewayCatalogSnapshot,
@@ -45,6 +47,11 @@ export class CompositeErpGateway implements ErpGateway {
     }
   }
 
+  async cancelOrder(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse> {
+    const response = await this.hashavshevetAdapter.cancelOrder(request);
+    return this.toStableCancelResponse(response);
+  }
+
   async getHealth(): Promise<ErpGatewayHealth> {
     return this.hashavshevetAdapter.getHealth();
   }
@@ -71,6 +78,15 @@ export class CompositeErpGateway implements ErpGateway {
       provider: response.provider,
       externalRef: response.externalRef,
       acceptedAt: response.acceptedAt,
+    };
+  }
+
+  private toStableCancelResponse(response: ErpOrderCancelResponse): ErpOrderCancelResponse {
+    return {
+      status: response.status,
+      provider: response.provider,
+      externalRef: response.externalRef,
+      canceledAt: response.canceledAt,
     };
   }
 }

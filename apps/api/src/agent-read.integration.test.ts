@@ -7,6 +7,8 @@ import { AGENT_CUSTOMERS_REPOSITORY } from './customers/customers.constants';
 import type { AgentCustomersRepository } from './customers/customers.types';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from './erp/erp.gateway';
+import { AGENT_ORDERS_REPOSITORY } from './orders/orders.constants';
+import type { AgentOrdersRepository } from './orders/agent-orders.types';
 
 describe('Agent read endpoints', () => {
   let app: NestFastifyApplication;
@@ -355,6 +357,212 @@ describe('Agent read endpoints', () => {
       message: 'Agent is not assigned to this customer',
     });
     expect(addApprovedItemSpy).not.toHaveBeenCalled();
+  });
+
+  it('returns paged agent orders with filters', async () => {
+    const ordersRepository = app.get<AgentOrdersRepository>(AGENT_ORDERS_REPOSITORY);
+    vi.spyOn(ordersRepository, 'listAgentOrders').mockResolvedValue({
+      total: 3,
+      orders: [
+        {
+          orderId: 'order-100',
+          orderRef: 'ORD-100',
+          customerId: 'cust-alpha',
+          customerName: 'Alpha',
+          submittedAt: '2026-04-12T09:15:00.000Z',
+          status: 'submitted',
+          orderStatus: 'submitted',
+          estimatedTotal: 349.5,
+          currency: 'ILS',
+          canCancel: true,
+          items: [
+            {
+              itemId: 'itm-ribeye',
+              itemName: 'Ribeye Steak',
+              quantity: 2,
+              unit: 'kg',
+              lineTotal: 349.5,
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/orders?page=2&pageSize=1&fromDate=2026-04-01&toDate=2026-04-30&query=ribeye',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      page: 2,
+      pageSize: 1,
+      total: 3,
+      totalPages: 3,
+      orders: [
+        {
+          orderId: 'order-100',
+          orderRef: 'ORD-100',
+          customerId: 'cust-alpha',
+          customerName: 'Alpha',
+          status: 'submitted',
+          estimatedTotal: 349.5,
+        },
+      ],
+    });
+    expect(vi.mocked(ordersRepository.listAgentOrders)).toHaveBeenCalledWith({
+      agentId: 'agent-42',
+      page: 2,
+      pageSize: 1,
+      fromDate: '2026-04-01',
+      toDate: '2026-04-30',
+      query: 'ribeye',
+    });
+  });
+
+  it('uses default pagination when list query params are missing', async () => {
+    const ordersRepository = app.get<AgentOrdersRepository>(AGENT_ORDERS_REPOSITORY);
+    vi.spyOn(ordersRepository, 'listAgentOrders').mockResolvedValue({
+      total: 0,
+      orders: [],
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/agent/orders',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-51')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      page: 1,
+      pageSize: 8,
+      total: 0,
+      totalPages: 1,
+      orders: [],
+    });
+    expect(vi.mocked(ordersRepository.listAgentOrders)).toHaveBeenCalledWith({
+      agentId: 'agent-51',
+      page: 1,
+      pageSize: 8,
+      fromDate: undefined,
+      toDate: undefined,
+      query: undefined,
+    });
+  });
+
+  it('cancels orders in testing mode via local deletion path', async () => {
+    const ordersRepository = app.get<AgentOrdersRepository>(AGENT_ORDERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
+
+    vi.spyOn(ordersRepository, 'findAgentOrderForCancel').mockResolvedValue({
+      orderId: 'order-901',
+      orderRef: 'ORD-901',
+      customerId: 'cust-alpha',
+      status: 'submitted',
+    });
+    vi.spyOn(ordersRepository, 'deleteOrder').mockResolvedValue(undefined);
+    vi.spyOn(erpGateway, 'cancelOrder');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/orders/order-901/cancel',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+      payload: {
+        reason: 'לקוח ביטל',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      orderId: 'order-901',
+      removed: true,
+      status: 'cancelled',
+      mode: 'testing_local_delete',
+    });
+    expect(vi.mocked(ordersRepository.deleteOrder)).toHaveBeenCalledWith('order-901');
+    expect(vi.mocked(erpGateway.cancelOrder)).not.toHaveBeenCalled();
+  });
+
+  it('calls ERP cancellation path when HASH_ENV=production', async () => {
+    const previousHashEnv = process.env.HASH_ENV;
+    process.env.HASH_ENV = 'production';
+    const ordersRepository = app.get<AgentOrdersRepository>(AGENT_ORDERS_REPOSITORY);
+    const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
+
+    vi.spyOn(ordersRepository, 'findAgentOrderForCancel').mockResolvedValue({
+      orderId: 'order-902',
+      orderRef: 'ORD-902',
+      customerId: 'cust-prod',
+      status: 'submitted',
+    });
+    vi.spyOn(ordersRepository, 'deleteOrder').mockResolvedValue(undefined);
+    vi
+      .spyOn(
+        erpGateway as ErpGateway & { cancelOrder: NonNullable<ErpGateway['cancelOrder']> },
+        'cancelOrder',
+      )
+      .mockResolvedValue({
+        status: 'cancelled',
+        provider: 'hashavshevet',
+        externalRef: 'ORD-902',
+        canceledAt: '2026-04-12T11:11:00.000Z',
+      });
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/agent/orders/order-902/cancel',
+        headers: {
+          authorization: `Bearer ${signAgentToken('agent-42')}`,
+        },
+        payload: {
+          reason: 'Customer requested cancellation',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({
+        orderId: 'order-902',
+        mode: 'hashavshevet',
+      });
+      expect(vi.mocked(erpGateway.cancelOrder)).toHaveBeenCalledWith({
+        orderId: 'order-902',
+        orderRef: 'ORD-902',
+        customerId: 'cust-prod',
+        reason: 'Customer requested cancellation',
+      });
+    } finally {
+      restoreEnv('HASH_ENV', previousHashEnv);
+    }
+  });
+
+  it('returns 404 when an agent cancels an order outside their assignments', async () => {
+    const ordersRepository = app.get<AgentOrdersRepository>(AGENT_ORDERS_REPOSITORY);
+    vi.spyOn(ordersRepository, 'findAgentOrderForCancel').mockResolvedValue(null);
+    const deleteSpy = vi.spyOn(ordersRepository, 'deleteOrder');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/agent/orders/order-missing/cancel',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-42')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({
+      code: 'AGENT_ORDER_NOT_FOUND',
+      message: 'Order order-missing was not found for this agent',
+    });
+    expect(deleteSpy).not.toHaveBeenCalled();
   });
 });
 

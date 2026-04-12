@@ -9,6 +9,7 @@
     "start": "node dist/main.js",
     "test": "vitest run",
     "prisma:generate": "prisma generate",
+    "seed:testing": "tsx scripts/seed-testing-data.ts",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:reset": "prisma migrate reset --force"

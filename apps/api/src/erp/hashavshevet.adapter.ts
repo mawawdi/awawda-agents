@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
+import type { AgentCatalogItem } from '@meatland/shared-types';
 
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
+  ErpOrderCancelRequest,
+  ErpOrderCancelResponse,
   ErpGatewayAssignedCustomersSnapshot,
   ErpGatewayCatalogSnapshot,
   ErpGatewayCustomerPricingSnapshot,
@@ -92,6 +95,107 @@ const HCONNECT_DEFAULT_PLUGIN_BY_FAMILY: Record<HConnectPluginFamily, string> = 
   stockheaderin: 'istockheaderin',
 };
 
+const CUT_VISUALS: Record<
+  NonNullable<AgentCatalogItem['category']>,
+  { iconEmoji: string; imageUrl: string }
+> = {
+  beef: {
+    iconEmoji: '🥩',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
+  },
+  chicken: {
+    iconEmoji: '🍗',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f357.svg',
+  },
+  lamb: {
+    iconEmoji: '🍖',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f356.svg',
+  },
+  turkey: {
+    iconEmoji: '🦃',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f983.svg',
+  },
+  veal: {
+    iconEmoji: '🥩',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
+  },
+  offal: {
+    iconEmoji: '🥩',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
+  },
+  prepared: {
+    iconEmoji: '🍢',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f362.svg',
+  },
+  seafood: {
+    iconEmoji: '🐟',
+    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f41f.svg',
+  },
+};
+
+const TESTING_CATALOG_SPECS: Array<{
+  itemId: string;
+  sku: string;
+  name: string;
+  unit: AgentCatalogItem['unit'];
+  category: NonNullable<AgentCatalogItem['category']>;
+}> = [
+  { itemId: 'itm-beef-entrecote', sku: 'BEEF-ENT-001', name: 'Beef Entrecôte', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-mince', sku: 'BEEF-MIN-010', name: 'Beef Mince 20% Fat', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-lamb-ribs', sku: 'LAMB-RIB-002', name: 'Lamb Ribs', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-beef-ribeye', sku: 'BEEF-RBY-003', name: 'Ribeye Steak Prime', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-brisket', sku: 'BEEF-BRS-004', name: 'Beef Brisket Whole', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-tenderloin', sku: 'BEEF-TND-005', name: 'Tenderloin Center Cut', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-striploin', sku: 'BEEF-STR-006', name: 'Striploin NY', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-short-ribs', sku: 'BEEF-SRB-007', name: 'Short Ribs Bone-In', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-osso-buco', sku: 'BEEF-OSS-008', name: 'Osso Buco', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-picanha', sku: 'BEEF-PIC-009', name: 'Picanha', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-chuck-roll', sku: 'BEEF-CHK-011', name: 'Chuck Roll', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-beef-kebab', sku: 'BEEF-KBB-012', name: 'Kebab Skewers', unit: 'kg', category: 'prepared' },
+  { itemId: 'itm-veal-shank', sku: 'VEAL-SHK-013', name: 'Veal Shank', unit: 'kg', category: 'veal' },
+  { itemId: 'itm-veal-rack', sku: 'VEAL-RCK-014', name: 'Veal Rack Frenched', unit: 'kg', category: 'veal' },
+  { itemId: 'itm-lamb-chops', sku: 'LAMB-CHP-015', name: 'Lamb Chops', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-lamb-shoulder', sku: 'LAMB-SHD-016', name: 'Lamb Shoulder', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-lamb-shank', sku: 'LAMB-SHK-017', name: 'Lamb Shank', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-lamb-neck', sku: 'LAMB-NCK-018', name: 'Lamb Neck Fillet', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-chicken-breast', sku: 'CHK-BRS-019', name: 'Chicken Breast Skinless', unit: 'kg', category: 'chicken' },
+  { itemId: 'itm-chicken-thigh', sku: 'CHK-THG-020', name: 'Chicken Thigh Boneless', unit: 'kg', category: 'chicken' },
+  { itemId: 'itm-chicken-drumstick', sku: 'CHK-DRM-021', name: 'Chicken Drumstick', unit: 'kg', category: 'chicken' },
+  { itemId: 'itm-chicken-wing', sku: 'CHK-WNG-022', name: 'Chicken Wing Party Cut', unit: 'kg', category: 'chicken' },
+  { itemId: 'itm-chicken-whole', sku: 'CHK-WHL-023', name: 'Whole Chicken', unit: 'unit', category: 'chicken' },
+  { itemId: 'itm-turkey-breast', sku: 'TRK-BRS-024', name: 'Turkey Breast Roast', unit: 'kg', category: 'turkey' },
+  { itemId: 'itm-turkey-thigh', sku: 'TRK-THG-025', name: 'Turkey Thigh', unit: 'kg', category: 'turkey' },
+  { itemId: 'itm-duck-magret', sku: 'DCK-MGT-026', name: 'Duck Magret', unit: 'kg', category: 'prepared' },
+  { itemId: 'itm-beef-liver', sku: 'BEEF-LVR-027', name: 'Beef Liver', unit: 'kg', category: 'offal' },
+  { itemId: 'itm-chicken-liver', sku: 'CHK-LVR-028', name: 'Chicken Liver', unit: 'kg', category: 'offal' },
+  { itemId: 'itm-beef-heart', sku: 'BEEF-HRT-029', name: 'Beef Heart', unit: 'kg', category: 'offal' },
+  { itemId: 'itm-sausage-merguez', sku: 'PRP-MRG-030', name: 'Merguez Sausage', unit: 'kg', category: 'prepared' },
+  { itemId: 'itm-sausage-bratwurst', sku: 'PRP-BRT-031', name: 'Bratwurst Sausage', unit: 'kg', category: 'prepared' },
+  { itemId: 'itm-beef-burger-patty', sku: 'PRP-BRG-032', name: 'Burger Patty 180g', unit: 'unit', category: 'prepared' },
+  { itemId: 'itm-beef-smoked-brisket', sku: 'PRP-SMK-033', name: 'Smoked Brisket Slices', unit: 'kg', category: 'prepared' },
+  { itemId: 'itm-salmon-fillet', sku: 'SEA-SLM-034', name: 'Salmon Fillet', unit: 'kg', category: 'seafood' },
+  { itemId: 'itm-seabass-whole', sku: 'SEA-SBS-035', name: 'Sea Bass Whole', unit: 'unit', category: 'seafood' },
+  { itemId: 'itm-beef-bones', sku: 'BEEF-BON-036', name: 'Marrow Bones', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-chicken-bones', sku: 'CHK-BON-037', name: 'Chicken Soup Bones', unit: 'kg', category: 'chicken' },
+  { itemId: 'itm-lamb-mince', sku: 'LAMB-MIN-038', name: 'Lamb Mince', unit: 'kg', category: 'lamb' },
+  { itemId: 'itm-beef-carpaccio', sku: 'BEEF-CRP-039', name: 'Carpaccio Slices', unit: 'kg', category: 'beef' },
+  { itemId: 'itm-chicken-schnitzel', sku: 'CHK-SNZ-040', name: 'Chicken Schnitzel Cut', unit: 'kg', category: 'chicken' },
+];
+
+function buildTestingCatalogItems(): AgentCatalogItem[] {
+  return TESTING_CATALOG_SPECS.map((spec) => ({
+    itemId: spec.itemId,
+    sku: spec.sku,
+    name: spec.name,
+    unit: spec.unit,
+    isActive: true,
+    category: spec.category,
+    iconEmoji: CUT_VISUALS[spec.category].iconEmoji,
+    imageUrl: CUT_VISUALS[spec.category].imageUrl,
+    isTestingOnly: true,
+  }));
+}
+
 @Injectable()
 export class HashavshevetAdapter {
   private readonly config = loadHashavshevetConfig();
@@ -115,6 +219,19 @@ export class HashavshevetAdapter {
       }
 
       return this.handoffOrderViaHConnect(request);
+    });
+  }
+
+  async cancelOrder(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse> {
+    return this.withRetry('hashavshevet.cancelOrder', async () => {
+      if (!this.config.hconnect.enabled) {
+        throw new ErpGatewayError(
+          ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+          'Hashavshevet adapter skeleton is wired, but live transport is not configured yet.',
+        );
+      }
+
+      return this.cancelOrderViaHConnect(request);
     });
   }
 
@@ -231,29 +348,7 @@ export class HashavshevetAdapter {
       return {
         source: 'hashavshevet',
         syncedAt: new Date().toISOString(),
-        items: [
-          {
-            itemId: 'itm-beef-entrecote',
-            sku: 'BEEF-ENT-001',
-            name: 'Beef Entrecôte',
-            unit: 'kg',
-            isActive: true,
-          },
-          {
-            itemId: 'itm-beef-mince',
-            sku: 'BEEF-MIN-010',
-            name: 'Beef Mince 20% Fat',
-            unit: 'kg',
-            isActive: true,
-          },
-          {
-            itemId: 'itm-lamb-ribs',
-            sku: 'LAMB-RIB-002',
-            name: 'Lamb Ribs',
-            unit: 'kg',
-            isActive: true,
-          },
-        ],
+        items: buildTestingCatalogItems(),
       };
     }
 
@@ -378,6 +473,12 @@ export class HashavshevetAdapter {
       name: readRequiredString(entry, ['name', 'description', 'ItemName', 'itemName'], 'name'),
       unit: normalizeUnit(readRequiredString(entry, ['unit', 'uom', 'Unit'], 'unit')),
       isActive: readOptionalBoolean(entry, ['isActive', 'active']) ?? true,
+      category:
+        (readOptionalString(entry, ['category', 'Category']) as AgentCatalogItem['category'] | null | undefined) ??
+        undefined,
+      iconEmoji: readOptionalString(entry, ['iconEmoji', 'icon_emoji', 'emoji']) ?? undefined,
+      imageUrl: readOptionalString(entry, ['imageUrl', 'image_url', 'iconUrl']) ?? undefined,
+      isTestingOnly: readOptionalBoolean(entry, ['isTestingOnly', 'testingOnly']) ?? undefined,
     }));
 
     return {
@@ -474,6 +575,57 @@ export class HashavshevetAdapter {
       externalRef,
       acceptedAt:
         (responseRecord ? readOptionalString(responseRecord, ['acceptedAt', 'createdAt', 'timestamp']) : null) ??
+        now,
+    };
+  }
+
+  private async cancelOrderViaHConnect(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse> {
+    const plugin = this.config.hconnect.handoffPlugin.trim().toLowerCase();
+    if (plugin !== HCONNECT_DEFAULT_PLUGIN_BY_FAMILY.movein) {
+      throw new ErpGatewayError(
+        ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+        `Hashavshevet handoff plugin "${plugin}" is not implemented in this release.`,
+      );
+    }
+
+    const referenceBase = request.orderRef ?? request.orderId;
+    const referenceDigits = referenceBase.replaceAll(/\D+/g, '').slice(0, 9);
+    const reference =
+      referenceDigits.length > 0 ? referenceDigits : referenceBase.replaceAll('-', '').slice(0, 9);
+    const accountKey = this.config.hconnect.handoffAccountKey ?? request.customerId;
+
+    const pluginData = [
+      {
+        accountKey,
+        documentid: this.config.hconnect.handoffDocumentId,
+        reference,
+        action: 'cancel',
+        orderid: request.orderId,
+        orderref: request.orderRef ?? '',
+        remarks: request.reason ?? '',
+      },
+    ];
+
+    const payload = await this.invokeCapabilityPlugin('movein', pluginData, plugin);
+    const responseRecord = extractPrimaryRecord(payload);
+    const now = new Date().toISOString();
+
+    return {
+      status: 'cancelled',
+      provider: 'hashavshevet',
+      externalRef:
+        (responseRecord
+          ? readOptionalIdentifier(responseRecord, [
+              'externalRef',
+              'orderRef',
+              'reference',
+              'Reference',
+              'DocumentID',
+              'docNumber',
+            ])
+          : null) ?? referenceBase,
+      canceledAt:
+        (responseRecord ? readOptionalString(responseRecord, ['canceledAt', 'cancelledAt', 'timestamp']) : null) ??
         now,
     };
   }

@@ -5,7 +5,7 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
-export type AgentDashboardTabId = 'home' | 'customers' | 'catalog' | 'settings'
+export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'settings'
 
 export type AgentRecentTransactionKind = 'magic_link' | 'order' | 'approved_item'
 
@@ -17,6 +17,25 @@ export interface AgentRecentTransaction {
   detail: string
   reference: string
   sortTimestamp: number
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+}
+
+function humanizeIdentifier(value: string, prefixes: string[] = []): string {
+  let normalized = value.trim()
+  for (const prefix of prefixes) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length)
+      break
+    }
+  }
+  return toTitleCase(normalized.replaceAll('-', ' '))
 }
 
 function normalizeLocalMagicLinkUrl(linkUrl: string): string {
@@ -173,11 +192,12 @@ export function buildRecentTransactions(input: {
 
   const magicLinkTimestamp = parseTimestamp(latestMagicLinkIssuedAt)
   if (latestMagicLink && latestMagicLinkCustomerId && magicLinkTimestamp) {
+    const customerLabel = humanizeIdentifier(latestMagicLinkCustomerId, ['cust-'])
     timeline.push({
       id: `magic-link-${latestMagicLinkCustomerId}-${magicLinkTimestamp}`,
       customerId: latestMagicLinkCustomerId,
       kind: 'magic_link',
-      title: `קישור נשלח ללקוח ${latestMagicLinkCustomerId}`,
+      title: `קישור נשלח • ${customerLabel}`,
       detail: `${formatRelativeTimestampHebrew(magicLinkTimestamp, nowMs)} • תוקף ${latestMagicLink.expiresInSeconds} שנ׳`,
       reference: latestMagicLink.lifecycle,
       sortTimestamp: magicLinkTimestamp,
@@ -190,11 +210,12 @@ export function buildRecentTransactions(input: {
       continue
     }
 
+    const customerLabel = humanizeIdentifier(customer.customerId, ['cust-'])
     timeline.push({
       id: `order-${customer.customerId}-${orderTimestamp}`,
       customerId: customer.customerId,
       kind: 'order',
-      title: `הזמנה עודכנה עבור ${customer.customerId}`,
+      title: `הזמנה עודכנה • ${customerLabel}`,
       detail: `${formatRelativeTimestampHebrew(orderTimestamp, nowMs)} • פריטים מאושרים ${customer.approvedItemsCount}`,
       reference: '#ORDER',
       sortTimestamp: orderTimestamp,
@@ -202,19 +223,21 @@ export function buildRecentTransactions(input: {
   }
 
   if (selectedCustomerId) {
+    const customerLabel = humanizeIdentifier(selectedCustomerId, ['cust-'])
     for (const item of approvedItems) {
       const createdAtTimestamp = parseTimestamp(item.createdAt)
       if (!createdAtTimestamp) {
         continue
       }
 
+      const itemLabel = humanizeIdentifier(item.hashItemId, ['itm-'])
       timeline.push({
         id: `approved-${selectedCustomerId}-${item.hashItemId}-${createdAtTimestamp}`,
         customerId: selectedCustomerId,
         kind: 'approved_item',
-        title: `פריט אושר עבור ${selectedCustomerId}`,
-        detail: `${formatRelativeTimestampHebrew(createdAtTimestamp, nowMs)} • נוסף ע״י ${item.addedByAgentId}`,
-        reference: item.hashItemId,
+        title: `פריט מאושר • ${itemLabel}`,
+        detail: `${formatRelativeTimestampHebrew(createdAtTimestamp, nowMs)} • ${customerLabel}`,
+        reference: 'עדכון קטלוג',
         sortTimestamp: createdAtTimestamp,
       })
     }

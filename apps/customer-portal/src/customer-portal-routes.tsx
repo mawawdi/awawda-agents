@@ -167,11 +167,11 @@ function ActivationRoute({
   if (state.status === 'error') {
     return (
       <main className="status-screen" dir="rtl" lang="he">
-        <Card className="status-card status-card-enter" data-kind="error">
-          <h1>הפעלת הקישור נכשלה</h1>
+        <Card className="status-card status-card-enter" data-kind="error" data-testid="screen-portal-session-error">
+          <h1>שגיאת הפעלה</h1>
           <p>{state.message}</p>
           <Button onClick={() => setState(createActivationIdleState(token))} size="lg" type="button">
-            נסו להפעיל שוב
+            נסה הפעלה מחדש
           </Button>
         </Card>
       </main>
@@ -489,15 +489,18 @@ function OrderRoute({
     </li>
   );
 
+  const itemNameById = new Map(state.cart.lines.map((line) => [line.itemId, line.name]));
+  const customerLabel = humanizeIdentifier(session?.customerId ?? 'unknown-customer', 'cust-');
+
   return (
-    <main className="portal-shell" data-testid="portal-shell" dir="rtl" lang="he">
+    <main className="portal-shell" data-testid="screen-portal-order-composer" dir="rtl" lang="he">
       <div className="portal-frame">
         <header className="portal-header">
           <div className="portal-brand-stack">
             <p className="portal-kicker">SALES APP</p>
             <h1 className="portal-brand" data-testid="portal-heading">MEATLAND</h1>
             <p className="portal-meta">
-              לקוח: <bdi dir="ltr">{session?.customerId ?? 'unknown-customer'}</bdi> · סשן מאובטח
+              לקוח פעיל: {customerLabel} · סשן מאובטח
             </p>
           </div>
           <div className="portal-header-actions">
@@ -522,7 +525,7 @@ function OrderRoute({
             <Card className="panel" data-section="recent">
               <div className="panel-heading">
                 <h2>{state.sections.recent.title}</h2>
-                <Badge className="panel-chip" variant="outline">קבועים</Badge>
+                <Badge className="panel-chip" variant="outline">הזמנות אחרונות</Badge>
               </div>
               {state.sections.recent.items.length === 0 ? (
                 <p>{state.sections.recent.emptyMessage}</p>
@@ -534,7 +537,7 @@ function OrderRoute({
             <Card className="panel" data-section="approved">
               <div className="panel-heading">
                 <h2>{state.sections.approved.title}</h2>
-                <Badge className="panel-chip" variant="outline">מאושר</Badge>
+                <Badge className="panel-chip" variant="outline">מוצרים מאושרים</Badge>
               </div>
               {state.sections.approved.items.length === 0 ? (
                 <p>{state.sections.approved.emptyMessage}</p>
@@ -546,25 +549,26 @@ function OrderRoute({
 
           <aside className="portal-column">
             <Card aria-label="סיכום הזמנה" className="summary-card">
-              <h2>סיכום הזמנה ואישור</h2>
+              <h2>סיכום הזמנה</h2>
               <div className="summary-line">
-                <span>סה״כ יחידות: {state.cart.totalUnits}</span>
-              </div>
-              <div className="summary-line summary-total">
+                <span>כמות כוללת</span>
                 <span>
-                  סה״כ משוער: <bdi dir="ltr">{state.cart.estimatedTotal.toFixed(2)}</bdi>
+                  <bdi dir="ltr">{state.cart.totalUnits}</bdi>
                 </span>
               </div>
-              <div className="summary-line summary-total">
+              <div className="summary-line">
+                <span>סכום ביניים</span>
                 <span>
-                  סה״כ משוער ({state.cart.currency ? <bdi dir="ltr">{state.cart.currency}</bdi> : 'לא זמין'}):{' '}
                   <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
                 </span>
               </div>
-              <p>{state.submitBar.summaryLabel}</p>
-              <p className="summary-microcopy">
-                כפוף לשקילה סופית (משקל משתנה).
-              </p>
+              <div className="summary-line summary-total">
+                <span>סה״כ לתשלום</span>
+                <span>
+                  <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
+                </span>
+              </div>
+              <p className="summary-microcopy">מחירים לפני מע״מ, כפוף לשקילה סופית.</p>
               {state.cart.lines.length > 0 ? (
                 <ul className="summary-lines">
                   {state.cart.lines.map((line) => (
@@ -583,13 +587,18 @@ function OrderRoute({
             </Card>
 
             {submitState.status === 'mismatch' ? (
-              <section aria-live="polite" className="feedback" data-kind="mismatch" data-testid="submit-mismatch">
+              <section
+                aria-live="polite"
+                className="feedback"
+                data-kind="mismatch"
+                data-testid="screen-portal-order-mismatch"
+              >
                 <h2>נמצאה אי-התאמה במחירים (Conflict 409)</h2>
                 <p>בדקו את השורות שסומנו, ואז רעננו מחירים או אשרו מחדש את ההזמנה.</p>
                 <ul>
                   {submitState.lines.map((line) => (
                     <li key={`${line.itemId}-${line.lineIndex}`}>
-                      <bdi dir="ltr">{line.itemId}</bdi>: {line.reason}
+                      {itemNameById.get(line.itemId) ?? humanizeIdentifier(line.itemId, 'itm-')}: {line.reason}
                     </li>
                   ))}
                 </ul>
@@ -617,12 +626,13 @@ function OrderRoute({
             ) : null}
 
             {submitState.status === 'success' ? (
-              <section aria-live="polite" className="feedback" data-kind="success" data-testid="submit-success">
+              <section aria-live="polite" className="feedback" data-kind="success" data-testid="screen-portal-order-success">
                 <h2>ההזמנה נקלטה בהצלחה!</h2>
                 <p>
                   אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi>
                 </p>
-                <p>ההזמנה אושרה. שליחה כפולה חסומה.</p>
+                <p>לחצן השליחה נעול למניעת כפילויות.</p>
+                <p>תמיכה זמינה בטלפון 1-800-MEAT.</p>
               </section>
             ) : null}
           </aside>
@@ -698,6 +708,15 @@ function formatCurrency(currency: string | null, amount: number): string {
   }
 
   return `${currency} ${amount.toFixed(2)}`;
+}
+
+function humanizeIdentifier(value: string, prefix: string): string {
+  const normalized = value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  return normalized
+    .split('-')
+    .filter((segment) => segment.length > 0)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
 
 function toOrderInput(payload: CustomerPortalDataPayload) {

@@ -2,6 +2,9 @@ import type {
   AgentApprovedItemMutationResponse,
   AgentApprovedItemsResponse,
   AgentAssignedCustomer,
+  AgentOrderCancelResponse,
+  AgentOrderCard,
+  AgentOrdersResponse,
   AgentCustomersResponse,
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
@@ -51,6 +54,44 @@ const AGENT_MAGIC_LINK_RESPONSE_SCHEMA: z.ZodType<AgentMagicLinkIssueResponse> =
   lifecycle: z.literal('issued'),
 })
 
+const AGENT_ORDER_CARD_SCHEMA: z.ZodType<AgentOrderCard> = z.object({
+  orderId: z.string().trim().min(1),
+  orderRef: z.string().trim().min(1).nullable(),
+  customerId: z.string().trim().min(1),
+  customerName: z.string().trim().min(1),
+  submittedAt: z.string().datetime(),
+  status: z.union([z.literal('submitted'), z.literal('pending_retry'), z.literal('failed')]),
+  estimatedTotal: z.number().nonnegative(),
+  currency: z.string().trim().min(1),
+  items: z.array(
+    z.object({
+      itemId: z.string().trim().min(1),
+      itemName: z.string().trim().min(1),
+      quantity: z.number().nonnegative(),
+      unit: z.union([z.literal('kg'), z.literal('unit')]),
+      lineTotal: z.number().nonnegative(),
+    }),
+  ),
+  canCancel: z.boolean(),
+})
+
+const AGENT_ORDERS_RESPONSE_SCHEMA: z.ZodType<AgentOrdersResponse> = z.object({
+  orders: z.array(AGENT_ORDER_CARD_SCHEMA),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+  totalPages: z.number().int().positive(),
+  generatedAt: z.string().datetime(),
+})
+
+const AGENT_ORDER_CANCEL_RESPONSE_SCHEMA: z.ZodType<AgentOrderCancelResponse> = z.object({
+  orderId: z.string().trim().min(1),
+  removed: z.boolean(),
+  status: z.literal('cancelled'),
+  canceledAt: z.string().datetime(),
+  mode: z.union([z.literal('testing_local_delete'), z.literal('hashavshevet')]),
+})
+
 function parseErrorBody(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') {
     return null
@@ -66,6 +107,8 @@ function mapAgentApiError(status: number, payload: unknown): Error {
       ? 'Session expired. Please sign in again.'
       : status === 403
         ? 'You are not assigned to this customer yet.'
+        : status === 404
+          ? 'The requested order was not found for your account.'
         : 'Unable to reach Meatland right now. Please try again.'
 
   return new Error(parseErrorBody(payload) ?? fallback)
@@ -153,4 +196,73 @@ export async function generateMagicLink(
   })
 
   return parseValidatedResponse(response, AGENT_MAGIC_LINK_RESPONSE_SCHEMA)
+}
+
+export async function listAgentOrders(
+  accessToken: string,
+  filters: {
+    page?: number
+    pageSize?: number
+    fromDate?: string
+    toDate?: string
+    query?: string
+  } = {},
+): Promise<AgentOrdersResponse> {
+  const params = new URLSearchParams()
+
+  if (filters.page && filters.page > 0) {
+    params.set('page', String(filters.page))
+  }
+
+  if (filters.pageSize && filters.pageSize > 0) {
+    params.set('pageSize', String(filters.pageSize))
+  }
+
+  if (filters.fromDate?.trim()) {
+    params.set('fromDate', filters.fromDate.trim())
+  }
+
+  if (filters.toDate?.trim()) {
+    params.set('toDate', filters.toDate.trim())
+  }
+
+  if (filters.query?.trim()) {
+    params.set('query', filters.query.trim())
+  }
+
+  const querySuffix = params.toString().length > 0 ? `?${params.toString()}` : ''
+  const response = await fetch(`${API_BASE_URL}/v1/agent/orders${querySuffix}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  return parseValidatedResponse(response, AGENT_ORDERS_RESPONSE_SCHEMA)
+}
+
+export async function cancelAgentOrder(
+  accessToken: string,
+  orderId: string,
+  reason?: string,
+): Promise<AgentOrderCancelResponse> {
+  const normalizedOrderId = orderId.trim()
+  if (!normalizedOrderId) {
+    throw new Error('Order ID is required to cancel an order.')
+  }
+
+  const response = await fetch(`${API_BASE_URL}/v1/agent/orders/${encodeURIComponent(normalizedOrderId)}/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      ...(reason?.trim() ? { reason: reason.trim() } : {}),
+    }),
+  })
+
+  return parseValidatedResponse(response, AGENT_ORDER_CANCEL_RESPONSE_SCHEMA)
 }

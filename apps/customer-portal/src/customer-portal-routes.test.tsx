@@ -83,8 +83,8 @@ describe('customer portal runtime routes', () => {
     expect(screen.getByText('הנתחים הקבועים שלכם')).toBeTruthy();
     expect(screen.getByText('קטלוג מאושר')).toBeTruthy();
     expect(screen.getByTestId('layout-state').textContent).toContain('מובייל');
-    expect(screen.getByTestId('portal-shell').getAttribute('dir')).toBe('rtl');
-    expect(screen.getByTestId('portal-shell').getAttribute('lang')).toBe('he');
+    expect(screen.getByTestId('screen-portal-order-composer').getAttribute('dir')).toBe('rtl');
+    expect(screen.getByTestId('screen-portal-order-composer').getAttribute('lang')).toBe('he');
     expect(activateSession).toHaveBeenCalledWith('token-abc');
   });
 
@@ -143,7 +143,7 @@ describe('customer portal runtime routes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'התנתקות מהסשן' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'הפעלת הקישור נכשלה' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'שגיאת הפעלה' })).toBeTruthy();
     });
     expect(logoutSession).toHaveBeenCalledWith('session-123');
   });
@@ -167,11 +167,11 @@ describe('customer portal runtime routes', () => {
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
-    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות פריט מאושר item-2' }));
+    await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות מוצר 2' }));
 
-    expect(screen.getByText('סה״כ יחידות: 2')).toBeTruthy();
+    expect(screen.getByText('כמות כוללת')).toBeTruthy();
     expect(
-      screen.getAllByText((_, element) => element?.textContent?.includes('סה״כ משוער: 92.50') ?? false)
+      screen.getAllByText((_, element) => element?.textContent?.includes('סה״כ לתשלום') ?? false)
         .length,
     ).toBeGreaterThan(0);
 
@@ -223,7 +223,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'הפעלת הקישור נכשלה' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'שגיאת הפעלה' })).toBeTruthy();
     });
     expect(getPortalData).toHaveBeenCalledTimes(1);
   });
@@ -280,14 +280,14 @@ describe('customer portal runtime routes', () => {
     submitDeferred.reject(mismatchError);
 
     await waitFor(() => {
-      expect(screen.getByTestId('submit-mismatch')).toBeTruthy();
+      expect(screen.getByTestId('screen-portal-order-mismatch')).toBeTruthy();
     });
 
-    expect(screen.getByTestId('submit-mismatch').textContent).toContain('ERP unit price changed from 42.50 to 49.90');
+    expect(screen.getByTestId('screen-portal-order-mismatch').textContent).toContain('ERP unit price changed from 42.50 to 49.90');
     await userEvent.click(screen.getByRole('button', { name: 'אישור מחדש ושליחה' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('submit-success')).toBeTruthy();
+      expect(screen.getByTestId('screen-portal-order-success')).toBeTruthy();
     });
 
     expect(submitOrder).toHaveBeenCalledTimes(2);
@@ -334,9 +334,9 @@ describe('customer portal runtime routes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'נסו לשלוח שוב' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('submit-success')).toBeTruthy();
+      expect(screen.getByTestId('screen-portal-order-success')).toBeTruthy();
     });
-    expect(screen.getByTestId('submit-success').querySelector('bdi')?.getAttribute('dir')).toBe('ltr');
+    expect(screen.getByTestId('screen-portal-order-success').querySelector('bdi')?.getAttribute('dir')).toBe('ltr');
 
     expect(getPortalData).toHaveBeenCalledTimes(1);
     expect(submitOrder).toHaveBeenCalledTimes(2);
@@ -368,7 +368,7 @@ describe('customer portal runtime routes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('submit-success')).toBeTruthy();
+      expect(screen.getByTestId('screen-portal-order-success')).toBeTruthy();
     });
 
     expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(true);

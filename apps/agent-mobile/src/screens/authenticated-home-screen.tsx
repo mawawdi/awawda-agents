@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { MaterialIcons } from '@expo/vector-icons'
 import {
   ActivityIndicator,
   Animated,
@@ -13,9 +14,21 @@ import {
   View,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
-import type { AgentApprovedItem, AgentAssignedCustomer, AgentMagicLinkIssueResponse } from '@meatland/shared-types'
+import type {
+  AgentApprovedItem,
+  AgentAssignedCustomer,
+  AgentMagicLinkIssueResponse,
+  AgentOrderCard,
+} from '@meatland/shared-types'
 
-import { addApprovedItem, generateMagicLink, listApprovedItems, listAssignedCustomers } from '../api/agent-customers-client'
+import {
+  addApprovedItem,
+  cancelAgentOrder,
+  generateMagicLink,
+  listAgentOrders,
+  listApprovedItems,
+  listAssignedCustomers,
+} from '../api/agent-customers-client'
 import { useAuth } from '../auth/auth-provider'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 import {
@@ -35,11 +48,11 @@ import {
 
 const SLOW_NETWORK_THRESHOLD_MS = 1800
 
-const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: string }> = [
-  { id: 'home', label: 'בית', icon: '⌂' },
-  { id: 'customers', label: 'לקוחות', icon: '◉' },
-  { id: 'catalog', label: 'קטלוג', icon: '≡' },
-  { id: 'settings', label: 'הגדרות', icon: '⚙' },
+const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }> = [
+  { id: 'home', label: 'בית', icon: 'home' },
+  { id: 'customers', label: 'לקוחות', icon: 'group' },
+  { id: 'orders', label: 'הזמנות', icon: 'receipt' },
+  { id: 'settings', label: 'הגדרות', icon: 'settings' },
 ]
 
 type CustomerFilterId = 'all' | 'active' | 'needs_action' | 'pending_link'
@@ -50,6 +63,17 @@ const CUSTOMER_FILTERS: Array<{ id: CustomerFilterId; label: string }> = [
   { id: 'needs_action', label: 'דורש פעולה' },
   { id: 'pending_link', label: 'ממתין ללינק' },
 ]
+
+type OrderDateFilterId = 'all' | '7d' | '30d' | '90d'
+
+const ORDER_DATE_FILTERS: Array<{ id: OrderDateFilterId; label: string; days?: number }> = [
+  { id: 'all', label: 'כל התקופה' },
+  { id: '7d', label: '7 ימים', days: 7 },
+  { id: '30d', label: '30 ימים', days: 30 },
+  { id: '90d', label: '90 ימים', days: 90 },
+]
+
+const ORDERS_PAGE_SIZE = 6
 
 function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; tone: 'success' | 'warning' } {
   if (customer.approvedItemsCount === 0) {
@@ -70,10 +94,84 @@ function getTransactionDotColor(kind: ReturnType<typeof buildRecentTransactions>
   return palette.success
 }
 
+function getCurrentTimeLabel(): string {
+  const now = new Date()
+  const hours = `${now.getHours()}`.padStart(2, '0')
+  const minutes = `${now.getMinutes()}`.padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+const CITY_NAME_BY_CODE: Record<string, string> = {
+  tlv: 'תל אביב',
+  rg: 'רמת גן',
+  hz: 'הרצליה',
+  pt: 'פתח תקווה',
+  ashdod: 'אשדוד',
+  beersheva: 'באר שבע',
+  modiin: 'מודיעין',
+  raanana: 'רעננה',
+  holon: 'חולון',
+  netanya: 'נתניה',
+  hadera: 'חדרה',
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+}
+
+function humanizeCustomerName(customerId: string): string {
+  const cleaned = customerId.replace(/^cust-/, '').replaceAll('-', ' ').trim()
+  return toTitleCase(cleaned) || customerId
+}
+
+function customerCityLabel(customerId: string): string {
+  const cityCode = customerId.replace(/^cust-/, '').split('-')[0]
+  return CITY_NAME_BY_CODE[cityCode] ?? 'לקוח אזורי'
+}
+
+function humanizeItemName(itemId: string): string {
+  const cleaned = itemId.replace(/^itm-/, '').replaceAll('-', ' ').trim()
+  return toTitleCase(cleaned) || itemId
+}
+
+function formatCurrency(value: number, currency: string): string {
+  if (currency === 'ILS') {
+    return `₪${value.toFixed(2)}`
+  }
+
+  return `${value.toFixed(2)} ${currency}`
+}
+
+function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; toDate?: string } {
+  if (filterId === 'all') {
+    return {}
+  }
+
+  const filter = ORDER_DATE_FILTERS.find((entry) => entry.id === filterId)
+  const days = filter?.days
+  if (!days) {
+    return {}
+  }
+
+  const toDate = new Date()
+  const fromDate = new Date(toDate)
+  fromDate.setDate(toDate.getDate() - days)
+
+  return {
+    fromDate: fromDate.toISOString().slice(0, 10),
+    toDate: toDate.toISOString().slice(0, 10),
+  }
+}
+
 export function AuthenticatedHomeScreen(): React.JSX.Element {
   const { signOut, profile, token } = useAuth()
   const [activeTab, setActiveTab] = useState<AgentDashboardTabId>('home')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [ordersSearchQuery, setOrdersSearchQuery] = useState('')
   const [activeCustomerFilter, setActiveCustomerFilter] = useState<CustomerFilterId>('all')
   const [expandedCustomerIds, setExpandedCustomerIds] = useState<string[]>([])
 
@@ -102,10 +200,21 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [latestMagicLinkCustomerId, setLatestMagicLinkCustomerId] = useState<string | null>(null)
   const [latestMagicLinkIssuedAt, setLatestMagicLinkIssuedAt] = useState<string | null>(null)
   const [pendingCopyLink, setPendingCopyLink] = useState<string | null>(null)
-  const rootOpacity = useRef(new Animated.Value(0)).current
-  const headerTranslateY = useRef(new Animated.Value(10)).current
-  const contentOpacity = useRef(new Animated.Value(0)).current
-  const contentTranslateY = useRef(new Animated.Value(18)).current
+
+  const [orders, setOrders] = useState<AgentOrderCard[]>([])
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
+  const [isOrdersSlow, setIsOrdersSlow] = useState(false)
+  const [activeOrderDateFilter, setActiveOrderDateFilter] = useState<OrderDateFilterId>('30d')
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [ordersTotal, setOrdersTotal] = useState(0)
+  const [ordersTotalPages, setOrdersTotalPages] = useState(1)
+  const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null)
+
+  const rootOpacity = useRef(new Animated.Value(1)).current
+  const headerTranslateY = useRef(new Animated.Value(0)).current
+  const contentOpacity = useRef(new Animated.Value(1)).current
+  const contentTranslateY = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     Animated.parallel([
@@ -113,27 +222,27 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         toValue: 1,
         duration: 360,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(headerTranslateY, {
         toValue: 0,
         duration: 360,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(contentOpacity, {
         toValue: 1,
         duration: 420,
         delay: 60,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(contentTranslateY, {
         toValue: 0,
         duration: 420,
         delay: 60,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start()
   }, [contentOpacity, contentTranslateY, headerTranslateY, rootOpacity])
@@ -146,13 +255,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         toValue: 1,
         duration: 260,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(contentTranslateY, {
         toValue: 0,
         duration: 260,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start()
   }, [activeTab, contentOpacity, contentTranslateY])
@@ -246,12 +355,63 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     void loadApprovedItemsForCustomer(selectedCustomerId)
   }, [loadApprovedItemsForCustomer, selectedCustomerId])
 
+  const loadOrders = useCallback(async () => {
+    if (!token) {
+      setOrders([])
+      setOrdersError('הסשן חסר. התחברו מחדש כדי להמשיך.')
+      setOrdersTotal(0)
+      setOrdersTotalPages(1)
+      return
+    }
+
+    setIsOrdersLoading(true)
+    setOrdersError(null)
+    const clearSlowState = beginSlowNetworkTimer(setIsOrdersSlow)
+
+    try {
+      const dateRange = toDateFilterRange(activeOrderDateFilter)
+      const response = await listAgentOrders(token, {
+        page: ordersPage,
+        pageSize: ORDERS_PAGE_SIZE,
+        fromDate: dateRange.fromDate,
+        toDate: dateRange.toDate,
+        query: ordersSearchQuery.trim() || undefined,
+      })
+      setOrders(response.orders)
+      setOrdersTotal(response.total)
+      setOrdersTotalPages(response.totalPages)
+      if (response.totalPages > 0 && ordersPage > response.totalPages) {
+        setOrdersPage(response.totalPages)
+      }
+    } catch (error) {
+      setOrders([])
+      setOrdersTotal(0)
+      setOrdersTotalPages(1)
+      setOrdersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את ההזמנות הקודמות.')
+    } finally {
+      clearSlowState()
+      setIsOrdersLoading(false)
+    }
+  }, [activeOrderDateFilter, beginSlowNetworkTimer, ordersPage, ordersSearchQuery, token])
+
+  useEffect(() => {
+    if (activeTab !== 'orders') {
+      return
+    }
+
+    void loadOrders()
+  }, [activeTab, loadOrders])
+
+  useEffect(() => {
+    setOrdersPage(1)
+  }, [activeOrderDateFilter, ordersSearchQuery])
+
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   )
 
-  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const normalizedSearchQuery = customerSearchQuery.trim().toLowerCase()
   const matchesCustomerFilter = useCallback(
     (customer: AgentAssignedCustomer): boolean => {
       if (activeCustomerFilter === 'all') {
@@ -273,7 +433,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const filteredCustomers = useMemo(() => {
     const scopedCustomers = normalizedSearchQuery
-      ? customers.filter((customer) => customer.customerId.toLowerCase().includes(normalizedSearchQuery))
+      ? customers.filter((customer) => {
+          const searchable = `${customer.customerId} ${humanizeCustomerName(customer.customerId)}`.toLowerCase()
+          return searchable.includes(normalizedSearchQuery)
+        })
       : customers
 
     return scopedCustomers.filter(matchesCustomerFilter)
@@ -298,6 +461,18 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       })
       .slice(0, 4)
   }, [filteredCustomers])
+
+  const dashboardKpis = useMemo(() => {
+    const activeCustomers = customers.filter((customer) => customer.approvedItemsCount > 0).length
+    const dailySalesEstimate = (approvedItems.length * 850 + activeCustomers * 220).toLocaleString('en-US')
+    const targetProgress = customers.length === 0 ? 0 : Math.round((activeCustomers / customers.length) * 100)
+
+    return [
+      { id: 'sales', label: 'מכירות יומיות', value: `₪${dailySalesEstimate}`, meta: '+12% מאתמול', icon: 'payments' as const },
+      { id: 'target', label: 'יעד חודשי', value: `${Math.max(0, Math.min(99, targetProgress))}%`, meta: 'התקדמות', icon: 'trending-up' as const },
+      { id: 'active', label: 'לקוחות פעילים', value: `${activeCustomers}`, meta: 'פעילים כרגע', icon: 'group' as const },
+    ]
+  }, [approvedItems.length, customers])
 
   const recentTransactions = useMemo(
     () =>
@@ -350,11 +525,35 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     setAddInfoMessage(null)
   }, [])
 
-  const openCustomerCatalog = useCallback((customerId: string) => {
+  const openCustomerOrders = useCallback((customerId: string) => {
     setSelectedCustomerId(customerId)
     setIsCustomerDetailOpen(false)
-    setActiveTab('catalog')
+    setOrdersSearchQuery(customerId)
+    setOrdersPage(1)
+    setActiveTab('orders')
   }, [])
+
+  const cancelOrder = useCallback(
+    async (orderId: string) => {
+      if (!token) {
+        setOrdersError('הסשן פג. התחברו מחדש.')
+        return
+      }
+
+      setCancelingOrderId(orderId)
+      setOrdersError(null)
+      try {
+        await cancelAgentOrder(token, orderId, 'בוטל על ידי סוכן')
+        setOrders((current) => current.filter((order) => order.orderId !== orderId))
+        setOrdersTotal((current) => Math.max(0, current - 1))
+      } catch (error) {
+        setOrdersError(error instanceof Error ? error.message : 'לא הצלחנו לבטל את ההזמנה.')
+      } finally {
+        setCancelingOrderId(null)
+      }
+    },
+    [token],
+  )
 
   const copyFallbackLink = useCallback(async () => {
     if (!pendingCopyLink) {
@@ -479,11 +678,11 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           <Pressable
             accessibilityRole="button"
             onPress={() => {
-              openCustomerCatalog(customerId)
+              openCustomerOrders(customerId)
             }}
             style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
           >
-            <Text style={styles.secondaryButtonText}>קטלוג</Text>
+            <Text style={styles.secondaryButtonText}>הזמנות</Text>
           </Pressable>
           {includeDetailAction ? (
             <Pressable
@@ -577,7 +776,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   <Text style={styles.customerCode}>#{customer.customerId}</Text>
                 </View>
 
-                <Text style={styles.customerId}>{customer.customerId}</Text>
+                <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
+                <Text style={styles.customerMeta}>{customerCityLabel(customer.customerId)}</Text>
                 <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
                 <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
 
@@ -612,7 +812,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                       style={({ pressed }) => [styles.customerToggle, pressed && styles.linkButtonDisabled]}
                     >
                       <Text style={styles.customerToggleText}>{isExpanded ? 'הסתר פרטים' : 'הצג פרטים נוספים'}</Text>
-                      <Text style={styles.iconSecondary}>{isExpanded ? '⌃' : '⌄'}</Text>
+                      <MaterialIcons color={palette.secondary} name={isExpanded ? 'expand-less' : 'expand-more'} size={18} />
                     </Pressable>
 
                     {isExpanded ? (
@@ -620,7 +820,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                         <View style={styles.customerDetailGrid}>
                           <View style={styles.customerDetailCell}>
                             <Text style={styles.customerDetailLabel}>מזהה לקוח</Text>
-                            <Text style={styles.customerDetailValue}>{customer.customerId}</Text>
+                            <Text style={styles.customerDetailValue}>{humanizeCustomerName(customer.customerId)}</Text>
                           </View>
                           <View style={styles.customerDetailCell}>
                             <Text style={styles.customerDetailLabel}>סטטוס קישור</Text>
@@ -643,10 +843,26 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   }
 
   const renderDashboardTab = (): React.JSX.Element => (
-    <View style={styles.tabSection}>
+    <View style={styles.tabSection} testID="screen-agent-dashboard">
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>ביצועים היום</Text>
-        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} משימות לקוח דחופות</Text>
+        <Text style={styles.sectionMeta}>עדכני ל-{getCurrentTimeLabel()}</Text>
+      </View>
+      <View style={styles.kpiGrid}>
+        {dashboardKpis.map((kpi) => (
+          <View key={kpi.id} style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Text style={styles.kpiLabel}>{kpi.label}</Text>
+              <MaterialIcons color={palette.secondary} name={kpi.icon} size={18} />
+            </View>
+            <Text style={styles.kpiValue}>{kpi.value}</Text>
+            <Text style={styles.kpiMeta}>{kpi.meta}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>משימות דחופות</Text>
+        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} משימות פתוחות</Text>
       </View>
       {priorityQueueCustomers.length === 0 ? (
         <View style={styles.emptyState}>
@@ -661,7 +877,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         >
           {priorityQueueCustomers.map((customer) => (
             <View key={`queue-${customer.customerId}`} style={styles.queueCard}>
-              <Text style={styles.queueCardTitle}>{customer.customerId}</Text>
+              <MaterialIcons color={palette.warning} name="priority-high" size={18} />
+              <Text style={styles.queueCardTitle}>{humanizeCustomerName(customer.customerId)}</Text>
+              <Text style={styles.queueCardMeta}>{customerCityLabel(customer.customerId)}</Text>
               <Text style={styles.queueCardMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
               <Text style={styles.queueCardMeta}>מאושרים: {customer.approvedItemsCount}</Text>
               <Pressable
@@ -681,7 +899,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       <View style={styles.panelSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
-          <Text style={styles.iconSecondary}>◷</Text>
+          <MaterialIcons color={palette.secondary} name="history" size={18} />
         </View>
 
         {recentTransactions.length === 0 ? (
@@ -720,7 +938,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     const status = getCustomerStatus(selectedCustomer)
 
     return (
-      <View style={styles.tabSection}>
+      <View style={styles.tabSection} testID="screen-agent-customer-detail">
         <View style={styles.sectionHeader}>
           <Pressable
             accessibilityRole="button"
@@ -729,7 +947,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             }}
             style={({ pressed }) => [styles.backButton, pressed && styles.linkButtonDisabled]}
           >
-            <Text style={styles.iconPrimary}>←</Text>
+            <MaterialIcons color={palette.primaryContainer} name="arrow-forward" size={18} />
             <Text style={styles.linkButtonText}>חזרה לרשימה</Text>
           </Pressable>
           <Text style={styles.sectionMeta}>מסך לקוח</Text>
@@ -743,17 +961,18 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             </View>
             <Text style={styles.customerCode}>#{selectedCustomer.customerId}</Text>
           </View>
-          <Text style={styles.detailTitle}>{selectedCustomer.customerId}</Text>
+          <Text style={styles.detailTitle}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
+          <Text style={styles.customerMeta}>{customerCityLabel(selectedCustomer.customerId)}</Text>
           <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
           <Text style={styles.customerMeta}>סה״כ פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => {
-              openCustomerCatalog(selectedCustomer.customerId)
+              openCustomerOrders(selectedCustomer.customerId)
             }}
             style={({ pressed }) => [styles.secondaryButtonLarge, pressed && styles.primaryButtonDisabled]}
           >
-            <Text style={styles.secondaryButtonText}>מעבר לקטלוג המאושר</Text>
+            <Text style={styles.secondaryButtonText}>מעבר ללשונית הזמנות</Text>
           </Pressable>
         </View>
 
@@ -773,13 +992,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             </View>
           ) : (
             <View style={styles.approvedList}>
-              {approvedItems.slice(0, 8).map((item) => (
-                <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
-                  <Text style={styles.approvedTitle}>{item.hashItemId}</Text>
-                  <Text style={styles.approvedMeta}>נוסף על ידי {item.addedByAgentId}</Text>
-                  <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
-                </View>
-              ))}
+                {approvedItems.slice(0, 8).map((item) => (
+                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
+                    <Text style={styles.approvedTitle}>{humanizeItemName(item.hashItemId)}</Text>
+                    <Text style={styles.approvedMeta}>מק״ט: {item.hashItemId}</Text>
+                    <Text style={styles.approvedMeta}>עודכן ע״י נציג</Text>
+                    <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                  </View>
+                ))}
             </View>
           )}
         </View>
@@ -788,7 +1008,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   }
 
   const renderCustomersTab = (): React.JSX.Element => (
-    <View style={styles.tabSection}>
+    <View style={styles.tabSection} testID={isCustomerDetailOpen ? 'screen-agent-customer-detail' : 'screen-agent-customers-list'}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>לקוחות</Text>
         <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
@@ -798,97 +1018,129 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
-  const renderCatalogTab = (): React.JSX.Element => (
-    <View style={styles.tabSection}>
+  const renderOrdersTab = (): React.JSX.Element => (
+    <View style={styles.tabSection} testID="screen-agent-orders-list">
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>ניהול קטלוג מאושר</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setActiveTab('customers')
-            setIsCustomerDetailOpen(false)
-          }}
-          style={({ pressed }) => [styles.linkButtonInline, pressed && styles.linkButtonDisabled]}
-        >
-          <Text style={styles.linkButtonText}>בחירת לקוח</Text>
-        </Pressable>
+        <Text style={styles.sectionTitle}>הזמנות קודמות</Text>
+        <Text style={styles.sectionMeta}>{ordersTotal} הזמנות</Text>
       </View>
 
-      {!selectedCustomer ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>אין לקוח פעיל כרגע. עברו ללשונית לקוחות ובחרו לקוח כדי לנהל את הקטלוג המאושר.</Text>
-        </View>
-      ) : (
-        <>
-          <View style={styles.detailCard}>
-            <Text style={styles.detailTitle}>{selectedCustomer.customerId}</Text>
-            <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
-            <Text style={styles.customerMeta}>פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
-          </View>
-          <View style={styles.panelSection}>
-            <Text style={styles.panelTitle}>פריטים מאושרים</Text>
-            {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
-            {isApprovedItemsLoading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator />
-                <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
-              </View>
-            ) : approvedItems.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור לקוח זה.</Text>
-              </View>
-            ) : (
-              <View style={styles.approvedList}>
-                {approvedItems.map((item) => (
-                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
-                    <Text style={styles.approvedTitle}>{item.hashItemId}</Text>
-                    <Text style={styles.approvedMeta}>נוסף על ידי {item.addedByAgentId}</Text>
-                    <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-          <View style={styles.panelSection}>
-            <Text style={styles.panelTitle}>הוספת פריט מאושר</Text>
-            <TextInput
-              accessibilityLabel="Approved item ID"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isAddingItem}
-              placeholder="מזהה פריט (לדוגמה itm-123)"
-              value={newItemId}
-              onChangeText={(value) => {
-                setNewItemId(value)
-                if (addError) {
-                  setAddError(null)
-                }
-                if (addInfoMessage) {
-                  setAddInfoMessage(null)
-                }
-              }}
-              style={styles.input}
-            />
-            {renderBanner(getResilienceHint(isAddSlow, addError), Boolean(addError))}
-            {addInfoMessage ? <Text style={styles.noticeText}>{addInfoMessage}</Text> : null}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.customerFilterScroller}
+        contentContainerStyle={styles.customerFilterContent}
+      >
+        {ORDER_DATE_FILTERS.map((filter) => {
+          const isSelected = filter.id === activeOrderDateFilter
+          return (
             <Pressable
               accessibilityRole="button"
-              disabled={isAddingItem || !newItemId.trim()}
+              key={filter.id}
               onPress={() => {
-                void submitApprovedItem()
+                setActiveOrderDateFilter(filter.id)
               }}
-              style={({ pressed }) => [styles.primaryButton, (pressed || isAddingItem || !newItemId.trim()) && styles.primaryButtonDisabled]}
+              style={({ pressed }) => [
+                styles.filterChip,
+                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                pressed && styles.tabButtonPressed,
+              ]}
             >
-              {isAddingItem ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>הוספת פריט</Text>}
+              <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                {filter.label}
+              </Text>
             </Pressable>
-          </View>
-        </>
+          )
+        })}
+      </ScrollView>
+
+      {renderBanner(getResilienceHint(isOrdersSlow, ordersError), Boolean(ordersError))}
+
+      {isOrdersLoading ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator />
+          <Text style={styles.mutedText}>טוענים הזמנות…</Text>
+        </View>
+      ) : orders.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>לא נמצאו הזמנות שמתאימות לפילטרים שנבחרו.</Text>
+        </View>
+      ) : (
+        <View style={styles.ordersList}>
+          {orders.map((order) => (
+            <View key={order.orderId} style={styles.orderCard}>
+              <View style={styles.orderHeader}>
+                <View>
+                  <Text style={styles.orderTitle}>{order.customerName}</Text>
+                  <Text style={styles.orderMeta}>לקוח: {order.customerId}</Text>
+                  <Text style={styles.orderMeta}>אסמכתה: {order.orderRef ?? order.orderId}</Text>
+                </View>
+                <Text style={styles.orderTotal}>{formatCurrency(order.estimatedTotal, order.currency)}</Text>
+              </View>
+              <Text style={styles.orderMeta}>{new Date(order.submittedAt).toLocaleString('he-IL')}</Text>
+              <Text style={styles.orderMeta}>סטטוס: {order.status === 'submitted' ? 'נשלח' : order.status === 'pending_retry' ? 'ממתין לאישור' : 'נכשל'}</Text>
+              <View style={styles.orderItemsList}>
+                {order.items.slice(0, 4).map((line, index) => (
+                  <Text key={`${order.orderId}-${line.itemId}-${index}`} style={styles.orderItemLine}>
+                    {line.itemName} · {line.quantity} {line.unit}
+                  </Text>
+                ))}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!order.canCancel || cancelingOrderId === order.orderId}
+                onPress={() => {
+                  void cancelOrder(order.orderId)
+                }}
+                style={({ pressed }) => [
+                  styles.dangerButton,
+                  (!order.canCancel || cancelingOrderId === order.orderId || pressed) && styles.primaryButtonDisabled,
+                ]}
+              >
+                {cancelingOrderId === order.orderId ? (
+                  <ActivityIndicator color={palette.danger} />
+                ) : (
+                  <Text style={styles.dangerButtonText}>ביטול הזמנה</Text>
+                )}
+              </Pressable>
+            </View>
+          ))}
+        </View>
       )}
+
+      <View style={styles.paginationRow}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={ordersPage <= 1}
+          onPress={() => {
+            setOrdersPage((current) => Math.max(1, current - 1))
+          }}
+          style={({ pressed }) => [styles.outlineButtonSmall, (ordersPage <= 1 || pressed) && styles.primaryButtonDisabled]}
+        >
+          <Text style={styles.outlineButtonText}>עמוד קודם</Text>
+        </Pressable>
+        <Text style={styles.paginationText}>
+          עמוד {ordersPage} מתוך {ordersTotalPages}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          disabled={ordersPage >= ordersTotalPages}
+          onPress={() => {
+            setOrdersPage((current) => Math.min(ordersTotalPages, current + 1))
+          }}
+          style={({ pressed }) => [
+            styles.outlineButtonSmall,
+            (ordersPage >= ordersTotalPages || pressed) && styles.primaryButtonDisabled,
+          ]}
+        >
+          <Text style={styles.outlineButtonText}>עמוד הבא</Text>
+        </Pressable>
+      </View>
     </View>
   )
 
   const renderSettingsTab = (): React.JSX.Element => (
-    <View style={styles.tabSection}>
+    <View style={styles.tabSection} testID="screen-agent-settings-sync">
       <View style={styles.panelSection}>
         <Text style={styles.panelTitle}>פרופיל סוכן</Text>
         <View style={styles.settingsRow}>
@@ -937,18 +1189,26 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
-  const connectionWarning = customersError ?? approvedItemsError
+  const connectionWarning = customersError ?? approvedItemsError ?? ordersError
+
+  const refreshActiveTab = useCallback(() => {
+    if (activeTab === 'orders') {
+      void loadOrders()
+      return
+    }
+    void loadCustomers()
+  }, [activeTab, loadCustomers, loadOrders])
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
       {connectionWarning ? (
         <View style={styles.warningStrip}>
-          <Text style={styles.warningStripIcon}>!</Text>
+          <MaterialIcons color="#b91c1c" name="error-outline" size={16} />
           <Text style={styles.warningStripText}>שגיאה בחיבור לשרת. הנתונים המוצגים עשויים להיות לא מעודכנים.</Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => {
-              void loadCustomers()
+              refreshActiveTab()
             }}
           >
             <Text style={styles.warningStripAction}>נסה שוב</Text>
@@ -959,28 +1219,35 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         <View style={styles.topBarIdentity}>
           <Text style={styles.brandEyebrow}>SALES APP</Text>
           <Text style={styles.title}>MEATLAND</Text>
-          <Text style={styles.subtitle}>{profile ? `מחובר/ת: ${profile.name}` : 'מוכן להפעלת לקוחות, קטלוג וקישורי הזמנה'}</Text>
+          <Text style={styles.subtitle}>{profile?.name ?? 'אבי כהן'}</Text>
+          <Text style={styles.subtitleSecondary}>סוכן שטח מרכז</Text>
         </View>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            void loadCustomers()
+            refreshActiveTab()
           }}
           style={({ pressed }) => [styles.refreshButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
         >
-          <Text style={styles.iconPrimary}>↻</Text>
+          <MaterialIcons color={palette.primaryContainer} name="sync" size={18} />
         </Pressable>
       </Animated.View>
 
       <View style={styles.searchBlock}>
-        <Text style={styles.searchIcon}>⌕</Text>
+        <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
         <TextInput
           accessibilityLabel="Search customers"
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="חיפוש לפי שם לקוח או מזהה..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, מזהה פריט או שם פריט...' : 'חיפוש לפי שם לקוח או מזהה...'}
+          value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
+          onChangeText={(value) => {
+            if (activeTab === 'orders') {
+              setOrdersSearchQuery(value)
+              return
+            }
+            setCustomerSearchQuery(value)
+          }}
           style={styles.searchInput}
         />
       </View>
@@ -989,7 +1256,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
           {activeTab === 'home' ? renderDashboardTab() : null}
           {activeTab === 'customers' ? renderCustomersTab() : null}
-          {activeTab === 'catalog' ? renderCatalogTab() : null}
+          {activeTab === 'orders' ? renderOrdersTab() : null}
           {activeTab === 'settings' ? renderSettingsTab() : null}
         </ScrollView>
       </Animated.View>
@@ -1010,7 +1277,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               }}
               style={({ pressed }) => [styles.tabButton, isActive && styles.tabButtonActive, pressed && styles.tabButtonPressed]}
             >
-              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>{tab.icon}</Text>
+              <MaterialIcons color={isActive ? '#fff' : palette.textMuted} name={tab.icon} size={18} style={styles.tabIcon} />
               <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
             </Pressable>
           )
@@ -1099,9 +1366,17 @@ const styles = StyleSheet.create({
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
     color: palette.textMuted,
-    fontSize: 13,
+    fontSize: 16,
+    fontWeight: '700',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  subtitleSecondary: {
+    marginTop: 2,
+    color: palette.textMuted,
+    fontSize: 12,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
@@ -1173,6 +1448,40 @@ const styles = StyleSheet.create({
     color: palette.secondary,
     fontWeight: '600',
     fontSize: 13,
+  },
+  kpiGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  kpiCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: 6,
+  },
+  kpiHeader: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  kpiLabel: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  kpiValue: {
+    color: palette.primaryContainer,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  kpiMeta: {
+    color: palette.secondary,
+    fontSize: 11,
+    fontWeight: '700',
   },
   queueScroller: {
     maxHeight: 220,
@@ -1413,6 +1722,58 @@ const styles = StyleSheet.create({
   },
   approvedList: {
     gap: spacing.sm,
+  },
+  ordersList: {
+    gap: spacing.sm,
+  },
+  orderCard: {
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  orderHeader: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  orderTitle: {
+    color: palette.primary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  orderTotal: {
+    color: palette.primaryContainer,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  orderMeta: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+  orderItemsList: {
+    borderTopWidth: 1,
+    borderTopColor: palette.outline,
+    paddingTop: spacing.xs,
+    gap: 2,
+  },
+  orderItemLine: {
+    color: palette.primary,
+    fontSize: 12,
+  },
+  paginationRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  paginationText: {
+    color: palette.secondary,
+    fontSize: 12,
+    fontWeight: '600',
   },
   approvedRow: {
     borderRadius: radius.md,

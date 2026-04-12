@@ -12,6 +12,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @meatland/api test` — run API tests
 - `pnpm --filter @meatland/api build` — compile TypeScript to `dist/`
 - `pnpm --filter @meatland/api prisma:migrate:deploy` — run migrations in deploy environments
+- `pnpm --filter @meatland/api seed:testing` — seed realistic **testing-only** agents/customers/approved-items data
 
 ## Operational routes
 
@@ -145,3 +146,17 @@ Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT
 - `HashavshevetAdapter` is wired as a retry/backoff-ready skeleton for the primary handoff path.
 - `BMaxXmlAdapter` is wired as XML fallback stub for order handoff when primary ERP delivery fails.
 - Internal ERP failures use stable `ERP_*` error codes from `apps/api/src/erp/erp.errors.ts`.
+### Testing-only rich dataset
+
+For local QA/demo environments, run:
+
+```bash
+pnpm --filter @meatland/api seed:testing
+```
+
+This seeds:
+
+- realistic test agents (all with password `Password123`)
+- realistic customer assignment IDs
+- broad approved-items coverage across customers
+- fallback catalog metadata with per-cut icon/image fields (`iconEmoji`, `imageUrl`) for UI testing
