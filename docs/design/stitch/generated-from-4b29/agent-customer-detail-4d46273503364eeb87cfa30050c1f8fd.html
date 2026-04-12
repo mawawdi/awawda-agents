@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&amp;family=Sora:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: "#7f1d1d", // Deep cured red
+                            foreground: "#fef2f2"
+                        },
+                        secondary: {
+                            DEFAULT: "#0f766e", // Steel teal
+                            foreground: "#f0fdfa"
+                        },
+                        accent: {
+                            DEFAULT: "#b45309", // Warm copper
+                        },
+                        surface: {
+                            50: "#fafaf9",
+                            100: "#f5f5f4",
+                            200: "#e7e5e4",
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Rubik", "sans-serif"],
+                        body: ["Rubik", "sans-serif"],
+                        label: ["Sora", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #fafaf9;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stagger-reveal {
+            animation: fadeIn 0.32s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-50 text-stone-900 pb-32">
+<!-- TopAppBar -->
+<header class="bg-stone-50 dark:bg-stone-950 text-red-900 dark:text-red-500 font-sans rtl text-right font-bold text-lg docked full-width top-0 z-50 border-b border-stone-200 dark:border-stone-800 flat no shadows flex justify-between items-center px-4 h-16 w-full rtl fixed">
+<div class="flex items-center gap-3">
+<button class="transition-all duration-200 ease-in-out active:scale-95 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<h1 class="font-bold text-lg">פרטי לקוח</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="transition-all duration-200 ease-in-out active:scale-95 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<main class="pt-20 px-4 max-w-2xl mx-auto space-y-6">
+<!-- Customer Profile Header -->
+<section class="stagger-reveal" style="animation-delay: 0.1s;">
+<div class="relative overflow-hidden rounded-xl bg-stone-900 p-6 text-white shadow-lg">
+<div class="absolute top-0 left-0 w-full h-full opacity-20">
+<img class="w-full h-full object-cover" data-alt="close-up of premium marbled beef steak on a dark textured surface with dramatic top lighting and professional food photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYH8JADdAn5HQCZNPbg-i7CBFxNklGcY1JjEcYHwJhIsg7hAKzwy2H68KzEqO541yrqj0rR_8NxOKQ0b40hCeDm1-_QlW09rNfISekiFKpjzbp3PVT_Psmu5X9tWo9TuIpH5CBsNGHurkjTj8BLm1WuVXbvyrqaPGIkaE6R-XYU9VpKZEiWatPGj7URdQO6bhZ_euhJOn7IpCvbVNE9msTYbPtvf4dDstrVs0F0jGGTyB95Dppo3Z0LwKjyplRtleR1LsdHn5mgVOF"/>
+</div>
+<div class="relative z-10 flex flex-col items-start">
+<span class="bg-accent px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">Meatland VIP</span>
+<h2 class="text-3xl font-black mb-1">מסעדת השף איתן</h2>
+<p class="text-stone-300 font-label text-sm">מזהה חשבון: ML-8842-TX</p>
+</div>
+</div>
+</section>
+<!-- Contact & Location Card -->
+<section class="stagger-reveal grid grid-cols-1 md:grid-cols-2 gap-4" style="animation-delay: 0.2s;">
+<div class="bg-white rounded-xl p-5 shadow-sm border border-stone-100 flex flex-col justify-between hover:border-red-200 transition-colors cursor-pointer group">
+<div class="flex items-start justify-between">
+<div>
+<p class="text-stone-500 text-xs font-medium mb-1">טלפון ליצירת קשר</p>
+<p class="text-xl font-bold text-stone-800">054-987-6543</p>
+</div>
+<span class="material-symbols-outlined text-stone-400 group-hover:text-primary transition-colors" data-icon="call">call</span>
+</div>
+</div>
+<div class="bg-white rounded-xl p-5 shadow-sm border border-stone-100 flex flex-col justify-between hover:border-teal-200 transition-colors cursor-pointer group">
+<div class="flex items-start justify-between">
+<div>
+<p class="text-stone-500 text-xs font-medium mb-1">כתובת העסק</p>
+<p class="text-lg font-bold text-stone-800">הירקון 12, תל אביב</p>
+</div>
+<span class="material-symbols-outlined text-stone-400 group-hover:text-secondary transition-colors" data-icon="map">map</span>
+</div>
+<div class="mt-4 flex items-center text-secondary font-bold text-sm">
+<span>צפייה במפה</span>
+<span class="material-symbols-outlined text-sm mr-1" data-icon="chevron_left">chevron_left</span>
+</div>
+</div>
+</section>
+<!-- Last Order Summary Section -->
+<section class="stagger-reveal space-y-3" style="animation-delay: 0.3s;">
+<div class="flex items-center justify-between px-1">
+<h3 class="font-bold text-stone-800 text-lg">סיכום הזמנה אחרונה</h3>
+<span class="text-stone-400 text-xs font-medium">12/05/2024</span>
+</div>
+<div class="bg-stone-100 rounded-xl p-5 border-r-4 border-primary shadow-sm">
+<div class="flex justify-between items-center mb-4">
+<span class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        סופק בהצלחה
+                    </span>
+<p class="text-xl font-black text-stone-900">₪4,850.00</p>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center border-b border-stone-200 pb-2">
+<div class="flex gap-3 items-center">
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-stone-200">
+<span class="material-symbols-outlined text-stone-400" data-icon="restaurant">restaurant</span>
+</div>
+<div>
+<p class="font-bold text-stone-800 text-sm">נתח אנטריקוט פרימיום</p>
+<p class="text-stone-500 text-[11px]">15 ק"ג × ₪180</p>
+</div>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-3 items-center">
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-stone-200">
+<span class="material-symbols-outlined text-stone-400" data-icon="flatware">flatware</span>
+</div>
+<div>
+<p class="font-bold text-stone-800 text-sm">צלעות טלה ישראלי</p>
+<p class="text-stone-500 text-[11px]">8 ק"ג × ₪210</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Approved Items Preview -->
+<section class="stagger-reveal space-y-3 overflow-hidden" style="animation-delay: 0.4s;">
+<div class="flex items-center justify-between px-1">
+<h3 class="font-bold text-stone-800 text-lg">מוצרים מאושרים לרכישה</h3>
+<button class="text-secondary font-bold text-xs">הכל</button>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
+<div class="flex-none w-40 bg-white rounded-xl p-3 border border-stone-100 shadow-sm transition-transform active:scale-95">
+<div class="w-full aspect-square rounded-lg bg-stone-100 mb-2 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="raw premium ribeye steak with marbling on a wooden cutting board with rosemary and peppercorns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_isQXZPP4svAel4nKhbaHxkf5z55917r32CgjXMmbbjO7adbMqmKpoXta7O0I28uLZLPT_fyc9nm3Or1-FXsejp08z7C_w_orOY1XRTx4jeQesmS_RnbmliUgsqwUmYDVJBIwOvZ1yWoqWkjq3pe5w1RERRneQ1hJyXB2yRt7b_7DbFJgtT5-zLXettSDzF5ubkNsZUZXOvA68AiTmtgYwoZjF7DwsJVYkkQsxgML7BSMbEF67qF2Rwn-m3owL22odDOJCrPEEoCp"/>
+</div>
+<p class="text-xs font-bold text-stone-800 truncate">אנטריקוט מיושן</p>
+<p class="text-primary text-[10px] font-black">₪195 / ק"ג</p>
+</div>
+<div class="flex-none w-40 bg-white rounded-xl p-3 border border-stone-100 shadow-sm transition-transform active:scale-95">
+<div class="w-full aspect-square rounded-lg bg-stone-100 mb-2 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="rack of lamb chops seasoned with herbs on a dark slate board with warm atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgpl0IXthGFADvOByMkztNZxXAhO665KagILjPv-_xuv6AOcNB1UHxOgMSlUYSpw7VZkJaO5nWZ8r2sS_eiKFDYFo5zyH1fLgNQcB-kW_YxN5R67RjJLKScsj0yHFXIjRR9zIw9m0W6gKwJyysBMF9bml9I_tgBCBAmTLTkSgdLMVEbKzB9LNJkakrAhJGSN-w3eCMiERx_mZgJfXY84UTWQ4vIVsHoUdlQ3G1MEUN2EwWa_xPL3pwqHWRCGhLHpmGGqOeUiedpQwL"/>
+</div>
+<p class="text-xs font-bold text-stone-800 truncate">צלעות טלה</p>
+<p class="text-primary text-[10px] font-black">₪220 / ק"ג</p>
+</div>
+<div class="flex-none w-40 bg-white rounded-xl p-3 border border-stone-100 shadow-sm transition-transform active:scale-95">
+<div class="w-full aspect-square rounded-lg bg-stone-100 mb-2 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="premium ground beef mince neatly arranged on a white plate with dramatic side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6vXjMs7NmeRCt7kBZ5GxAnjTz1JUQJr1EpcIVeSkmufwnfdXjbicPWrPyfJnhhh2H4IgF-Dywt9RKrWJJm_7D6DZks5ciNhOjgc9tPYbht_bkomdkORtb4IAX0-RHb7Tgsjn3AXVM8aoDvjknxp0P1MVQhdR29RtXnTrZoJxdjWNS8_VxjIlFiozCiQtkay1yLtaSD0Pr5sWD2LMtKCXGbSyeSOAq3WTAgn7yXWszojJdd4hRCRBm1IXB7Uxg-2w3LDoj5dsp0dKR"/>
+</div>
+<p class="text-xs font-bold text-stone-800 truncate">בשר טחון פרימיום</p>
+<p class="text-primary text-[10px] font-black">₪65 / ק"ג</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Primary Actions (Fixed Bottom Rail) -->
+<div class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-stone-200 z-40 px-4 py-6 flex gap-3 shadow-[0_-10px_25px_rgba(0,0,0,0.05)]">
+<button class="flex-1 bg-stone-100 text-stone-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-lg" data-icon="link">link</span>
+<span>קישור קסם</span>
+</button>
+<button class="flex-[2] bg-primary text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-900/20 transition-all active:scale-95 focus:ring-4 focus:ring-red-900/20">
+<span class="material-symbols-outlined text-lg" data-icon="shopping_cart">shopping_cart</span>
+<span>פתיחת קטלוג</span>
+</button>
+<button class="w-14 h-14 bg-secondary text-white rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-teal-900/20">
+<span class="material-symbols-outlined" data-icon="call" data-weight="fill" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar (Contextual Filter) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-6 py-3 pb-safe rtl bg-stone-100/90 dark:bg-stone-900/90 backdrop-blur-md rounded-t-2xl border-t border-stone-200 dark:border-stone-800 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden">
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-500 transition-all duration-200 hover:text-red-700">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[11px] font-medium rtl">בית</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-red-900/10 text-red-900 dark:text-red-400 rounded-xl px-3 py-1.5 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-[11px] font-medium rtl">לקוחות</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-500 transition-all duration-200 hover:text-red-700">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="text-[11px] font-medium rtl">הזמנות</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-500 transition-all duration-200 hover:text-red-700">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[11px] font-medium rtl">פרופיל</span>
+</div>
+</nav>
+<!-- Subtle Floating Action Button (Alternative context) -->
+<div class="fixed bottom-28 left-4 z-30">
+<button class="w-14 h-14 bg-accent text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 group overflow-hidden">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform" data-icon="history_edu">history_edu</span>
+</button>
+</div>
+</body></html>

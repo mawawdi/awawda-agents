@@ -645,8 +645,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const renderDashboardTab = (): React.JSX.Element => (
     <View style={styles.tabSection}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>תור פעולות דחופות</Text>
-        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} לקוחות ממתינים לקישור</Text>
+        <Text style={styles.sectionTitle}>ביצועים היום</Text>
+        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} משימות לקוח דחופות</Text>
       </View>
       {priorityQueueCustomers.length === 0 ? (
         <View style={styles.emptyState}>
@@ -789,6 +789,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const renderCustomersTab = (): React.JSX.Element => (
     <View style={styles.tabSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>לקוחות</Text>
+        <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
+      </View>
       {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
       {isCustomerDetailOpen ? renderCustomerDetail() : renderCustomersList()}
     </View>
@@ -797,7 +801,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const renderCatalogTab = (): React.JSX.Element => (
     <View style={styles.tabSection}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>קטלוג מאושר</Text>
+        <Text style={styles.sectionTitle}>ניהול קטלוג מאושר</Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -886,7 +890,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const renderSettingsTab = (): React.JSX.Element => (
     <View style={styles.tabSection}>
       <View style={styles.panelSection}>
-        <Text style={styles.panelTitle}>פרופיל נציג</Text>
+        <Text style={styles.panelTitle}>פרופיל סוכן</Text>
         <View style={styles.settingsRow}>
           <Text style={styles.settingsLabel}>שם</Text>
           <Text style={styles.settingsValue}>{profile?.name ?? 'לא זמין'}</Text>
@@ -902,7 +906,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.panelSection}>
-        <Text style={styles.panelTitle}>מצב סנכרון</Text>
+        <Text style={styles.panelTitle}>הגדרות וסנכרון</Text>
         {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
         {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
         {!customersError && !approvedItemsError && !isCustomersSlow && !isApprovedItemsSlow ? (
@@ -933,13 +937,29 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
+  const connectionWarning = customersError ?? approvedItemsError
+
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
+      {connectionWarning ? (
+        <View style={styles.warningStrip}>
+          <Text style={styles.warningStripIcon}>!</Text>
+          <Text style={styles.warningStripText}>שגיאה בחיבור לשרת. הנתונים המוצגים עשויים להיות לא מעודכנים.</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              void loadCustomers()
+            }}
+          >
+            <Text style={styles.warningStripAction}>נסה שוב</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Animated.View style={[styles.topBar, { transform: [{ translateY: headerTranslateY }] }]}>
         <View style={styles.topBarIdentity}>
-          <Text style={styles.brandEyebrow}>The Artisanal Ledger</Text>
-          <Text style={styles.title}>לוח הסוכן</Text>
-          <Text style={styles.subtitle}>{profile ? `מחובר/ת: ${profile.name}` : 'מחובר/ת למשמרת השטח'}</Text>
+          <Text style={styles.brandEyebrow}>SALES APP</Text>
+          <Text style={styles.title}>MEATLAND</Text>
+          <Text style={styles.subtitle}>{profile ? `מחובר/ת: ${profile.name}` : 'מוכן להפעלת לקוחות, קטלוג וקישורי הזמנה'}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -1008,6 +1028,39 @@ const styles = StyleSheet.create({
   contentLayer: {
     flex: 1,
   },
+  warningStrip: {
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  warningStripIcon: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  warningStripText: {
+    flex: 1,
+    color: '#7f1d1d',
+    fontSize: 11,
+    fontWeight: '700',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  warningStripAction: {
+    color: '#7f1d1d',
+    fontSize: 11,
+    fontWeight: '800',
+    textDecorationLine: 'underline',
+  },
   topBar: {
     marginTop: spacing.md,
     marginHorizontal: spacing.md,
@@ -1018,11 +1071,6 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.outline,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    elevation: 4,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1032,22 +1080,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   brandEyebrow: {
-    color: palette.primaryContainer,
+    color: palette.secondary,
     fontSize: 11,
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
-    marginBottom: 3,
+    marginBottom: 6,
     fontWeight: '700',
+    borderBottomWidth: 2,
+    borderBottomColor: palette.secondary,
+    paddingBottom: 2,
+    alignSelf: 'flex-start',
   },
   title: {
-    fontSize: 30,
+    fontSize: 34,
     color: palette.primaryContainer,
     fontWeight: '800',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitle: {
-    marginTop: 2,
+    marginTop: 4,
     color: palette.textMuted,
     fontSize: 13,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',

@@ -1,0 +1,107 @@
+{
+  "projectId": "11487176842394258097",
+  "sessionId": "15249064558908600849",
+  "outputComponents": [
+    {
+      "designSystem": {
+        "name": "assets/5824344660252013526",
+        "designSystem": {
+          "displayName": "Meatland Bold Editorial Motion System",
+          "theme": {
+            "colorMode": "LIGHT",
+            "roundness": "ROUND_TWELVE",
+            "customColor": "#7A1F1B",
+            "headlineFont": "RUBIK",
+            "bodyFont": "RUBIK",
+            "labelFont": "SORA",
+            "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+            "colorVariant": "FIDELITY",
+            "overridePrimaryColor": "#7A1F1B",
+            "overrideSecondaryColor": "#1F4E5F",
+            "overrideTertiaryColor": "#B06A2A",
+            "overrideNeutralColor": "#F6F2ED"
+          }
+        },
+        "version": "1"
+      }
+    },
+    {
+      "design": {
+        "screens": [
+          {
+            "screenshot": {
+              "name": "projects/11487176842394258097/files/64b561f32ed24416a5e5f9e800908c34",
+              "downloadUrl": "https://lh3.googleusercontent.com/aida/ADBb0uibu0haCARmcnwWgmp9Z7YF2YtT34Ls9D1nnsK0I7CoipGTDuExrhrNK5Gm8yFE93aOUZ3iEOV0sTewbaiiV3nMlW8upRuw486IOyyccCt0yP49L4WwhQHGoJ5krY6jGKvAmRWPosoINypRNwTATlqIp5gRHweUzQQlHfINLQFth-kUcMhgf9EQ9iAk8EJ3r19g2z_qxeTD_QhwQ0A0pWlPpC7iX5coLHm6bZw0qdmsfyMb90DG483TwMfb"
+            },
+            "htmlCode": {
+              "name": "projects/11487176842394258097/files/f8e952c178e9405cad98374005d68a5f",
+              "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sX2E5NTIxOGRmZDYwNTQxYzJhNWIyMThiZDFiZmQxMmE5EgsSBxDzpte8uRQYAZIBJAoKcHJvamVjdF9pZBIWQhQxMTQ4NzE3Njg0MjM5NDI1ODA5Nw&filename=&opi=96797242",
+              "mimeType": "text/html"
+            },
+            "id": "2ef4146365e3440589708fb88c121d14",
+            "generatedBy": "figaro_agent",
+            "width": "780",
+            "height": "1772",
+            "title": "Settings & Sync Health",
+            "prompt": "Mobile Settings and Sync Health screen for sales agents. Language: Hebrew (RTL). Style: Premium editorial, operational clarity, matching {{DATA:SCREEN:SCREEN_29}}. Palette: Deep red and steel teal. \\n\\nContent:\\n1. TopAppBar: Title \"הגדרות וסנכרון\" (Settings & Sync).\\n2. Profile Section: Agent name, ID, and branch name.\\n3. Sync Health Cards: \\n   - Network Status: \"מחובר\" (Connected) with green indicator.\\n   - ERP Sync: \"סונכרן לאחרונה לפני 5 דקות\" (Last synced 5 mins ago) with a 'Retry' icon/button.\\n4. Settings List: Profile Edit, Notification Settings, Language.\\n5. Action Button: Large \"יציאה מהמערכת\" (Sign Out) button at the bottom using the primary deep red color.\\n6. Shared components: Use {{DATA:COMPONENTS:COMPONENTS_31}}. Ensure the Settings tab is active in the BottomNavBar.",
+            "name": "projects/11487176842394258097/screens/2ef4146365e3440589708fb88c121d14",
+            "theme": {
+              "colorMode": "LIGHT",
+              "roundness": "ROUND_TWELVE",
+              "customColor": "#7A1F1B",
+              "headlineFont": "RUBIK",
+              "bodyFont": "RUBIK",
+              "labelFont": "SORA",
+              "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+              "colorVariant": "FIDELITY",
+              "overridePrimaryColor": "#7A1F1B",
+              "overrideSecondaryColor": "#1F4E5F",
+              "overrideTertiaryColor": "#B06A2A",
+              "overrideNeutralColor": "#F6F2ED"
+            },
+            "deviceType": "MOBILE",
+            "screenType": "DESIGN",
+            "screenMetadata": {
+              "agentType": "PRO_AGENT",
+              "status": "COMPLETE"
+            },
+            "designSystem": {
+              "name": "assets/5824344660252013526",
+              "designSystem": {
+                "displayName": "Meatland Bold Editorial Motion System",
+                "theme": {
+                  "colorMode": "LIGHT",
+                  "roundness": "ROUND_TWELVE",
+                  "customColor": "#7A1F1B",
+                  "headlineFont": "RUBIK",
+                  "bodyFont": "RUBIK",
+                  "labelFont": "SORA",
+                  "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+                  "colorVariant": "FIDELITY",
+                  "overridePrimaryColor": "#7A1F1B",
+                  "overrideSecondaryColor": "#1F4E5F",
+                  "overrideTertiaryColor": "#B06A2A",
+                  "overrideNeutralColor": "#F6F2ED"
+                }
+              },
+              "version": "1"
+            }
+          }
+        ],
+        "theme": {}
+      }
+    },
+    {
+      "text": "I've designed the Settings and Sync Health screen for your agents. It features a premium editorial style consistent with the rest of the app, full Hebrew RTL support, and includes the profile fields, network/ERP sync status cards, and the sign-out action you requested."
+    },
+    {
+      "suggestion": "Add a dark mode version"
+    },
+    {
+      "suggestion": "Add an 'Account Security' section"
+    },
+    {
+      "suggestion": "Change the primary color to steel teal"
+    }
+  ]
+}

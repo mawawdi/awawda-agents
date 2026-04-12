@@ -77,7 +77,7 @@ describe('customer portal runtime routes', () => {
 
     activationDeferred.resolve(activationResponse);
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     expect(screen.getByText('הנתחים הקבועים שלכם')).toBeTruthy();
@@ -96,7 +96,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m?token=token-query-123');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-query-123');
@@ -114,7 +114,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-storage-fallback');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-storage-fallback');
@@ -137,7 +137,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder, logoutSession }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'התנתקות מהסשן' }));
@@ -163,7 +163,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
@@ -268,7 +268,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
@@ -317,7 +317,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));
@@ -361,7 +361,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('קטלוג');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('MEATLAND');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות Ribeye Steak' }));

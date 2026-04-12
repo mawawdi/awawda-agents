@@ -1,0 +1,186 @@
+{
+  "projectId": "11487176842394258097",
+  "sessionId": "2912019459324109706",
+  "outputComponents": [
+    {
+      "design": {
+        "screens": [
+          {
+            "screenshot": {
+              "name": "projects/11487176842394258097/files/0edbbf5ce94346a3b2af4344876cfab1",
+              "downloadUrl": "https://lh3.googleusercontent.com/aida/ADBb0uhoGGQHXTDVhGWXpB7_2QAxtZJ1G1s02DNrhTz-JkIgeFvh7K2f2qgBXLFBBI9YnNRESgU4jjsK_qpCKLl8sTbaGfK1pc5h_sZHeutcjN7z6FYLQDd63wWkqVGdLA7Ka7QwaaAwm6x2O6aBszGbJp1fpvEQFIbD1c4TynA8TVeErcqNEUQxLKwr8_5O7rsxGA_ctlNloS68argjSYxVTmfKfhvbRmEPZO4RsJOhH6tEqdV9Usqnk-XX1qrT"
+            },
+            "htmlCode": {
+              "name": "projects/11487176842394258097/files/4f6b91836be5438da66fe0b456b318a3",
+              "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzEwOGFlMmQ3MDU4ZTRhZTk4Y2MyMGVkNWE1MDA3YzI5EgsSBxDzpte8uRQYAZIBJAoKcHJvamVjdF9pZBIWQhQxMTQ4NzE3Njg0MjM5NDI1ODA5Nw&filename=&opi=96797242",
+              "mimeType": "text/html"
+            },
+            "id": "ee4a4aba31cc49f1b3c53e23dcf1c242",
+            "generatedBy": "figaro_agent",
+            "width": "2560",
+            "height": "2620",
+            "title": "Order Success Confirmation",
+            "prompt": "Create a desktop order success confirmation state for the Customer Portal. Hebrew RTL. Match the visual style of {{DATA:SCREEN:SCREEN_18}} and {{DATA:SCREEN:SCREEN_24}} exactly. \n\nThe screen should include:\n- A clear success confirmation card in the center or main content area.\n- A large checkmark icon and a \"Success\" headline in Hebrew (\"ההזמנה נקלטה בהצלחה!\").\n- Order reference number (e.g., #88291).\n- Summary of the order (Total amount, estimated delivery date).\n- A visual indicator or note that the submit button is now locked to prevent duplicate submissions.\n- Primary CTA to \"Return to Dashboard\" or \"View Order History\".\n- The layout must be RTL (Right-to-Left).\n- Use the 'Meatland Bold Editorial Motion System' theme.",
+            "name": "projects/11487176842394258097/screens/ee4a4aba31cc49f1b3c53e23dcf1c242",
+            "theme": {
+              "colorMode": "LIGHT",
+              "font": "PLUS_JAKARTA_SANS",
+              "roundness": "ROUND_EIGHT",
+              "customColor": "#7f1d1d",
+              "headlineFont": "PLUS_JAKARTA_SANS",
+              "bodyFont": "PLUS_JAKARTA_SANS",
+              "labelFont": "PLUS_JAKARTA_SANS",
+              "namedColors": {
+                "background": "#fafaf9",
+                "error": "#ba1a1a",
+                "error_container": "#ffdad6",
+                "inverse_on_surface": "#f5f5f4",
+                "inverse_primary": "#f87171",
+                "inverse_surface": "#292524",
+                "on_background": "#1c1917",
+                "on_error": "#ffffff",
+                "on_error_container": "#93000a",
+                "on_primary": "#ffffff",
+                "on_primary_container": "#7f1d1d",
+                "on_primary_fixed": "#450a0a",
+                "on_primary_fixed_variant": "#7f1d1d",
+                "on_secondary": "#ffffff",
+                "on_secondary_container": "#0f766e",
+                "on_secondary_fixed": "#134e4a",
+                "on_secondary_fixed_variant": "#0f766e",
+                "on_surface": "#1c1917",
+                "on_surface_variant": "#44403c",
+                "on_tertiary": "#ffffff",
+                "on_tertiary_container": "#b45309",
+                "on_tertiary_fixed": "#7c2d12",
+                "on_tertiary_fixed_variant": "#b45309",
+                "outline": "#d6d3d1",
+                "outline_variant": "#e7e5e4",
+                "primary": "#7f1d1d",
+                "primary_container": "#fef2f2",
+                "primary_fixed": "#fee2e2",
+                "primary_fixed_dim": "#fecaca",
+                "secondary": "#0f766e",
+                "secondary_container": "#f0fdfa",
+                "secondary_fixed": "#ccfbf1",
+                "secondary_fixed_dim": "#99f6e4",
+                "surface": "#fafaf9",
+                "surface_bright": "#ffffff",
+                "surface_container": "#fafaf9",
+                "surface_container_high": "#f1f1f0",
+                "surface_container_highest": "#e7e5e4",
+                "surface_container_low": "#f5f5f4",
+                "surface_container_lowest": "#ffffff",
+                "surface_dim": "#e7e5e4",
+                "surface_tint": "#7f1d1d",
+                "surface_variant": "#f5f5f4",
+                "tertiary": "#b45309",
+                "tertiary_container": "#fffbeb",
+                "tertiary_fixed": "#ffedd5",
+                "tertiary_fixed_dim": "#fed7aa"
+              },
+              "designMd": "# Crimson Terroir: Design System Document\n\n### 1. Overview & Creative North Star\n**Creative North Star: The Artisanal Butcher**\nCrimson Terroir is a high-end editorial design system that bridges the gap between raw, tactile craftsmanship and sophisticated digital precision. Inspired by the textures of premium marbled beef, steel blades, and copper hardware, it avoids the \"app-like\" sterility of standard grids. Instead, it embraces **Staggered Narrative Layouts**—where elements reveal themselves with intentional pacing, using depth and cinematic photography to tell a story of quality.\n\n### 2. Colors\nThe palette is grounded in \"Stone\" neutrals, punctuated by \"Deep Cured Red\" (Primary), \"Steel Teal\" (Secondary), and \"Warm Copper\" (Tertiary).\n\n- **The \"No-Line\" Rule:** Sectioning is achieved through shifts in background tone (e.g., `#fafaf9` to `#ffffff`) or vertical accents (like the 4px primary-colored border on order cards). Never use a full 1px border to divide major sections.\n- **Surface Hierarchy:** \n    - `surface_container_lowest` (#ffffff): Used for interactive cards that need to \"pop.\"\n    - `surface` (#fafaf9): The standard canvas.\n    - `surface_dim` (#e7e5e4): Used for inactive or foundational background elements.\n- **The \"Glass & Gradient\" Rule:** The bottom navigation and action rails utilize `backdrop-blur-xl` at 80% opacity to maintain a sense of environmental depth.\n- **Signature Textures:** Hero sections should utilize dark, high-contrast imagery with low-opacity overlays to ensure white typography remains legible while maintaining a \"moody\" editorial feel.\n\n### 3. Typography\nThe system uses **Plus Jakarta Sans** (integrated from the Rubik/Sora foundation) to provide a modern, geometric clarity with an organic touch.\n\n- **Display & Headlines:** Use heavy weights (700-900) for titles (e.g., 30px/1.875rem) to create a bold, authoritative hierarchy.\n- **Body & Labels:** Reference the exact scale found in-situ:\n    - **Body Large:** 1.25rem (20px) for prominent numbers or status.\n    - **Body Standard:** 1.125rem (18px) for primary UI labels.\n    - **Caption/Detail:** 0.875rem (14px) and 0.75rem (12px).\n    - **Micro-Labels:** 10px and 11px for metadata like \"Meatland VIP\" tags or account IDs.\nThe typographic rhythm is intentionally varied, contrasting 10px bold uppercase tracking with 30px heavy headlines.\n\n### 4. Elevation & Depth\nElevation is communicated through soft, environmental light rather than mechanical offsets.\n\n- **The Layering Principle:** Stack cards using `surface_container_low` against a `surface` background to create a \"stepped\" feel without shadows.\n- **Ambient Shadows:**\n    - **Small (shadow-sm):** Used for standard product cards to provide a subtle lift.\n    - **Large (shadow-lg):** Used for the Hero section and main CTAs to define \"Hero\" importance.\n    - **Floating (shadow-2xl):** Reserved for Floating Action Buttons (FAB) to imply significant vertical distance from the page.\n- **Glassmorphism:** The bottom action bar is fixed with a `backdrop-blur-xl` and a subtle top border (#e7e5e4) to simulate a floating glass pane over the content.\n\n### 5. Components\n- **Primary Buttons:** High-contrast containers with 1rem (lg) corner radius. The primary action uses a subtle shadow in the primary color (e.g., `shadow-red-900/20`).\n- **Cards:** Use `rounded-xl` (1.5rem) for main containers. Hero cards should feature full-bleed imagery with a z-index-10 typography layer.\n- **Status Chips:** Use 10% opacity backgrounds of the status color (e.g., Primary/10) with bold, matching-color text for a sophisticated \"tonal\" look.\n- **Horizontal Scrollers:** Used for product catalogs to break the vertical scroll and encourage discovery without occupying excessive vertical space.\n\n### 6. Do's and Don'ts\n**Do:**\n- Use \"Staggered Reveal\" animations (320ms ease-out) for all page transitions.\n- Align text to the right (RTL) with generous 1rem (16px) padding.\n- Use iconography with a consistent weight (400) and optical size (24px).\n\n**Don't:**\n- Don't use full-width borders between list items; use 2/3 width dividers or simple whitespace.\n- Don't use pure black (#000); use Stone-900 (#1c1917) for high-contrast text.\n- Don't use standard \"Material Blue\" for links; use the Secondary Steel Teal for a bespoke feel.",
+              "colorVariant": "FIDELITY",
+              "overridePrimaryColor": "#7f1d1d",
+              "overrideSecondaryColor": "#0f766e",
+              "overrideTertiaryColor": "#b45309",
+              "overrideNeutralColor": "#fafaf9",
+              "spacingScale": 2
+            },
+            "deviceType": "DESKTOP",
+            "screenType": "DESIGN",
+            "screenMetadata": {
+              "agentType": "PRO_AGENT",
+              "status": "COMPLETE"
+            },
+            "designSystem": {
+              "name": "assets/5824344660252013526",
+              "designSystem": {
+                "displayName": "Meatland Bold Editorial Motion System",
+                "theme": {
+                  "colorMode": "LIGHT",
+                  "font": "PLUS_JAKARTA_SANS",
+                  "roundness": "ROUND_EIGHT",
+                  "customColor": "#7f1d1d",
+                  "headlineFont": "PLUS_JAKARTA_SANS",
+                  "bodyFont": "PLUS_JAKARTA_SANS",
+                  "labelFont": "PLUS_JAKARTA_SANS",
+                  "namedColors": {
+                    "background": "#fafaf9",
+                    "error": "#ba1a1a",
+                    "error_container": "#ffdad6",
+                    "inverse_on_surface": "#f5f5f4",
+                    "inverse_primary": "#f87171",
+                    "inverse_surface": "#292524",
+                    "on_background": "#1c1917",
+                    "on_error": "#ffffff",
+                    "on_error_container": "#93000a",
+                    "on_primary": "#ffffff",
+                    "on_primary_container": "#7f1d1d",
+                    "on_primary_fixed": "#450a0a",
+                    "on_primary_fixed_variant": "#7f1d1d",
+                    "on_secondary": "#ffffff",
+                    "on_secondary_container": "#0f766e",
+                    "on_secondary_fixed": "#134e4a",
+                    "on_secondary_fixed_variant": "#0f766e",
+                    "on_surface": "#1c1917",
+                    "on_surface_variant": "#44403c",
+                    "on_tertiary": "#ffffff",
+                    "on_tertiary_container": "#b45309",
+                    "on_tertiary_fixed": "#7c2d12",
+                    "on_tertiary_fixed_variant": "#b45309",
+                    "outline": "#d6d3d1",
+                    "outline_variant": "#e7e5e4",
+                    "primary": "#7f1d1d",
+                    "primary_container": "#fef2f2",
+                    "primary_fixed": "#fee2e2",
+                    "primary_fixed_dim": "#fecaca",
+                    "secondary": "#0f766e",
+                    "secondary_container": "#f0fdfa",
+                    "secondary_fixed": "#ccfbf1",
+                    "secondary_fixed_dim": "#99f6e4",
+                    "surface": "#fafaf9",
+                    "surface_bright": "#ffffff",
+                    "surface_container": "#fafaf9",
+                    "surface_container_high": "#f1f1f0",
+                    "surface_container_highest": "#e7e5e4",
+                    "surface_container_low": "#f5f5f4",
+                    "surface_container_lowest": "#ffffff",
+                    "surface_dim": "#e7e5e4",
+                    "surface_tint": "#7f1d1d",
+                    "surface_variant": "#f5f5f4",
+                    "tertiary": "#b45309",
+                    "tertiary_container": "#fffbeb",
+                    "tertiary_fixed": "#ffedd5",
+                    "tertiary_fixed_dim": "#fed7aa"
+                  },
+                  "designMd": "# Crimson Terroir: Design System Document\n\n### 1. Overview & Creative North Star\n**Creative North Star: The Artisanal Butcher**\nCrimson Terroir is a high-end editorial design system that bridges the gap between raw, tactile craftsmanship and sophisticated digital precision. Inspired by the textures of premium marbled beef, steel blades, and copper hardware, it avoids the \"app-like\" sterility of standard grids. Instead, it embraces **Staggered Narrative Layouts**—where elements reveal themselves with intentional pacing, using depth and cinematic photography to tell a story of quality.\n\n### 2. Colors\nThe palette is grounded in \"Stone\" neutrals, punctuated by \"Deep Cured Red\" (Primary), \"Steel Teal\" (Secondary), and \"Warm Copper\" (Tertiary).\n\n- **The \"No-Line\" Rule:** Sectioning is achieved through shifts in background tone (e.g., `#fafaf9` to `#ffffff`) or vertical accents (like the 4px primary-colored border on order cards). Never use a full 1px border to divide major sections.\n- **Surface Hierarchy:** \n    - `surface_container_lowest` (#ffffff): Used for interactive cards that need to \"pop.\"\n    - `surface` (#fafaf9): The standard canvas.\n    - `surface_dim` (#e7e5e4): Used for inactive or foundational background elements.\n- **The \"Glass & Gradient\" Rule:** The bottom navigation and action rails utilize `backdrop-blur-xl` at 80% opacity to maintain a sense of environmental depth.\n- **Signature Textures:** Hero sections should utilize dark, high-contrast imagery with low-opacity overlays to ensure white typography remains legible while maintaining a \"moody\" editorial feel.\n\n### 3. Typography\nThe system uses **Plus Jakarta Sans** (integrated from the Rubik/Sora foundation) to provide a modern, geometric clarity with an organic touch.\n\n- **Display & Headlines:** Use heavy weights (700-900) for titles (e.g., 30px/1.875rem) to create a bold, authoritative hierarchy.\n- **Body & Labels:** Reference the exact scale found in-situ:\n    - **Body Large:** 1.25rem (20px) for prominent numbers or status.\n    - **Body Standard:** 1.125rem (18px) for primary UI labels.\n    - **Caption/Detail:** 0.875rem (14px) and 0.75rem (12px).\n    - **Micro-Labels:** 10px and 11px for metadata like \"Meatland VIP\" tags or account IDs.\nThe typographic rhythm is intentionally varied, contrasting 10px bold uppercase tracking with 30px heavy headlines.\n\n### 4. Elevation & Depth\nElevation is communicated through soft, environmental light rather than mechanical offsets.\n\n- **The Layering Principle:** Stack cards using `surface_container_low` against a `surface` background to create a \"stepped\" feel without shadows.\n- **Ambient Shadows:**\n    - **Small (shadow-sm):** Used for standard product cards to provide a subtle lift.\n    - **Large (shadow-lg):** Used for the Hero section and main CTAs to define \"Hero\" importance.\n    - **Floating (shadow-2xl):** Reserved for Floating Action Buttons (FAB) to imply significant vertical distance from the page.\n- **Glassmorphism:** The bottom action bar is fixed with a `backdrop-blur-xl` and a subtle top border (#e7e5e4) to simulate a floating glass pane over the content.\n\n### 5. Components\n- **Primary Buttons:** High-contrast containers with 1rem (lg) corner radius. The primary action uses a subtle shadow in the primary color (e.g., `shadow-red-900/20`).\n- **Cards:** Use `rounded-xl` (1.5rem) for main containers. Hero cards should feature full-bleed imagery with a z-index-10 typography layer.\n- **Status Chips:** Use 10% opacity backgrounds of the status color (e.g., Primary/10) with bold, matching-color text for a sophisticated \"tonal\" look.\n- **Horizontal Scrollers:** Used for product catalogs to break the vertical scroll and encourage discovery without occupying excessive vertical space.\n\n### 6. Do's and Don'ts\n**Do:**\n- Use \"Staggered Reveal\" animations (320ms ease-out) for all page transitions.\n- Align text to the right (RTL) with generous 1rem (16px) padding.\n- Use iconography with a consistent weight (400) and optical size (24px).\n\n**Don't:**\n- Don't use full-width borders between list items; use 2/3 width dividers or simple whitespace.\n- Don't use pure black (#000); use Stone-900 (#1c1917) for high-contrast text.\n- Don't use standard \"Material Blue\" for links; use the Secondary Steel Teal for a bespoke feel.",
+                  "colorVariant": "FIDELITY",
+                  "overridePrimaryColor": "#7f1d1d",
+                  "overrideSecondaryColor": "#0f766e",
+                  "overrideTertiaryColor": "#b45309",
+                  "overrideNeutralColor": "#fafaf9",
+                  "spacingScale": 2
+                }
+              },
+              "version": "2"
+            }
+          }
+        ],
+        "theme": {}
+      }
+    },
+    {
+      "text": "I've designed the desktop order success confirmation state for the Customer Portal, matching the premium editorial style and RTL Hebrew requirements. The screen includes the order reference, a clear success message, and a locked state for the submit action to prevent duplicates."
+    },
+    {
+      "suggestion": "Change the background color to a light stone tone"
+    },
+    {
+      "suggestion": "Add a 'Print Receipt' button"
+    },
+    {
+      "suggestion": "Modify the sidebar links"
+    }
+  ]
+}

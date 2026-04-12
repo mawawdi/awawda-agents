@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#7f1d1d",
+                        "secondary-fixed-dim": "#99f6e4",
+                        "surface-container-highest": "#e7e5e4",
+                        "inverse-primary": "#f87171",
+                        "surface-bright": "#ffffff",
+                        "surface-dim": "#e7e5e4",
+                        "background": "#fafaf9",
+                        "secondary": "#0f766e",
+                        "on-error": "#ffffff",
+                        "outline": "#d6d3d1",
+                        "on-surface": "#1c1917",
+                        "primary-container": "#fef2f2",
+                        "primary-fixed-dim": "#fecaca",
+                        "outline-variant": "#e7e5e4",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#f1f1f0",
+                        "surface": "#fafaf9",
+                        "secondary-fixed": "#ccfbf1",
+                        "on-secondary-fixed-variant": "#0f766e",
+                        "on-secondary-container": "#0f766e",
+                        "on-secondary-fixed": "#134e4a",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#292524",
+                        "tertiary-fixed-dim": "#fed7aa",
+                        "surface-variant": "#f5f5f4",
+                        "secondary-container": "#f0fdfa",
+                        "on-tertiary-fixed": "#7c2d12",
+                        "inverse-on-surface": "#f5f5f4",
+                        "tertiary": "#b45309",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#fffbeb",
+                        "on-surface-variant": "#44403c",
+                        "tertiary-fixed": "#ffedd5",
+                        "on-tertiary-fixed-variant": "#b45309",
+                        "surface-tint": "#7f1d1d",
+                        "on-primary-fixed-variant": "#7f1d1d",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1c1917",
+                        "on-tertiary-container": "#b45309",
+                        "primary-fixed": "#fee2e2",
+                        "on-primary-container": "#7f1d1d",
+                        "surface-container": "#fafaf9",
+                        "on-primary-fixed": "#450a0a",
+                        "surface-container-low": "#f5f5f4",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stagger-reveal {
+            animation: fadeIn 320ms ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 border-b border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 backdrop-blur-xl shadow-sm h-20 px-8 flex flex-row-reverse justify-between items-center">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-red-900 dark:text-red-500 tracking-tighter">Crimson Terroir</span>
+<nav class="hidden md:flex gap-6 items-center text-stone-600 dark:text-stone-400 font-bold text-lg tracking-tight">
+<a class="hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">Dashboard</a>
+<a class="text-red-900 dark:text-red-400 border-b-2 border-red-900 dark:border-red-500 pb-1" href="#">Order History</a>
+<a class="hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">Profile</a>
+<a class="hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">Support</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-stone-100 transition-all scale-95 active:opacity-80">
+<span class="material-symbols-outlined text-stone-600">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-stone-100 transition-all scale-95 active:opacity-80">
+<span class="material-symbols-outlined text-stone-600">shopping_cart</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-stone-200">
+<img alt="Customer Profile Avatar" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional man in a well-lit studio, neutral background, high-end editorial photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBj8CJH5grtB-Kj4FerjrWKK60PnrGyBx8lTeRpOLw-g-kzRzyADhs-On_3nPO7PwjY-1OTPBTAMR426iSsJNLZw1Y9NoY5WBSYn2Ag8fsmJOe9FY_rRGHNhVXOs9gIqvrnkEb3WpADDpfiTLQbUsfk431BkAL1N9215NRGHDNEW66bjmglfCD170VWPoqLctoDT1tOm5ImIJDUzGxegt7KplAiNZDCDzCNF047BdEZkSFqYd81_O6MESuF2ccby2_TNsFvEO5sh5BS"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (RTL) -->
+<aside class="fixed right-0 top-20 h-[calc(100vh-5rem)] w-64 border-l border-stone-200 bg-stone-50 py-6 px-4 flex flex-col space-y-2 text-right hidden md:flex">
+<div class="mb-8 px-4">
+<div class="text-xs font-bold text-primary uppercase tracking-widest mb-1">Meatland VIP</div>
+<div class="text-lg font-extrabold text-on-surface">Premium Member</div>
+<div class="text-xs text-stone-500">ID: #88291</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">potted_plant</span>
+<span class="font-medium text-sm">Active Orders</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 text-red-900 font-bold border-r-4 border-red-900 transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-medium text-sm">Order History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-medium text-sm">Meatland VIP</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4">
+<button class="w-full bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-red-900/20 scale-95 active:opacity-80 transition-all">
+                New Order
+            </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:mr-64 pt-32 pb-20 px-8 flex justify-center items-center min-h-screen">
+<div class="max-w-3xl w-full stagger-reveal">
+<!-- Success Hero Card -->
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl shadow-lg border-r-4 border-primary p-12 text-center">
+<!-- Background Decorative Texture -->
+<div class="absolute top-0 right-0 w-64 h-64 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[12rem]">check_circle</span>
+</div>
+<div class="relative z-10">
+<div class="inline-flex items-center justify-center w-24 h-24 bg-primary-container rounded-full mb-8">
+<span class="material-symbols-outlined text-primary text-6xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h1 class="text-4xl font-black text-on-surface mb-2 tracking-tight">ההזמנה נקלטה בהצלחה!</h1>
+<p class="text-xl text-stone-500 mb-10">תודה שבחרת ב-Crimson Terroir. הצוות שלנו כבר התחיל בטיפול בנתחים המובחרים שלך.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-right mb-12">
+<!-- Summary Detail 1 -->
+<div class="bg-surface-container-low p-6 rounded-lg">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest block mb-2">מספר הזמנה</span>
+<span class="text-2xl font-bold text-on-surface">#88291</span>
+</div>
+<!-- Summary Detail 2 -->
+<div class="bg-surface-container-low p-6 rounded-lg">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest block mb-2">סה״כ לתשלום</span>
+<span class="text-2xl font-bold text-on-surface">₪ 1,240.00</span>
+</div>
+<!-- Summary Detail 3 -->
+<div class="bg-surface-container-low p-6 rounded-lg">
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest block mb-2">מועד משלוח משוער</span>
+<span class="text-2xl font-bold text-on-surface">יום שלישי, 24 באוקטובר</span>
+</div>
+<!-- Summary Detail 4 -->
+<div class="bg-surface-container-low p-6 rounded-lg flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<span class="text-xs font-bold text-stone-400 uppercase tracking-widest block">סטטוס משלוח</span>
+<span class="text-lg font-bold text-secondary">מעובד במפעל</span>
+</div>
+</div>
+</div>
+<!-- Lock Indicator -->
+<div class="flex items-center justify-center gap-2 mb-8 bg-stone-100 py-3 px-6 rounded-full inline-flex">
+<span class="material-symbols-outlined text-stone-400 text-sm">lock</span>
+<span class="text-xs font-bold text-stone-500 uppercase tracking-tight">לחצן השליחה נעול למניעת כפילויות</span>
+</div>
+<!-- CTAs -->
+<div class="flex flex-col md:flex-row-reverse gap-4 justify-center">
+<button class="px-12 py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-red-900/20 hover:scale-105 active:scale-95 transition-all">
+                            חזרה לדשבורד
+                        </button>
+<button class="px-12 py-4 border border-outline text-on-surface rounded-xl font-bold hover:bg-stone-50 active:scale-95 transition-all">
+                            צפייה בפרטי ההזמנה
+                        </button>
+</div>
+</div>
+</div>
+<!-- Staggered Editorial Section -->
+<div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="md:col-span-2 relative h-64 rounded-xl overflow-hidden group">
+<img alt="Premium Beef Cuts" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close-up of premium raw marbled wagyu steak on a dark stone surface with dramatic side lighting and coarse salt" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsgdw8SxYyp70rHQbLjvKc3oM1Zr_01UbyIendb9W0hg48b9SFaiSwEu46XJsgL6781S9NzmfYAi8dSrFU-6MtzZ3PHTJDmiCUHt1RYX1J69sOCbgkgCvU2bMaWQ3xSX6xYaKI2XxtTQ8XSZJCxG6Qn02yEjb09jWkymA7kErp9Ly29FGIYBzncM2XyXG7tgKKHMHeJEJ_QPypzk8L8jAwZ7eUcoWXHCZtrpXyi_P-QSXUCgVGawwMVV7Nj8bRTP9ccbj_QmEM0qcK"/>
+<div class="absolute inset-0 bg-gradient-to-t from-stone-900/80 to-transparent flex flex-col justify-end p-8 text-right">
+<span class="text-xs font-bold text-red-400 mb-1">המלצת הקצב</span>
+<h3 class="text-2xl font-black text-white">כיצד להכין את הנתח המושלם?</h3>
+</div>
+</div>
+<div class="bg-tertiary-container p-8 rounded-xl flex flex-col justify-between">
+<div>
+<span class="material-symbols-outlined text-tertiary text-4xl mb-4">military_tech</span>
+<h4 class="text-xl font-bold text-on-tertiary-container mb-2">צברת 120 נקודות!</h4>
+<p class="text-sm text-on-tertiary-container/80">ההזמנה הזו קירבה אותך להטבה הבאה שלך במועדון Meatland VIP.</p>
+</div>
+<a class="text-tertiary font-bold text-sm underline decoration-2 underline-offset-4" href="#">לצפייה בהטבות</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (Glassmorphism) -->
+<div class="fixed bottom-0 left-0 right-0 md:mr-64 bg-stone-50/80 backdrop-blur-xl border-t border-stone-200 h-16 flex items-center justify-between px-8 z-40">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">support_agent</span>
+<span class="text-xs font-bold text-on-surface-variant">תמיכה זמינה בטלפון 1-800-MEAT</span>
+</div>
+<div class="flex gap-6 text-xs font-bold text-stone-400 uppercase tracking-widest">
+<a class="hover:text-primary" href="#">מדיניות ביטולים</a>
+<a class="hover:text-primary" href="#">תנאי שימוש</a>
+<a class="hover:text-primary" href="#">פרטיות</a>
+</div>
+</div>
+</body></html>

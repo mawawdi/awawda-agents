@@ -6,7 +6,7 @@ Expo React Native app for Meatland sales agents.
 
 Copy `.env.example` to `.env` and set:
 
-- `EXPO_PUBLIC_API_BASE_URL` (API origin, e.g. `http://YOUR_LAN_IP:3000` for Expo Go on a physical device)
+- `EXPO_PUBLIC_API_BASE_URL` (API origin; use `http://localhost:3000` for web/simulators, or `http://YOUR_LAN_IP:3000` for Expo Go on a physical device)
 
 ## Implemented in T14
 

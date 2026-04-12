@@ -494,8 +494,8 @@ function OrderRoute({
       <div className="portal-frame">
         <header className="portal-header">
           <div className="portal-brand-stack">
-            <p className="portal-kicker">The Artisanal Ledger</p>
-            <h1 className="portal-brand" data-testid="portal-heading">קטלוג מובחר</h1>
+            <p className="portal-kicker">SALES APP</p>
+            <h1 className="portal-brand" data-testid="portal-heading">MEATLAND</h1>
             <p className="portal-meta">
               לקוח: <bdi dir="ltr">{session?.customerId ?? 'unknown-customer'}</bdi> · סשן מאובטח
             </p>
@@ -584,7 +584,7 @@ function OrderRoute({
 
             {submitState.status === 'mismatch' ? (
               <section aria-live="polite" className="feedback" data-kind="mismatch" data-testid="submit-mismatch">
-                <h2>המחירים השתנו לפני השליחה</h2>
+                <h2>נמצאה אי-התאמה במחירים (Conflict 409)</h2>
                 <p>בדקו את השורות שסומנו, ואז רעננו מחירים או אשרו מחדש את ההזמנה.</p>
                 <ul>
                   {submitState.lines.map((line) => (
@@ -618,7 +618,7 @@ function OrderRoute({
 
             {submitState.status === 'success' ? (
               <section aria-live="polite" className="feedback" data-kind="success" data-testid="submit-success">
-                <h2>ההזמנה נשלחה בהצלחה</h2>
+                <h2>ההזמנה נקלטה בהצלחה!</h2>
                 <p>
                   אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi>
                 </p>

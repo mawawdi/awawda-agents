@@ -1,5 +1,17 @@
+import { MaterialIcons } from '@expo/vector-icons'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Animated, Easing, I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  I18nManager,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 
 import { useAuth } from '../auth/auth-provider'
 import { validateLoginInput, type LoginValidationErrors } from '../auth/validation'
@@ -11,27 +23,18 @@ export function LoginScreen(): React.JSX.Element {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<LoginValidationErrors>({})
-  const cardOpacity = useRef(new Animated.Value(0)).current
-  const cardTranslateY = useRef(new Animated.Value(18)).current
 
   const canSubmit = useMemo(() => !isSubmitting, [isSubmitting])
+  const reveal = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardTranslateY, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [cardOpacity, cardTranslateY])
+    Animated.timing(reveal, {
+      toValue: 1,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start()
+  }, [reveal])
 
   const submit = async (): Promise<void> => {
     clearError()
@@ -49,148 +52,346 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContent} style={styles.container}>
       <Animated.View
         style={[
-          styles.card,
+          styles.shell,
           {
-            opacity: cardOpacity,
-            transform: [{ translateY: cardTranslateY }],
+            opacity: reveal,
+            transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
           },
         ]}
       >
-        <Text style={styles.kicker}>The Artisanal Ledger</Text>
-        <Text style={styles.title}>כניסת סוכן</Text>
-        <Text style={styles.subtitle}>הפעילו משמרת מכירות עם נתוני לקוחות בזמן אמת.</Text>
+        <View style={styles.topMeta}>
+          <Text style={styles.salesApp}>SALES APP</Text>
+          <Text style={styles.wordmark}>MEATLAND</Text>
+        </View>
 
-        <TextInput
-          accessibilityLabel="Phone or email"
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          placeholder="טלפון או אימייל ארגוני"
-          value={phoneOrEmail}
-          onChangeText={(value) => {
-            setPhoneOrEmail(value)
-            if (fieldErrors.phoneOrEmail) {
-              setFieldErrors((current) => ({ ...current, phoneOrEmail: undefined }))
-            }
-          }}
-          style={styles.input}
-        />
-        {fieldErrors.phoneOrEmail ? <Text style={styles.error}>{fieldErrors.phoneOrEmail}</Text> : null}
+        {errorMessage ? (
+          <View style={styles.errorBanner}>
+            <View style={styles.errorTextGroup}>
+              <Text style={styles.errorTitle}>שגיאת התחברות</Text>
+              <Text style={styles.errorBody}>{errorMessage}</Text>
+            </View>
+            <MaterialIcons color={palette.danger} name="error-outline" size={18} />
+          </View>
+        ) : null}
 
-        <TextInput
-          accessibilityLabel="Password"
-          secureTextEntry
-          placeholder="סיסמה"
-          value={password}
-          onChangeText={(value) => {
-            setPassword(value)
-            if (fieldErrors.password) {
-              setFieldErrors((current) => ({ ...current, password: undefined }))
-            }
-          }}
-          style={styles.input}
-        />
-        {fieldErrors.password ? <Text style={styles.error}>{fieldErrors.password}</Text> : null}
+        <View style={styles.headerBlock}>
+          <Text style={styles.title}>כניסת סוכנים</Text>
+          <Text style={styles.subtitle}>הזן את הפרטים שלך כדי להתחיל יום עבודה</Text>
+        </View>
 
-        {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
+        <View style={styles.form}>
+          <View style={styles.fieldBlock}>
+            <Text style={styles.label}>טלפון או דוא״ל</Text>
+            <View style={styles.inputShell}>
+              <TextInput
+                accessibilityLabel="Phone or email"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                placeholder="05x-xxxxxxx"
+                placeholderTextColor="#9ca3af"
+                style={styles.input}
+                value={phoneOrEmail}
+                onChangeText={(value) => {
+                  setPhoneOrEmail(value)
+                  if (fieldErrors.phoneOrEmail) {
+                    setFieldErrors((current) => ({ ...current, phoneOrEmail: undefined }))
+                  }
+                }}
+              />
+              <MaterialIcons color="#9ca3af" name="alternate-email" size={18} style={styles.inputIcon} />
+            </View>
+            <View style={styles.verifiedRow}>
+              <MaterialIcons color={palette.secondary} name="verified-user" size={13} />
+              <Text style={styles.verifiedText}>מזוהה ע״י המערכת</Text>
+            </View>
+            {fieldErrors.phoneOrEmail ? <Text style={styles.errorInline}>{fieldErrors.phoneOrEmail}</Text> : null}
+          </View>
+
+          <View style={styles.fieldBlock}>
+            <View style={styles.passwordHeader}>
+              <Text style={styles.label}>סיסמה</Text>
+              <Text style={styles.forgot}>שכחת סיסמה?</Text>
+            </View>
+            <View style={styles.inputShell}>
+              <TextInput
+                accessibilityLabel="Password"
+                placeholder="••••••••"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                style={styles.input}
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value)
+                  if (fieldErrors.password) {
+                    setFieldErrors((current) => ({ ...current, password: undefined }))
+                  }
+                }}
+              />
+              <MaterialIcons color="#9ca3af" name="visibility" size={18} style={styles.inputIcon} />
+            </View>
+            {fieldErrors.password ? <Text style={styles.errorInline}>{fieldErrors.password}</Text> : null}
+          </View>
+        </View>
 
         <Pressable
           accessibilityRole="button"
+          disabled={!canSubmit}
+          style={({ pressed }) => [styles.button, (pressed || !canSubmit) && styles.buttonDisabled]}
           onPress={() => {
             void submit()
           }}
-          style={({ pressed }) => [styles.button, (pressed || !canSubmit) && styles.buttonDisabled]}
-          disabled={!canSubmit}
         >
-          {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>כניסה למערכת</Text>}
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText}>התחברות למערכת</Text>
+              <MaterialIcons color="#fff" name="arrow-back" size={18} />
+            </View>
+          )}
         </Pressable>
+
+        <View style={styles.helpRow}>
+          <Text style={styles.helpText}>
+            נתקלת בבעיה? <Text style={styles.helpLink}>צור קשר עם מנהל המחוז</Text>
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.footerSide}>
+            <Text style={styles.footerLabel}>HEBREW (IL)</Text>
+            <View style={styles.footerDot} />
+          </View>
+          <View style={styles.footerSide}>
+            <Text style={styles.footerLabel}>SECURE CONNECTION v2.4</Text>
+            <MaterialIcons color="#a8a29e" name="lock" size={12} />
+          </View>
+        </View>
       </Animated.View>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fafaf9',
+  },
+  scrollContent: {
+    minHeight: '100%',
     justifyContent: 'center',
-    padding: spacing.xl,
-    backgroundColor: palette.background,
+    paddingHorizontal: 14,
+    paddingVertical: spacing.xl,
   },
-  card: {
-    borderRadius: radius.lg,
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    padding: spacing.xl,
-    gap: spacing.lg,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 5,
+  shell: {
+    borderRadius: 4,
+    backgroundColor: '#fafaf9',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.sm,
   },
-  kicker: {
-    color: palette.primaryContainer,
-    fontSize: 11,
+  topMeta: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+    paddingHorizontal: 4,
+  },
+  salesApp: {
+    color: '#0d9488',
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    borderBottomWidth: 2,
+    borderBottomColor: '#0d9488',
+    paddingBottom: 2,
+    letterSpacing: 0.5,
+  },
+  wordmark: {
+    color: '#7f1d1d',
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+  },
+  errorBanner: {
+    marginBottom: spacing.xl,
+    backgroundColor: '#fef2f2',
+    borderRightWidth: 3,
+    borderRightColor: '#dc2626',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  errorTextGroup: {
+    flex: 1,
+    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+  },
+  errorTitle: {
+    color: '#7f1d1d',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  errorBody: {
+    color: '#b91c1c',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  headerBlock: {
+    marginBottom: spacing.xl,
+    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: palette.primaryContainer,
+    color: '#1c1917',
+    fontSize: 47,
+    fontWeight: '900',
+    letterSpacing: -0.8,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitle: {
-    color: palette.textMuted,
-    fontSize: 14,
+    marginTop: 4,
+    color: '#78716c',
+    fontSize: 18,
+    fontWeight: '500',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  form: {
+    gap: spacing.lg,
+  },
+  fieldBlock: {
+    gap: 6,
+  },
+  label: {
+    color: '#57534e',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  inputShell: {
+    borderWidth: 2,
+    borderColor: '#e7e5e4',
+    borderRadius: 999,
+    minHeight: 54,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    position: 'relative',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
   input: {
-    borderWidth: 1,
-    borderColor: palette.outline,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: palette.surfaceLow,
-    color: palette.text,
+    minHeight: 54,
+    paddingHorizontal: 16,
+    paddingLeft: 44,
+    color: '#1c1917',
+    fontSize: 16,
+    fontWeight: '500',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    minHeight: touchTarget.comfortable,
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 14,
+    top: 17,
+  },
+  verifiedRow: {
+    marginTop: 2,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  verifiedText: {
+    color: palette.secondary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  passwordHeader: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  forgot: {
+    color: '#a8a29e',
+    fontSize: 12,
+    fontWeight: '700',
   },
   button: {
-    marginTop: 8,
-    borderRadius: radius.md,
-    backgroundColor: palette.primaryContainer,
-    borderWidth: 1,
-    borderColor: '#0369a1',
+    marginTop: spacing.xl,
+    minHeight: touchTarget.comfortable + 8,
+    borderRadius: radius.lg,
+    backgroundColor: '#7f1d1d',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: touchTarget.comfortable,
+    shadowColor: '#7f1d1d',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 6,
   },
   buttonDisabled: {
-    opacity: 0.65,
+    opacity: 0.62,
+  },
+  buttonContent: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   buttonText: {
     color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  helpRow: {
+    marginTop: spacing.xl,
+    alignItems: 'center',
+  },
+  helpText: {
+    color: '#a8a29e',
+    fontSize: 13,
+  },
+  helpLink: {
+    color: '#0d9488',
+    fontWeight: '800',
+  },
+  footer: {
+    marginTop: spacing.xl * 2,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#e7e5e4',
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  footerSide: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerLabel: {
+    color: '#a8a29e',
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  error: {
-    color: palette.danger,
-    fontSize: 13,
+  footerDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#22c55e',
   },
-  errorBanner: {
-    marginTop: 4,
-    padding: 10,
-    borderRadius: radius.sm,
-    backgroundColor: palette.dangerSurface,
+  errorInline: {
+    marginTop: 2,
     color: palette.danger,
+    fontSize: 12,
+    fontWeight: '600',
   },
 })

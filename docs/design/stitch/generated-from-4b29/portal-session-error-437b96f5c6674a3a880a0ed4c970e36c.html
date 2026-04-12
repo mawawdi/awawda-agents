@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#7f1d1d",
+                    "outline": "#d6d3d1",
+                    "on-secondary-container": "#0f766e",
+                    "on-primary-fixed-variant": "#7f1d1d",
+                    "on-error-container": "#93000a",
+                    "primary-container": "#fef2f2",
+                    "on-primary-fixed": "#450a0a",
+                    "surface-variant": "#f5f5f4",
+                    "secondary": "#0f766e",
+                    "surface-bright": "#ffffff",
+                    "primary": "#7f1d1d",
+                    "on-secondary-fixed": "#134e4a",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "background": "#fafaf9",
+                    "surface-dim": "#e7e5e4",
+                    "surface-container-high": "#f1f1f0",
+                    "on-error": "#ffffff",
+                    "surface-container": "#fafaf9",
+                    "primary-fixed": "#fee2e2",
+                    "on-surface-variant": "#44403c",
+                    "inverse-surface": "#292524",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#fed7aa",
+                    "secondary-container": "#f0fdfa",
+                    "on-background": "#1c1917",
+                    "tertiary-fixed": "#ffedd5",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#b45309",
+                    "inverse-primary": "#f87171",
+                    "on-surface": "#1c1917",
+                    "secondary-fixed-dim": "#99f6e4",
+                    "secondary-fixed": "#ccfbf1",
+                    "surface-container-low": "#f5f5f4",
+                    "on-tertiary-fixed": "#7c2d12",
+                    "on-secondary-fixed-variant": "#0f766e",
+                    "surface-tint": "#7f1d1d",
+                    "on-tertiary-fixed-variant": "#b45309",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#b45309",
+                    "surface": "#fafaf9",
+                    "surface-container": "#fafaf9",
+                    "primary-fixed-dim": "#fecaca",
+                    "outline-variant": "#e7e5e4",
+                    "inverse-on-surface": "#f5f5f4",
+                    "tertiary-container": "#fffbeb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-stone-50/80 backdrop-blur-xl border-b border-stone-200/50 shadow-sm">
+<div class="flex justify-between items-center h-20 px-8 max-w-[1920px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-stone-900 tracking-tighter uppercase">CRIMSON TERROIR</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-stone-600 hover:text-stone-900 transition-colors font-['Plus_Jakarta_Sans'] tracking-tight font-medium text-sm" href="#">Collections</a>
+<a class="text-stone-600 hover:text-stone-900 transition-colors font-['Plus_Jakarta_Sans'] tracking-tight font-medium text-sm" href="#">Process</a>
+<a class="text-stone-600 hover:text-stone-900 transition-colors font-['Plus_Jakarta_Sans'] tracking-tight font-medium text-sm" href="#">Concierge</a>
+<a class="text-red-900 font-bold border-b-2 border-red-900 pb-1 font-['Plus_Jakarta_Sans'] tracking-tight text-sm" href="#">Account</a>
+</div>
+</div>
+<div class="flex items-center gap-5">
+<button class="p-2 hover:bg-stone-100/50 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined text-stone-700">shopping_bag</span>
+</button>
+<button class="p-2 hover:bg-stone-100/50 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined text-stone-700">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border border-stone-200">
+<img alt="Customer Profile" data-alt="Close-up portrait of a sophisticated man with a well-groomed beard, wearing a charcoal grey sweater in soft window light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4h02Y4jPoRW-ibfDzyiwA3CDSs2YhLIZ5xvZSVTB7lTo7ib86AFFoWVIwybZjb6536jToTE2evY1G_sgBn1SYi6DNVsRMHCh5NXxdBa_34JqyRFSSTvHIUyrhS87LOATEGEoyZzsP3M8-gdwI8IRPdknfa3ErOzd1V15mVb7k1K1gDsYXmrQutcMu_MQKb1cPvf-JozU2Ny_aAugXw8nYgJGfnZNfZShsqJ4ih54TEnobgf5BL9jeNqHe2mfGmoFdtq6VP9xflhze"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow flex items-center justify-center px-6 pt-24 pb-12 bg-surface">
+<div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden rounded-xl shadow-lg bg-surface-container-lowest border border-stone-100">
+<!-- Visual Brand Side (Staggered Narrative) -->
+<div class="hidden md:block md:col-span-5 relative min-h-[500px]">
+<img alt="Artisan butcher tools" class="absolute inset-0 w-full h-full object-cover" data-alt="Moody editorial shot of high-end steel knives and copper wine accessories on a dark wooden textured surface with warm shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8KNozvCxgYmI0w5yFPDzLT5VawYoukg7vnzk0u1mu254nI9QszPpwnqWU_co74XG-C27-IE6PBbTn9i20lcqDRiD6-zABLejwigtMB3oGeemTp6ohItEVvnjTJpX2HLhD-qCB34_N-nO1Lrevd-XKPQGSzwp6hQnQNgE8R_cy-s-Npqiqu06wNFwIID1Yn1TIjm0qh48Azd-Y-7Job0zQdiidkUOzNS4WuASOz0hUaQNAUHU7bEx9_99EtkP_UoV8V6cEx8AllkIj"/>
+<div class="absolute inset-0 bg-primary/20 mix-blend-multiply"></div>
+<div class="absolute bottom-10 right-10 left-10 text-white">
+<p class="text-[10px] font-bold uppercase tracking-[0.2em] mb-2 opacity-80">Heritage Quality</p>
+<h2 class="text-3xl font-black leading-tight tracking-tighter">EXCELLENCE IN EVERY CUT</h2>
+</div>
+</div>
+<!-- Error Content Side -->
+<div class="md:col-span-7 p-12 md:p-16 flex flex-col justify-center">
+<div class="mb-8 flex items-center justify-center w-16 h-16 rounded-full bg-primary-container text-primary">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 0;">error</span>
+</div>
+<h1 class="text-4xl font-extrabold text-stone-900 mb-6 tracking-tighter">שגיאת הפעלה</h1>
+<p class="text-lg text-stone-600 leading-relaxed mb-10 max-w-md">
+                    לא הצלחנו להפעיל את חיבור הפורטל המאובטח שלך. ייתכן שהדבר נובע מקישור שפג תוקפו או מהפסקת זמן בחיבור.
+                </p>
+<div class="space-y-6">
+<button class="group w-full bg-primary text-white py-4 px-8 rounded-lg font-bold text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-3">
+<span>נסה הפעלה מחדש</span>
+<span class="material-symbols-outlined">refresh</span>
+</button>
+<div class="flex items-start gap-4 p-4 rounded-xl bg-secondary-container/50 border-r-4 border-secondary">
+<span class="material-symbols-outlined text-secondary mt-1">support_agent</span>
+<div>
+<p class="text-sm font-semibold text-on-secondary-container">זקוק לעזרה?</p>
+<p class="text-sm text-secondary">צור קשר עם מוקד הפרימיום שלנו לקבלת סיוע אישי.</p>
+</div>
+</div>
+</div>
+<!-- Subtle Metadata -->
+<div class="mt-12 flex items-center gap-6">
+<div class="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Error Code: CT-401-AUTH</div>
+<div class="h-px flex-grow bg-stone-200"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 mt-auto bg-stone-100">
+<div class="flex flex-col md:flex-row justify-between items-center px-12 w-full border-t border-stone-200 gap-8">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-stone-900">CRIMSON TERROIR.</span>
+<span class="font-['Plus_Jakarta_Sans'] text-xs tracking-widest uppercase text-stone-500">© 2024 Excellence in Craft.</span>
+</div>
+<div class="flex gap-8">
+<a class="font-['Plus_Jakarta_Sans'] text-xs tracking-widest uppercase text-stone-500 hover:text-red-900 transition-all duration-200" href="#">Privacy Policy</a>
+<a class="font-['Plus_Jakarta_Sans'] text-xs tracking-widest uppercase text-stone-500 hover:text-red-900 transition-all duration-200" href="#">Terms of Service</a>
+<a class="font-['Plus_Jakarta_Sans'] text-xs tracking-widest uppercase text-stone-500 hover:text-red-900 transition-all duration-200" href="#">Sustainability</a>
+<a class="font-['Plus_Jakarta_Sans'] text-xs tracking-widest uppercase text-stone-500 hover:text-red-900 transition-all duration-200" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body></html>

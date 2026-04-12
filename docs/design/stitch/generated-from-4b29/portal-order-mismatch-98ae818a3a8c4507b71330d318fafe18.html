@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#0f766e",
+                    "on-error-container": "#93000a",
+                    "on-secondary-container": "#0f766e",
+                    "primary-fixed": "#fee2e2",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#fef2f2",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#e7e5e4",
+                    "on-tertiary-fixed-variant": "#b45309",
+                    "on-surface": "#1c1917",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#0f766e",
+                    "primary": "#7f1d1d",
+                    "surface-container-low": "#f5f5f4",
+                    "surface-tint": "#7f1d1d",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#f0fdfa",
+                    "on-tertiary-fixed": "#7c2d12",
+                    "on-background": "#1c1917",
+                    "surface-container": "#fafaf9",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#fecaca",
+                    "on-tertiary-container": "#b45309",
+                    "inverse-primary": "#f87171",
+                    "surface-bright": "#ffffff",
+                    "surface": "#fafaf9",
+                    "secondary-fixed": "#ccfbf1",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed-variant": "#7f1d1d",
+                    "inverse-surface": "#292524",
+                    "on-primary-fixed": "#450a0a",
+                    "surface-container-high": "#f1f1f0",
+                    "on-primary-container": "#7f1d1d",
+                    "tertiary-fixed-dim": "#fed7aa",
+                    "surface-variant": "#f5f5f4",
+                    "outline": "#d6d3d1",
+                    "inverse-on-surface": "#f5f5f4",
+                    "tertiary-container": "#fffbeb",
+                    "secondary-fixed-dim": "#99f6e4",
+                    "on-surface-variant": "#44403c",
+                    "on-secondary-fixed": "#134e4a",
+                    "tertiary-fixed": "#ffedd5",
+                    "outline-variant": "#e7e5e4",
+                    "surface-dim": "#e7e5e4",
+                    "tertiary": "#b45309",
+                    "background": "#fafaf9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fafaf9; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .staggered-reveal > * { opacity: 0; transform: translateY(10px); animation: fadeIn 0.32s ease-out forwards; }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="text-on-surface overflow-x-hidden">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 border-b border-stone-200 bg-stone-50/80 backdrop-blur-xl flex flex-row-reverse justify-between items-center px-6 py-4">
+<div class="flex items-center gap-6">
+<div class="flex gap-4 text-stone-500">
+<span class="material-symbols-outlined cursor-pointer hover:text-red-900 transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-red-900 transition-colors">shopping_cart</span>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-stone-200">
+<img alt="Customer Profile" data-alt="Close-up portrait of a professional male chef in white uniform looking at the camera with a confident smile in a bright kitchen background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeAv00iKy0gj4_FlGT_pPIxD9JTm5PU1VblJS-r1OW46XV7WzXEioMc2X3528bVVoLGE5wAPufifEOz8WHdF02lhjjPKVTSgL51R55cVGVdmKKnlkjxSAgZkIGr6UQ5WOBLdujDUEd7o7beitRHT7Q7jPv2NsBXb2ocWP9qJrNI2YfNwxfYuG3D3WMi020ARt-EU7M_mMAnL0H8yK9SWXc81TcNuYyZNHoVMYBx7XHXcrpNVGi8FEGdNvTIt4VCw_ED0Yzsh8BXhEO"/>
+</div>
+</div>
+<div class="flex items-center gap-12">
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold text-[30px] tracking-tight text-red-900 uppercase tracking-widest">Crimson Terroir</h1>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-red-900 font-bold border-b-2 border-red-900" href="#">Dashboard</a>
+<a class="text-stone-500 font-medium hover:text-red-800 transition-colors" href="#">Order History</a>
+<a class="text-stone-500 font-medium hover:text-red-800 transition-colors" href="#">Price List</a>
+<a class="text-stone-500 font-medium hover:text-red-800 transition-colors" href="#">Support</a>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Predicted for Admin/VIP Context) -->
+<aside class="fixed right-0 top-0 h-full w-64 border-l border-stone-200 bg-stone-50 flex flex-col pt-24 z-40">
+<div class="px-6 mb-10">
+<div class="text-2xl font-black text-red-900 uppercase tracking-tighter">MEATLAND</div>
+<div class="text-[10px] font-bold text-stone-400 tracking-[0.2em]">MEATLAND VIP</div>
+</div>
+<nav class="flex flex-col">
+<a class="flex items-center gap-4 text-stone-600 py-3 px-6 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-lg font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 text-red-900 bg-red-50/50 border-r-4 border-red-900 py-3 px-6" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-lg font-medium">Order History</span>
+</a>
+<a class="flex items-center gap-4 text-stone-600 py-3 px-6 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-lg font-medium">Price List</span>
+</a>
+<a class="flex items-center gap-4 text-stone-600 py-3 px-6 hover:bg-stone-100 transition-all" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="text-lg font-medium">Support</span>
+</a>
+</nav>
+<div class="mt-auto p-6">
+<button class="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-red-900/20 shadow-lg hover:bg-red-800 transition-all active:scale-95">
+                New Order
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="mr-64 pt-28 px-10 pb-20 max-w-[1440px]">
+<!-- Conflict 409 Warning Banner -->
+<div class="mb-8 p-6 bg-red-50 border-r-8 border-red-900 rounded-xl flex items-center justify-between shadow-sm staggered-reveal stagger-1">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-900">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<h2 class="text-xl font-extrabold text-red-950">נמצאה אי-התאמה במחירים (Conflict 409)</h2>
+<p class="text-red-800/80 font-medium">מחירי השוק עודכנו מאז הוספת המוצרים לסל. אנא עברו על השינויים לפני המשך ההזמנה.</p>
+</div>
+</div>
+<button class="flex items-center gap-2 bg-red-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-950 transition-all shadow-md">
+<span class="material-symbols-outlined">sync</span>
+<span>עדכון מחירים</span>
+</button>
+</div>
+<div class="grid grid-cols-12 gap-10">
+<!-- Main Content Area: Order Details -->
+<div class="col-span-8 space-y-6 staggered-reveal stagger-2">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-2xl font-black tracking-tight text-on-surface">פירוט הזמנה #MEAT-9422</h3>
+<div class="px-4 py-1.5 bg-red-50 text-red-900 rounded-full text-sm font-bold border border-red-100">ממתין לעדכון מחיר</div>
+</div>
+<!-- Product Card: Mismatch State -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border-r-4 border-red-900 transition-all hover:shadow-md">
+<div class="flex gap-6">
+<div class="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Bone-in Ribeye" class="w-full h-full object-cover" data-alt="A thick, high-quality bone-in ribeye steak with intense marbling on a dark slate background with dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsE_B_DDH-NCBH4h_K_fYdmBcFhEonAzFazHgxRXQQihWX-ZH9U3BDF_9LyC3ynL9dISOzHwpAN3ALahDYWBByixblGoYEKy1FlDWGloTpTq_oqXQkbNTvr-jUoeyy1gcvx33ELX9qgahcSyJPPQ5BQ2YD444eat6Zc7jTKWIojlA_yCzkjCUODv1fn0ztyNqLjKARlgZJTh_vA3rLfIQcSIFg8_WIOcKIuNw5IEYcJiHlGQtl3pVV_dyiVJ-lQKJ5IqfKSradOovz"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-xl font-bold">Bone-in Ribeye (Black Angus)</h4>
+<p class="text-stone-400 text-sm">נתח מיושן 45 יום | כמות: 12.5 ק"ג</p>
+</div>
+<div class="text-left">
+<div class="text-stone-400 line-through text-lg">₪185.00</div>
+<div class="text-red-900 font-black text-2xl flex items-center gap-2">
+                                        ₪198.50
+                                        <span class="material-symbols-outlined text-red-600 animate-pulse">trending_up</span>
+</div>
+<div class="text-[10px] font-bold text-red-900 bg-red-50 px-2 py-0.5 rounded text-left mt-1 inline-block">+7.3% שינוי שוק</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Product Card: Mismatch State -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border-r-4 border-red-900 transition-all hover:shadow-md">
+<div class="flex gap-6">
+<div class="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Lamb Rack" class="w-full h-full object-cover" data-alt="Fresh premium lamb rack with herbs on a butcher's wooden block with moody shadows and golden highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbUBHlMhzG5jZGlmZKYaEwEnRSL4PqLD2EzQ7wPl9HZDBuBdONbSmEZCC0ODAgX4tbBHJ9F_REsPMkUrl8Xezk90Xvpn6hx9elkVheuRM6d3D4TYFPGNuDkOlTVbiUTd1zPNV6Lxj9A3Es65BrMMXnXO792sii5hP2Zf6y62a7oh1eZzoWbUbEsBPDCg5g_w5IZz4ZKY9ni77YavzOGAGmwv-6d_PPNMGj-gMi6VVyuDDs_IeJAInElYFxtUx1Q4bhXybqoiA3z1uH"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-xl font-bold">Lamb Rack (New Zealand)</h4>
+<p class="text-stone-400 text-sm">כתף כבש טרי | כמות: 4 יחידות (כ-8 ק"ג)</p>
+</div>
+<div class="text-left">
+<div class="text-stone-400 line-through text-lg">₪142.00</div>
+<div class="text-red-900 font-black text-2xl flex items-center gap-2">
+                                        ₪155.00
+                                        <span class="material-symbols-outlined text-red-600">trending_up</span>
+</div>
+<div class="text-[10px] font-bold text-red-900 bg-red-50 px-2 py-0.5 rounded text-left mt-1 inline-block">+9.1% שינוי שוק</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Product Card: Normal State -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border-r-4 border-stone-200 opacity-80">
+<div class="flex gap-6">
+<div class="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0 grayscale">
+<img alt="Beef Tenderloin" class="w-full h-full object-cover" data-alt="Whole beef tenderloin on a stainless steel surface in a commercial kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSjVn13I_cmTjc9BK_UsRRzyMHkvVX_Ib1rs9dLGvpK4ay6bQ0gcja6Ubc4jaTm1YQHm-7eLFxEtfRkB7MXM9ksZDQ3NtUnosY3GxpHRuu1yE22ERnU4Jk_gD6BE1E_bNRE0vcZEhL5OF43nt8gPCISXVT1Orqq6Vj-bUpE_hAFHEuHz266SwhDZOwcc4DC9sFrgjB892eDRwMB_9qrCUEb7RBsNaug59c2fl7NsTOZOBZB0C6Yqk5mWYK3vu1vL9si8D-RvIe1EWm"/>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-xl font-bold">Beef Tenderloin (Prime)</h4>
+<p class="text-stone-400 text-sm">פילה בקר מובחר | כמות: 5 ק"ג</p>
+</div>
+<div class="text-left">
+<div class="text-stone-900 font-black text-2xl">₪220.00</div>
+<div class="text-[10px] font-bold text-stone-400 px-2 py-0.5 rounded text-left mt-1 inline-block">ללא שינוי</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Order Summary Panel (Mismatch State) -->
+<div class="col-span-4 staggered-reveal stagger-3">
+<div class="sticky top-28 bg-white rounded-2xl shadow-xl overflow-hidden">
+<div class="p-8 bg-stone-900 text-white">
+<h4 class="text-sm font-bold uppercase tracking-widest text-red-500 mb-2">סיכום הזמנה זמני</h4>
+<div class="text-4xl font-black tracking-tighter">₪5,248.50</div>
+<div class="mt-4 flex items-center gap-2 text-red-400 text-xs font-bold bg-red-900/30 w-fit px-3 py-1 rounded-full border border-red-800">
+<span class="material-symbols-outlined text-sm">error</span>
+                            הפרש מחיר: +₪284.00
+                        </div>
+</div>
+<div class="p-8 space-y-6">
+<div class="space-y-4">
+<div class="flex justify-between items-center text-stone-500">
+<span>סה"כ לפני שינוי</span>
+<span class="font-bold">₪4,964.50</span>
+</div>
+<div class="flex justify-between items-center text-red-900 font-bold">
+<span>עדכון מחירי שוק</span>
+<span>+₪284.00</span>
+</div>
+<div class="h-px bg-stone-100 w-full"></div>
+<div class="flex justify-between items-center text-xl font-black text-stone-900">
+<span>סה"כ לתשלום</span>
+<span>₪5,248.50</span>
+</div>
+</div>
+<div class="space-y-3 pt-4">
+<button class="w-full bg-red-900 text-white font-extrabold py-5 rounded-xl shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition-all text-xl">
+                                אשר ושדר הזמנה
+                            </button>
+<button class="w-full border-2 border-stone-200 text-stone-600 font-bold py-4 rounded-xl hover:bg-stone-50 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">refresh</span>
+                                עדכון מחירים ידני
+                            </button>
+</div>
+<p class="text-[11px] text-stone-400 leading-relaxed text-center italic">
+                            * מחירי הבשר נקבעים עפ"י מדד 'Crimson Terroir' היומי. אישור ההזמנה מהווה הסכמה למחירים החדשים המצוינים מעלה.
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Rail (Glassmorphism) -->
+<div class="fixed bottom-0 w-full z-50 md:hidden bg-stone-50/80 backdrop-blur-xl border-t border-stone-200 px-6 py-4 flex justify-around">
+<div class="flex flex-col items-center text-red-900">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[10px] font-bold">דאשבורד</span>
+</div>
+<div class="flex flex-col items-center text-stone-400">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[10px] font-bold">הזמנות</span>
+</div>
+<div class="flex flex-col items-center text-stone-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">פרופיל</span>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&amp;family=Sora:wght@400;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: "#7A1F1B",
+                            dark: "#5A1613",
+                            light: "#9B2C27"
+                        },
+                        steel: {
+                            50: "#f4f7f7",
+                            100: "#e2e9e9",
+                            500: "#5F8D8D",
+                            800: "#2C4343"
+                        },
+                        copper: {
+                            DEFAULT: "#B87333",
+                            light: "#D49E6A"
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Rubik"],
+                        body: ["Rubik"],
+                        label: ["Sora"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stagger-item { opacity: 0; transform: translateY(10px); } /* Animation targets */
+        .glass-surface { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-50 font-body text-stone-900 min-h-screen pb-40">
+<!-- TopAppBar -->
+<header class="bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 shadow-sm docked full-width top-0 z-50 sticky">
+<div class="flex flex-row-reverse justify-between items-center w-full px-4 h-16">
+<div class="flex items-center gap-3">
+<button class="hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors p-2 rounded-full press:scale-95 duration-150">
+<span class="material-symbols-outlined text-red-900 dark:text-red-500">more_vert</span>
+</button>
+</div>
+<h1 class="font-sans text-right font-bold tracking-tight text-red-900 dark:text-red-500 text-xl">ניהול קטלוג מאושר</h1>
+<button class="hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors p-2 rounded-full press:scale-95 duration-150">
+<span class="material-symbols-outlined text-red-900 dark:text-red-500">arrow_forward</span>
+</button>
+</div>
+</header>
+<main class="max-w-md mx-auto px-4 pt-4 space-y-6">
+<!-- Error Banner -->
+<section class="bg-red-900 text-white p-4 rounded-xl shadow-lg border-r-4 border-copper flex items-start gap-3">
+<span class="material-symbols-outlined text-copper-light">warning</span>
+<div class="flex-1">
+<h3 class="font-bold text-sm">חריגה במלאי זמין</h3>
+<p class="text-xs opacity-90 mt-1">שים לב: 3 פריטים בקטלוג אינם זמינים כרגע במחסן המרכזי. יש לעדכן כמויות.</p>
+</div>
+</section>
+<!-- Quick Summary Metrics -->
+<section class="grid grid-cols-2 gap-3">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-stone-100">
+<p class="text-xs text-stone-500 font-label">פריטים מאושרים</p>
+<p class="text-2xl font-black text-red-900">42</p>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-sm border border-stone-100">
+<p class="text-xs text-stone-500 font-label">סה"כ הזמנה</p>
+<p class="text-2xl font-black text-steel-800">₪14,250</p>
+</div>
+</section>
+<!-- List of Approved Items -->
+<section class="space-y-4">
+<div class="flex justify-between items-center px-1">
+<h2 class="text-lg font-black tracking-tight text-red-900 border-r-4 border-red-900 pr-3">פריטים בקטלוג</h2>
+<span class="text-xs font-label text-stone-400">מעודכן ל-14:00</span>
+</div>
+<!-- Item Card 1 -->
+<article class="bg-white rounded-xl shadow-sm overflow-hidden border border-stone-100 group">
+<div class="flex flex-row-reverse h-32">
+<div class="w-1/3 relative">
+<img class="w-full h-full object-cover" data-alt="Close-up of premium raw ribeye steak with intense marbling on a dark slate background, professional culinary photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzoxTif1u1ZlVNvflxh2n-laliTl9940Nxlh18IYGE_g3v2DxjpC9jJlpk5y5-nczMAzP3UiOa3jt_cD2Fax1EXY5u4U2tAB0oHEeqPNagQ7UuAfSstErmyyF1FDRq7MuH4XL8ooS_IofMA1wnwZbSzKF6rAtaWWlWO4GNaeFYStJxD2sMw4a0XRk7BrdkbdTOibMTxsXTyn_sCfOthol1z2Kv9gUT-2IH-At_RENS6YNovSmscaqR0nTHdqHDNj25TgDtFvL5QBfV"/>
+<div class="absolute inset-0 bg-gradient-to-l from-transparent to-white/20"></div>
+</div>
+<div class="w-2/3 p-4 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<span class="bg-stone-100 text-stone-600 text-[10px] px-2 py-0.5 rounded-full font-label">SKU: ANT-502</span>
+<h3 class="font-bold text-red-900">אנטריקוט פרימיום</h3>
+</div>
+<p class="text-xs text-stone-500 mt-1">נתח מיושן 21 יום, משקל ממוצע 2.5 ק"ג</p>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-col">
+<span class="text-[10px] text-stone-400">מחיר ליחידה</span>
+<span class="font-black text-steel-800">₪189.00</span>
+</div>
+<div class="flex items-center gap-2 bg-stone-50 rounded-lg p-1 border border-stone-100 focus-within:ring-2 ring-red-900/20 ring-offset-1 transition-all">
+<button class="w-8 h-8 flex items-center justify-center text-red-900 hover:bg-white rounded-md transition-colors"><span class="material-symbols-outlined text-sm">remove</span></button>
+<input class="w-10 bg-transparent border-none text-center font-bold p-0 focus:ring-0 text-sm" type="number" value="12"/>
+<button class="w-8 h-8 flex items-center justify-center text-red-900 hover:bg-white rounded-md transition-colors"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Item Card 2 -->
+<article class="bg-white rounded-xl shadow-sm overflow-hidden border border-stone-100">
+<div class="flex flex-row-reverse h-32">
+<div class="w-1/3 relative">
+<img class="w-full h-full object-cover" data-alt="Fresh raw lamb chops arranged on a wooden board with sprigs of rosemary and sea salt, moody kitchen lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1IfiNcj1BzcuX7pAPrEvsJ97AiN96Hz8HDUY05MldCRmuIqJAbiEGdqVZgJVGkM0Y_nYK2szgsZHqMik62TkiBV16PP_Q6APqPfxns0NCH5a2GFGklNeGARZWbB445Xb--0gFqym8XoYQD3AT1MAqRqUdl-OXMD34lYm_sVJpEWFH-J9_4hDEiZxDWYjAM36R37P0OaUdMP516n24p3E048B54fxd4R2qLqY2z8tQ2RpFOEEh-KGnJyfYOsGLhOXXwPrS2xl6Mdw4"/>
+</div>
+<div class="w-2/3 p-4 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<span class="bg-stone-100 text-stone-600 text-[10px] px-2 py-0.5 rounded-full font-label">SKU: LMB-201</span>
+<h3 class="font-bold text-red-900">צלעות טלה טרי</h3>
+</div>
+<p class="text-xs text-stone-500 mt-1">גידול מקומי, חיתוך צרפתי נקי</p>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-col">
+<span class="text-[10px] text-stone-400">מחיר ליחידה</span>
+<span class="font-black text-steel-800">₪245.00</span>
+</div>
+<div class="flex items-center gap-2 bg-stone-50 rounded-lg p-1 border border-stone-100">
+<button class="w-8 h-8 flex items-center justify-center text-red-900 hover:bg-white rounded-md transition-colors"><span class="material-symbols-outlined text-sm">remove</span></button>
+<input class="w-10 bg-transparent border-none text-center font-bold p-0 focus:ring-0 text-sm" type="number" value="5"/>
+<button class="w-8 h-8 flex items-center justify-center text-red-900 hover:bg-white rounded-md transition-colors"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Item Card 3 (Out of Stock State) -->
+<article class="bg-white rounded-xl shadow-sm overflow-hidden border border-red-100 opacity-80">
+<div class="flex flex-row-reverse h-32">
+<div class="w-1/3 relative grayscale">
+<img class="w-full h-full object-cover" data-alt="Whole raw beef tenderloin on a marble surface with dramatic side lighting, high-end butcher shop aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZF-OIQetX5SZxfsr-qMQA_qx0S1ekb_ZiRZxq8H8HKZ1Vps-3VwzwnPOLaPcVNrDuLG1QM9JHiSZj9eLPpf2-dZGP89t2bcTWZ101VmVwFt9xf9lkZ1lqLxupD8FvAEvBej93cOm7ur1OXzQQ8E3SaNTR-PnUGgmgzbimS48XnXTC5RyNLjI1A3ctqjoFa68ebJdCbzxnt1TQZZI9uLJwaykFBTSJDxq-QViBIA7UpAFmeWTq4q4uxPCgF7EenLqHbAH5tmSs5ZPu"/>
+<div class="absolute inset-0 bg-red-900/10 flex items-center justify-center">
+<span class="bg-red-900 text-white text-[10px] font-bold px-2 py-1 rounded">חסר במלאי</span>
+</div>
+</div>
+<div class="w-2/3 p-4 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<span class="bg-stone-100 text-stone-600 text-[10px] px-2 py-0.5 rounded-full font-label">SKU: BFT-909</span>
+<h3 class="font-bold text-red-900">פילה בקר ישראלי</h3>
+</div>
+<p class="text-xs text-stone-500 mt-1">נתח מרכזי, ללא שומן</p>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-col">
+<span class="text-[10px] text-stone-400">מחיר ליחידה</span>
+<span class="font-black text-stone-400 line-through">₪310.00</span>
+</div>
+<button class="bg-stone-100 text-stone-400 text-xs font-bold px-4 py-2 rounded-lg cursor-not-allowed">לא זמין</button>
+</div>
+</div>
+</div>
+</article>
+</section>
+<!-- Add New Item Section -->
+<section class="bg-steel-50 border-2 border-dashed border-steel-100 p-6 rounded-xl space-y-4">
+<h3 class="font-bold text-steel-800 text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-steel-500">add_circle</span>
+                הוספת פריט חדש לקטלוג
+            </h3>
+<div class="flex gap-2">
+<div class="relative flex-1">
+<input class="w-full bg-white border-stone-200 rounded-lg py-3 px-4 pr-10 text-sm focus:ring-steel-500 focus:border-steel-500" placeholder="הכנס שם פריט או SKU" type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-stone-400">search</span>
+</div>
+<button class="bg-steel-800 text-white w-12 h-12 flex items-center justify-center rounded-lg hover:bg-steel-500 transition-colors shadow-md">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<p class="text-[11px] text-steel-500 text-center">ניתן להוסיף רק פריטים שאושרו מראש ע"י הנהלת חשבונות</p>
+</section>
+</main>
+<!-- Sticky Bottom Action & Nav -->
+<div class="fixed bottom-0 left-0 w-full z-40">
+<!-- Action Rail -->
+<div class="bg-white/95 backdrop-blur-md border-t border-stone-200 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+<div class="max-w-md mx-auto flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-xs text-stone-500 font-label">סה"כ לתשלום</span>
+<span class="text-xl font-black text-red-900 leading-none">₪14,250.00</span>
+</div>
+<button class="flex-1 bg-red-900 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-900/20 active:scale-95 transition-transform">
+<span>בצע הזמנה</span>
+<span class="material-symbols-outlined">shopping_cart_checkout</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="bg-stone-100/95 dark:bg-stone-900/95 backdrop-blur-md fixed bottom-0 w-full z-50 rounded-t-3xl border-t border-stone-200 dark:border-stone-800 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+<div class="flex flex-row-reverse justify-around items-center px-4 pt-2 pb-6 h-20">
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-red-700 dark:hover:text-red-300">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[11px] font-medium leading-none mt-1">ראשי</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-red-700 dark:hover:text-red-300">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[11px] font-medium leading-none mt-1">הזמנות</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-red-900 text-white rounded-xl px-4 py-1.5 Active: scale-110 transition-transform duration-200 ease-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="text-[11px] font-medium leading-none mt-1">קטלוג</span>
+</div>
+<div class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 py-1.5 hover:text-red-700 dark:hover:text-red-300">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[11px] font-medium leading-none mt-1">הגדרות</span>
+</div>
+</div>
+</nav>
+</div>
+</body></html>

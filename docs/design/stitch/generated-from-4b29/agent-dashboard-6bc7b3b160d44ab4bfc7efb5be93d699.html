@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&amp;family=Sora:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#7f1d1d', // deep cured red
+                light: '#fef2f2',
+                dark: '#450a0a',
+              },
+              secondary: {
+                DEFAULT: '#134e4a', // cold steel teal
+                light: '#f0fdfa',
+              },
+              accent: {
+                DEFAULT: '#b45309', // warm copper
+              },
+              surface: {
+                warm: '#fafaf9',
+                muted: '#f5f5f4',
+              }
+            },
+            borderRadius: {
+              "DEFAULT": "0.5rem",
+              "lg": "1rem",
+              "xl": "1.5rem",
+              "full": "9999px"
+            },
+            fontFamily: {
+              headline: ["Rubik", "sans-serif"],
+              body: ["Rubik", "sans-serif"],
+              label: ["Sora", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fafaf9;
+            font-family: 'Rubik', sans-serif;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            right: 11px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e7e5e4;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-50 text-stone-900 pb-24 overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-stone-50 dark:bg-zinc-950 border-b border-stone-200 dark:border-zinc-800 shadow-sm fixed top-0 w-full z-50 flex justify-between items-center px-6 py-3 h-16 font-sans rtl text-right">
+<div class="flex items-center gap-4">
+<button class="text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-900 p-2 rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="flex flex-col leading-tight">
+<span class="text-xl font-black tracking-tighter text-red-900 dark:text-red-600">MEATLAND</span>
+<span class="text-[10px] font-bold tracking-widest text-red-800/60 uppercase">SALES APP</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-left">
+<p class="text-xs font-bold text-stone-900 leading-none">אבי כהן</p>
+<p class="text-[10px] text-stone-500">סוכן שטח מרכז</p>
+</div>
+<div class="h-10 w-10 rounded-full border-2 border-red-900/10 overflow-hidden">
+<img alt="Agent Profile" class="h-full w-full object-cover" data-alt="Professional portrait of a male sales executive in a clean-cut suit with a confident and friendly expression, studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBeuny5vmGMY3hGPjCjSTrA6wMsN_Rt4waJlLEBq1MDU5Wzpu464bAw-LO4wwi5bSm7XD7c9A6u_MNule4-DiK5faeyZCyIc5kuOeNknSIsuQ52it1Q3AWBujc0zeiZO36pEUn5tG-vtwwhYKWXY4b_xZCGg9F7TwUgy2R0symCBZ8eEreiJQCLjBzo2WweYG2ZQ9L1CQYy1gc2-pLJjYZ1mHZ7aXE7SYLz9OP27so74eIluqRPQE8X7QhaQnXCd9UxA8UC9ucSkze"/>
+</div>
+</div>
+</header>
+<main class="pt-20 px-4 max-w-lg mx-auto space-y-6">
+<!-- Quick KPIs Bento -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<h2 class="text-2xl font-black text-red-900 tracking-tight">ביצועים היום</h2>
+<span class="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded">עדכני ל-14:30</span>
+</div>
+<div class="grid grid-cols-6 gap-3">
+<!-- Large KPI -->
+<div class="col-span-6 bg-red-900 text-white p-6 rounded-xl shadow-xl shadow-red-900/10 flex flex-col justify-between relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-red-200 text-sm font-medium">מכירות יומיות</p>
+<h3 class="text-4xl font-black mt-1">₪42,850</h3>
+<div class="flex items-center gap-2 mt-4">
+<span class="bg-red-800 text-red-100 text-[10px] px-2 py-1 rounded-full font-bold">+12% מאתמול</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -left-4 text-9xl opacity-10" data-icon="payments">payments</span>
+</div>
+<!-- Small KPIs -->
+<div class="col-span-3 bg-stone-100 p-4 rounded-xl border border-stone-200">
+<p class="text-stone-500 text-xs font-bold">יעד חודשי</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="text-xl font-black text-stone-900">84%</span>
+<div class="w-8 h-8 rounded-full border-4 border-teal-500 border-t-stone-200"></div>
+</div>
+</div>
+<div class="col-span-3 bg-stone-100 p-4 rounded-xl border border-stone-200">
+<p class="text-stone-500 text-xs font-bold">לקוחות פעילים</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="text-xl font-black text-stone-900">18</span>
+<span class="material-symbols-outlined text-teal-700" data-icon="group">group</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Urgent Tasks -->
+<section class="space-y-4">
+<h2 class="text-xl font-black text-red-900 tracking-tight">משימות דחופות</h2>
+<div class="space-y-3">
+<div class="bg-white border-r-4 border-r-amber-500 p-4 rounded-lg shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600">
+<span class="material-symbols-outlined" data-icon="priority_high">priority_high</span>
+</div>
+<div>
+<p class="font-bold text-stone-900">חובות בפיגור: אטליז הפינה</p>
+<p class="text-xs text-stone-500">פיגור של 4 ימים בתשלום</p>
+</div>
+</div>
+<button class="bg-stone-100 p-2 rounded-full text-stone-600">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<div class="bg-white border-r-4 border-r-red-600 p-4 rounded-lg shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined" data-icon="error_outline">error_outline</span>
+</div>
+<div>
+<p class="font-bold text-stone-900">הזמנה חסרה במלאי: #8821</p>
+<p class="text-xs text-stone-500">צורך בעדכון פריטים מול הלקוח</p>
+</div>
+</div>
+<button class="bg-stone-100 p-2 rounded-full text-stone-600">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Recent Activity Timeline -->
+<section class="space-y-4">
+<div class="flex justify-between items-center">
+<h2 class="text-xl font-black text-red-900 tracking-tight">פעילות אחרונה</h2>
+<button class="text-stone-500 text-xs font-bold flex items-center gap-1">
+                    הצג הכל
+                    <span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+<div class="relative space-y-6 pr-4 timeline-line">
+<!-- Activity Item -->
+<div class="relative flex items-start gap-4">
+<div class="relative z-10 w-6 h-6 rounded-full bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-900/20">
+<span class="material-symbols-outlined text-[12px] text-white" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex-1">
+<div class="flex justify-between items-start">
+<span class="text-xs font-bold text-teal-700">הזמנה סופקה</span>
+<span class="text-[10px] text-stone-400">לפני 15 דק׳</span>
+</div>
+<p class="font-bold text-stone-900 mt-1">מסעדת הגריל המרכזי</p>
+<p class="text-xs text-stone-500">הזמנה מס׳ #9021 סופקה בהצלחה</p>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="relative flex items-start gap-4">
+<div class="relative z-10 w-6 h-6 rounded-full bg-red-100 flex items-center justify-center border-2 border-red-900">
+<span class="material-symbols-outlined text-[12px] text-red-900" data-icon="add_shopping_cart">add_shopping_cart</span>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex-1">
+<div class="flex justify-between items-start">
+<span class="text-xs font-bold text-red-900">הזמנה חדשה</span>
+<span class="text-[10px] text-stone-400">לפני שעה</span>
+</div>
+<p class="font-bold text-stone-900 mt-1">אטליז האחים</p>
+<p class="text-xs text-stone-500">הזמנה חדשה על סך ₪3,400 הוכנסה למערכת</p>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="relative flex items-start gap-4">
+<div class="relative z-10 w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-stone-600" data-icon="person">person</span>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex-1">
+<div class="flex justify-between items-start">
+<span class="text-xs font-bold text-stone-600">ביקור לקוח</span>
+<span class="text-[10px] text-stone-400">היום בבוקר</span>
+</div>
+<p class="font-bold text-stone-900 mt-1">בורגר בוטיק</p>
+<p class="text-xs text-stone-500">שיחת סטטוס ותיאום אספקה לחגים</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Premium Image Banner -->
+<section class="pt-2 pb-8">
+<div class="relative h-32 rounded-2xl overflow-hidden shadow-lg group">
+<img alt="Product Showcase" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Close-up of premium raw wagyu beef steak with marbled texture on dark stone surface with dramatic top lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P3LCMxKihDo46mHuo-n-oMjS5-FMzQ8OdvNWWDJHy4s5mRGHvsymulGespmeooRrIKbKz59LcHzNLFPzcGKaxvnRyiejPMZzzmMe7k8BElJgjsgg65gcvQ92vczrxd_EOI8E2-7WVbRpkZNJyKdinhULT-QTrufj_2JBvjhDvYbyBDYYr-LLX_EdV9Ssp4jchB8QFBORXBUtN3HNMgb6xffu5IGfHRU4ANq3HXythZIWMB8VR91ybwD1dLpshWttKbbsGEuERQox"/>
+<div class="absolute inset-0 bg-gradient-to-r from-red-950/80 to-transparent flex flex-col justify-center px-6">
+<p class="text-white text-xs font-bold tracking-widest uppercase opacity-80">קולקציית פרימיום</p>
+<h4 class="text-white text-xl font-black">מבצעי חג המולד</h4>
+<button class="mt-2 text-red-200 text-[10px] font-bold flex items-center gap-1">
+                        לצפייה בקטלוג
+                        <span class="material-symbols-outlined text-xs" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-stone-50 dark:bg-zinc-950 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-20 border-t border-stone-200 dark:border-zinc-800 rounded-t-2xl shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-xs font-medium rtl">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-400 rounded-xl px-4 py-1 Active: scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span>בית</span>
+</a>
+<!-- Customers -->
+<a class="flex flex-col items-center justify-center text-teal-900/60 dark:text-zinc-500 px-4 py-1 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="group">group</span>
+<span>לקוחות</span>
+</a>
+<!-- FAB for New Order -->
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-red-900 text-white rounded-full flex items-center justify-center shadow-xl shadow-red-900/40 ring-4 ring-white active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
+</button>
+</div>
+<!-- Orders -->
+<a class="flex flex-col items-center justify-center text-teal-900/60 dark:text-zinc-500 px-4 py-1 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="receipt_long">receipt_long</span>
+<span>הזמנות</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-teal-900/60 dark:text-zinc-500 px-4 py-1 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="settings">settings</span>
+<span>הגדרות</span>
+</a>
+</nav>
+</body></html>

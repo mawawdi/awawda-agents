@@ -1,0 +1,56 @@
+[
+  {
+    "key": "agent-dashboard",
+    "status": "ok",
+    "screenId": "6bc7b3b160d44ab4bfc7efb5be93d699",
+    "title": "Agent Dashboard"
+  },
+  {
+    "key": "agent-customers-list",
+    "status": "ok",
+    "screenId": "4fd50ed1ea7a494eb97d3174c80aab55",
+    "title": "Customers List"
+  },
+  {
+    "key": "agent-customer-detail",
+    "status": "ok",
+    "screenId": "4d46273503364eeb87cfa30050c1f8fd",
+    "title": "Customer Details"
+  },
+  {
+    "key": "agent-approved-catalog",
+    "status": "ok",
+    "screenId": "a957b2c6927a46c0b36cde1e012bf267",
+    "title": "Approved Catalog Management"
+  },
+  {
+    "key": "agent-settings-sync",
+    "status": "ok",
+    "screenId": "2ef4146365e3440589708fb88c121d14",
+    "title": "Settings & Sync Health"
+  },
+  {
+    "key": "portal-order-composer",
+    "status": "ok",
+    "screenId": "51533539cfb0433e8f9f71dfd9116e4e",
+    "title": "Order Composer - Desktop"
+  },
+  {
+    "key": "portal-order-mismatch",
+    "status": "ok",
+    "screenId": "98ae818a3a8c4507b71330d318fafe18",
+    "title": "Order Mismatch - Desktop"
+  },
+  {
+    "key": "portal-order-success",
+    "status": "ok",
+    "screenId": "ee4a4aba31cc49f1b3c53e23dcf1c242",
+    "title": "Order Success Confirmation"
+  },
+  {
+    "key": "portal-session-error",
+    "status": "ok",
+    "screenId": "437b96f5c6674a3a880a0ed4c970e36c",
+    "title": "Portal Activation Error"
+  }
+]

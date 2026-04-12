@@ -1,0 +1,107 @@
+{
+  "projectId": "11487176842394258097",
+  "sessionId": "16437579824837649928",
+  "outputComponents": [
+    {
+      "designSystem": {
+        "name": "assets/5824344660252013526",
+        "designSystem": {
+          "displayName": "Meatland Bold Editorial Motion System",
+          "theme": {
+            "colorMode": "LIGHT",
+            "roundness": "ROUND_TWELVE",
+            "customColor": "#7A1F1B",
+            "headlineFont": "RUBIK",
+            "bodyFont": "RUBIK",
+            "labelFont": "SORA",
+            "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+            "colorVariant": "FIDELITY",
+            "overridePrimaryColor": "#7A1F1B",
+            "overrideSecondaryColor": "#1F4E5F",
+            "overrideTertiaryColor": "#B06A2A",
+            "overrideNeutralColor": "#F6F2ED"
+          }
+        },
+        "version": "1"
+      }
+    },
+    {
+      "design": {
+        "screens": [
+          {
+            "screenshot": {
+              "name": "projects/11487176842394258097/files/e8fdd87578ce4dadb419d5093a5b0b8b",
+              "downloadUrl": "https://lh3.googleusercontent.com/aida/ADBb0ujsYJWuNQnv0ghWkmm-tV5raMVpRG2gXmyBmqTb_9oJXzOI4zj207rK0Xf0ypuWI74NevXezU0Fc3p4lch3pUYsBTp8sf-fYZeX3MapszXV4ahUNTSP35xOawt87m1zSZGlrvRk4GIPAr6VrW4EMm-jJS_0zpj3SGuvOWeUiDxhzYov8_KjGI8g8GdjTlmhIGV5cLt8qcnljaBB7TKL2_0Lea7pis2j17R38-x3-p5rHJooQ5G7To9Brs61"
+            },
+            "htmlCode": {
+              "name": "projects/11487176842394258097/files/a13e84267cdd4e9382c135b73678adf8",
+              "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sX2RlYmJjYjMzODdiMzQwYWM4OWMxYzA0MDM1YzlhMzc1EgsSBxDzpte8uRQYAZIBJAoKcHJvamVjdF9pZBIWQhQxMTQ4NzE3Njg0MjM5NDI1ODA5Nw&filename=&opi=96797242",
+              "mimeType": "text/html"
+            },
+            "id": "4d46273503364eeb87cfa30050c1f8fd",
+            "generatedBy": "figaro_agent",
+            "width": "780",
+            "height": "2262",
+            "title": "Customer Details",
+            "prompt": "Customer Detail screen for a field sales agent. Hebrew RTL language. Style language: Premium Editorial + Operational Clarity (matching {{DATA:DESIGN_SYSTEM:DESIGN_SYSTEM_2}}). \\n\\nComponents to include:\\n- TopAppBar with 'Customer Details' title and back button.\\n- Customer Profile Header: Name, business type (e.g., 'Meatland VIP'), and account ID.\\n- Contact & Location Card: Clickable phone number, address with 'View on Map' option.\\n- Last Order Summary Section: Status badge (e.g., 'Delivered'), total amount, date, and a list of 2-3 items.\\n- Approved Items Preview: A horizontal scroll or grid of products the customer is approved to buy.\\n- Primary Actions (Floating or Fixed Bottom): 'Create Magic Link', 'Open Catalog', 'Call Customer'.\\n- Motion Notes: Include text notes for staggered reveal of cards and a subtle focus glow on actionable items. \\n\\nColors: Deep red, steel teal, and clean neutrals. Typography: Bold, editorial Hebrew sans-serif. Card style: Tactile rounded cards with soft shadows.",
+            "name": "projects/11487176842394258097/screens/4d46273503364eeb87cfa30050c1f8fd",
+            "theme": {
+              "colorMode": "LIGHT",
+              "roundness": "ROUND_TWELVE",
+              "customColor": "#7A1F1B",
+              "headlineFont": "RUBIK",
+              "bodyFont": "RUBIK",
+              "labelFont": "SORA",
+              "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+              "colorVariant": "FIDELITY",
+              "overridePrimaryColor": "#7A1F1B",
+              "overrideSecondaryColor": "#1F4E5F",
+              "overrideTertiaryColor": "#B06A2A",
+              "overrideNeutralColor": "#F6F2ED"
+            },
+            "deviceType": "MOBILE",
+            "screenType": "DESIGN",
+            "screenMetadata": {
+              "agentType": "PRO_AGENT",
+              "status": "COMPLETE"
+            },
+            "designSystem": {
+              "name": "assets/5824344660252013526",
+              "designSystem": {
+                "displayName": "Meatland Bold Editorial Motion System",
+                "theme": {
+                  "colorMode": "LIGHT",
+                  "roundness": "ROUND_TWELVE",
+                  "customColor": "#7A1F1B",
+                  "headlineFont": "RUBIK",
+                  "bodyFont": "RUBIK",
+                  "labelFont": "SORA",
+                  "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+                  "colorVariant": "FIDELITY",
+                  "overridePrimaryColor": "#7A1F1B",
+                  "overrideSecondaryColor": "#1F4E5F",
+                  "overrideTertiaryColor": "#B06A2A",
+                  "overrideNeutralColor": "#F6F2ED"
+                }
+              },
+              "version": "1"
+            }
+          }
+        ],
+        "theme": {}
+      }
+    },
+    {
+      "text": "I've created the Customer Detail screen for the field sales agent workflow. \n\nThis design matches the premium editorial style of your project, featuring:\n*   **Localized Hebrew RTL layout** with a clear hierarchy.\n*   **Customer Profile & Contact info** with quick-action links.\n*   **Last Order Summary** and an **Approved Items preview** to help the agent prepare for the visit.\n*   **Key Operational Actions** like creating a magic link, opening the catalog, and calling the customer.\n*   **Motion Notes** included to guide the development of smooth transitions.\n\nHow does this look? Would you like to refine any of the sections?"
+    },
+    {
+      "suggestion": "Add a 'Visit History' section"
+    },
+    {
+      "suggestion": "Change the layout of the approved items preview"
+    },
+    {
+      "suggestion": "Design the 'Create Magic Link' flow"
+    }
+  ]
+}

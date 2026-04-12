@@ -1,0 +1,84 @@
+{
+  "projectId": "11487176842394258097",
+  "sessionId": "7900815933831429324",
+  "outputComponents": [
+    {
+      "design": {
+        "screens": [
+          {
+            "screenshot": {
+              "name": "projects/11487176842394258097/files/0310e4698a3c4f6385e8f12df943d175",
+              "downloadUrl": "https://lh3.googleusercontent.com/aida/ADBb0uh22WeypUABlDLLrpJ9E3LPEA5JMoKFB5lNa_aLl8-7Sdz8umA17Q5d5w5OnubWL6-D9bOotCdqWM2vqTBV-tL4eMc1zwAEvhPG9qXBIgx5P1jWSdPcFObXIvutWtr_KNpKbGNWMZJTglKI6m4j9kEZaQN8Ej0G59RIvLfEadwvRPVDPjt4VkW5ObDBX73T3ewx1VxrojnRrSgD3GruvUJWIh8z3BiaOM4B2s6NE1i42xB5KPzDIgO6hL1V"
+            },
+            "htmlCode": {
+              "name": "projects/11487176842394258097/files/740c55a7477d47c0929a2f6d15ffb7ac",
+              "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzdmNzU2YjdjOGNmZTQ2MmRhOGRlYmU5MmM0NWI1MzYwEgsSBxDzpte8uRQYAZIBJAoKcHJvamVjdF9pZBIWQhQxMTQ4NzE3Njg0MjM5NDI1ODA5Nw&filename=&opi=96797242",
+              "mimeType": "text/html"
+            },
+            "id": "a957b2c6927a46c0b36cde1e012bf267",
+            "generatedBy": "figaro_agent",
+            "width": "780",
+            "height": "2244",
+            "title": "Approved Catalog Management",
+            "prompt": "Mobile Approved Catalog management screen for agents. Style: Bold Editorial from {{DATA:SCREEN:SCREEN_10}}. Hebrew RTL only. Layout: 1. TopAppBar (title: 'ניהול קטלוג מאושר'). 2. Summary/Error Banner at top (red background for conflict/error, Hebrew text). 3. List of Approved Items: Cards with item name (e.g., 'אנטריקוט פרימיום'), SKU, price per unit, and a 'Quantity' input field. 4. 'Add New Item' section: Input for SKU/Name and a '+' button. 5. Sticky Bottom Action: Primary CTA button ('בצע הזמנה' or 'עדכן קטלו'), price total, and BottomNavBar. Visuals: Deep red (#7A1F1B) and steel teal accents, tactile rounded cards (ROUND_TWELVE), high-contrast typography. Use placeholder images for meat products. Add motion notes: staggered list reveal, focus glow on quantity inputs.",
+            "name": "projects/11487176842394258097/screens/a957b2c6927a46c0b36cde1e012bf267",
+            "theme": {
+              "colorMode": "LIGHT",
+              "roundness": "ROUND_TWELVE",
+              "customColor": "#7A1F1B",
+              "headlineFont": "RUBIK",
+              "bodyFont": "RUBIK",
+              "labelFont": "SORA",
+              "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+              "colorVariant": "FIDELITY",
+              "overridePrimaryColor": "#7A1F1B",
+              "overrideSecondaryColor": "#1F4E5F",
+              "overrideTertiaryColor": "#B06A2A",
+              "overrideNeutralColor": "#F6F2ED"
+            },
+            "deviceType": "MOBILE",
+            "screenType": "DESIGN",
+            "screenMetadata": {
+              "agentType": "PRO_AGENT",
+              "status": "COMPLETE"
+            },
+            "designSystem": {
+              "name": "assets/5824344660252013526",
+              "designSystem": {
+                "displayName": "Meatland Bold Editorial Motion System",
+                "theme": {
+                  "colorMode": "LIGHT",
+                  "roundness": "ROUND_TWELVE",
+                  "customColor": "#7A1F1B",
+                  "headlineFont": "RUBIK",
+                  "bodyFont": "RUBIK",
+                  "labelFont": "SORA",
+                  "designMd": "# Meatland Full Product Design System\n\n## Core Tone\nPremium butcher-craft meets fast operational logistics. Avoid generic SaaS look.\n\n## Color Story\n- Primary: deep cured red for authority and trust.\n- Secondary: cold steel teal for data and controls.\n- Accent: warm copper for key highlights and progress moments.\n- Surfaces: layered warm neutrals, no flat sterile white-only canvases.\n\n## Typography and RTL\n- Hebrew-first, RTL-first visual hierarchy.\n- Large headline rhythm, compact utilitarian body labels.\n- High contrast, generous whitespace, dense information only where needed.\n\n## Motion Choreography (required)\n- Page entry: 320ms stagger reveal (title, context chips, cards).\n- Stateful transitions: 180-220ms for tab/filter/chip transitions.\n- Network feedback: skeleton shimmer + subtle pulse, never blank states.\n- Success moments: short celebratory rise/fade 420ms.\n- Respect reduced motion settings.\n\n## Layout Rules\n- Use layered cards with tonal depth and soft shadows.\n- Sticky action rails on mobile where submit/share actions are critical.\n- Strong visual grouping by background planes, not heavy borders.\n\n## Shadcn Usage (customer portal)\nUse shadcn primitives and patterns for all portal screens:\n- Card, Button, Input, Label, Badge, Separator, Skeleton, Dialog, Sheet, ScrollArea, Tabs, Toast, Table.\n- Use semantic table structure for order line summaries.\n- Prefer shadcn blocks for login/order dashboard style layout composition.\n\n## Mobile App Interaction Language\n- Bottom tab shell with clear active pill.\n- Agent dashboard cards with progressive disclosure.\n- Swipe and press states must feel tactile and fast.\n- WhatsApp send action must be prominent with fallback copy-link path.\n\n## Anti-patterns\n- No emoji icons.\n- No purple default UI aesthetic.\n- No excessive motion on every element.\n- No low-contrast glass cards on light backgrounds.\n",
+                  "colorVariant": "FIDELITY",
+                  "overridePrimaryColor": "#7A1F1B",
+                  "overrideSecondaryColor": "#1F4E5F",
+                  "overrideTertiaryColor": "#B06A2A",
+                  "overrideNeutralColor": "#F6F2ED"
+                }
+              },
+              "version": "1"
+            }
+          }
+        ],
+        "theme": {}
+      }
+    },
+    {
+      "text": "I've created the **Approved Catalog Management** screen for the mobile sales app. \n\nKey features:\n- **Bold Editorial Style:** Matches the typographic and visual hierarchy of the login screen, utilizing the deep red and steel teal palette.\n- **Full Hebrew RTL:** All text, layouts, and component directions are localized for Hebrew users.\n- **Catalog Management:** Includes a detailed list of approved meat items with SKU details, pricing, and quantity adjustments.\n- **Operational Clarity:** Features a prominent system alert banner for stock conflicts and a clear \"Add to Catalog\" input section.\n- **Interactive Elements:** Designed with tactile cards and clear primary actions, including a \"Execute Purchase\" sticky button.\n- **Motion Strategy:** I've included notes for staggered list animations and focus states to enhance the premium feel."
+    },
+    {
+      "suggestion": "Add a search filter to the catalog"
+    },
+    {
+      "suggestion": "Design the 'Add New Item' modal"
+    },
+    {
+      "suggestion": "Create a success state for submitted orders"
+    }
+  ]
+}

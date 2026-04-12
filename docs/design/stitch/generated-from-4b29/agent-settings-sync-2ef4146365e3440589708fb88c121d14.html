@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&amp;family=Sora:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: "#7f1d1d", // Deep Cured Red
+                dark: "#450a0a"
+              },
+              secondary: {
+                DEFAULT: "#134e4a", // Cold Steel Teal
+                light: "#ccfbf1"
+              },
+              accent: {
+                DEFAULT: "#b45309" // Warm Copper
+              },
+              stone: {
+                50: "#fafaf9",
+                100: "#f5f5f4",
+                200: "#e7e5e4",
+                400: "#a8a29e",
+                500: "#78716c",
+                800: "#292524",
+                950: "#0c0a09"
+              }
+            },
+            borderRadius: {
+              "DEFAULT": "0.5rem",
+              "lg": "1rem",
+              "xl": "1.5rem",
+              "full": "9999px"
+            },
+            fontFamily: {
+              headline: ["Rubik", "sans-serif"],
+              body: ["Rubik", "sans-serif"],
+              label: ["Sora", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .tonal-shift {
+        background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.02));
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-50 font-body text-stone-800 antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-stone-50 dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800 shadow-sm">
+<div class="flex flex-row-reverse items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="text-xl font-black text-red-900 dark:text-red-500 font-headline">הגדרות וסנכרון</span>
+</div>
+<button class="transition-all duration-200 active:scale-95 text-red-900 dark:text-red-500 p-2">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-28 px-4 max-w-md mx-auto space-y-6">
+<!-- Profile Section -->
+<section class="relative overflow-hidden bg-white rounded-xl p-6 shadow-sm border border-stone-100 flex items-center gap-4">
+<div class="w-16 h-16 rounded-full overflow-hidden bg-stone-100 border-2 border-primary/10">
+<img class="w-full h-full object-cover" data-alt="professional headshot of a middle-aged sales agent with a confident smile, warm studio lighting, neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBumsYzAqZHe4LUVdUlmAaoy1D1uDZ1--ivIKfeUDSGJ6GP-HsEIVZcKMx4Zfbx5QHPewI6jsphER5pxUUdoC1lIuUyrSnjL-MlEG4hs9CCAEVl1Vj4N06sjDEy4ux8vqiqtnN2UIH2Lz5r-II6k9szURfPbwQlRqe-5Rqv_etTWp5wEYm14Lh4YBpJaBQEWOrixFEX0EiQPdF2UeM84BrHDgP2uc0tV_fQr_wgDPxDUaangGabqOTG5EBIgepvxP8S7NTb-0iTv-yN"/>
+</div>
+<div class="flex-1">
+<h2 class="text-xl font-bold text-stone-950">יוסי כהן</h2>
+<div class="flex flex-col text-sm text-stone-500">
+<span>מזהה סוכן: #44892</span>
+<span class="font-medium text-secondary">סניף מרכז - תל אביב</span>
+</div>
+</div>
+<div class="absolute -left-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+</section>
+<!-- Sync Health Bento Grid -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Network Status -->
+<div class="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<span class="text-stone-400 font-label text-xs uppercase tracking-wider">סטטוס רשת</span>
+<span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+</div>
+<div class="mt-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-600" data-icon="wifi">wifi</span>
+<span class="text-lg font-bold text-stone-900">מחובר</span>
+</div>
+</div>
+<!-- ERP Sync Health -->
+<div class="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="flex justify-between items-start">
+<span class="text-stone-400 font-label text-xs uppercase tracking-wider">סנכרון ERP</span>
+<button class="transition-all active:rotate-180 duration-500">
+<span class="material-symbols-outlined text-secondary text-xl" data-icon="sync">sync</span>
+</button>
+</div>
+<div class="mt-1">
+<p class="text-xs text-stone-500 leading-tight">סונכרן לאחרונה לפני 5 דקות</p>
+</div>
+</div>
+</div>
+<!-- Sync Progress Card (Asymmetric) -->
+<div class="bg-secondary text-white p-5 rounded-xl shadow-lg relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-bold text-lg">סנכרון מלאי יומי</h3>
+<span class="text-xs bg-white/20 px-2 py-1 rounded-full">94%</span>
+</div>
+<div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+<div class="bg-accent h-full w-[94%] rounded-full"></div>
+</div>
+</div>
+<div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16"></div>
+</div>
+<!-- Settings List -->
+<section class="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-100">
+<div class="divide-y divide-stone-100">
+<button class="w-full px-5 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-400" data-icon="person_edit">person_edit</span>
+<span class="font-medium">עריכת פרופיל</span>
+</div>
+<span class="material-symbols-outlined text-stone-300" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-full px-5 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-400" data-icon="notifications_active">notifications_active</span>
+<span class="font-medium">הגדרות התראות</span>
+</div>
+<span class="material-symbols-outlined text-stone-300" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-full px-5 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-stone-400" data-icon="language">language</span>
+<span class="font-medium">שפת ממשק</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-stone-400">עברית</span>
+<span class="material-symbols-outlined text-stone-300" data-icon="chevron_left">chevron_left</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Logout Action -->
+<div class="pt-4">
+<button class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                יציאה מהמערכת
+            </button>
+<p class="text-center text-[10px] text-stone-400 mt-6 font-label">גרסת אפליקציה 2.4.1 (build_402)</p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-stone-200 dark:border-stone-800 bg-stone-50/95 dark:bg-stone-950/95 backdrop-blur-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex flex-row-reverse justify-around items-center w-full px-2 py-3 pb-safe">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 hover:text-red-800 dark:hover:text-red-300" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[12px] font-medium leading-tight">בית</span>
+</a>
+<!-- Clients -->
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 hover:text-red-800 dark:hover:text-red-300" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-[12px] font-medium leading-tight">לקוחות</span>
+</a>
+<!-- Orders -->
+<a class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 hover:text-red-800 dark:hover:text-red-300" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-[12px] font-medium leading-tight">הזמנות</span>
+</a>
+<!-- Settings (ACTIVE) -->
+<a class="scale-110 transition-transform duration-180 flex flex-col items-center justify-center text-red-900 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-[12px] font-medium leading-tight">הגדרות</span>
+</a>
+</div>
+</nav>
+</body></html>

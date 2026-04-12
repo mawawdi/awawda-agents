@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;700;900&amp;family=Be_Vietnam_Pro:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#4b3e30",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-container": "#bca997",
+                    "tertiary-fixed-dim": "#d7c3b0",
+                    "on-secondary-fixed": "#00201f",
+                    "on-primary-fixed": "#410002",
+                    "inverse-on-surface": "#f1f1f0",
+                    "tertiary-fixed": "#f4dfcb",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#e2e2e2",
+                    "outline": "#8a716f",
+                    "surface-container-low": "#f4f3f3",
+                    "on-background": "#1a1c1c",
+                    "secondary": "#3c6563",
+                    "surface-tint": "#a23d35",
+                    "secondary-fixed": "#bfebe8",
+                    "surface-container-high": "#e8e8e8",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#426b69",
+                    "tertiary": "#34281b",
+                    "primary": "#5b0608",
+                    "secondary-fixed-dim": "#a4cfcc",
+                    "on-primary": "#ffffff",
+                    "background": "#f9f9f9",
+                    "outline-variant": "#ddc0bc",
+                    "surface-bright": "#f9f9f9",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#dadad9",
+                    "surface-container": "#eeeeed",
+                    "on-surface": "#1a1c1c",
+                    "primary-fixed": "#ffdad6",
+                    "inverse-primary": "#ffb4ab",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#524436",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#244d4c",
+                    "on-surface-variant": "#56423f",
+                    "inverse-surface": "#2f3131",
+                    "on-tertiary-fixed": "#241a0e",
+                    "primary-container": "#7a1f1b",
+                    "surface": "#f9f9f9",
+                    "secondary-container": "#bfebe8",
+                    "surface-variant": "#e2e2e2",
+                    "on-primary-fixed-variant": "#832520",
+                    "on-primary-container": "#ff8c80"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Epilogue"],
+                    "body": ["Be Vietnam Pro"],
+                    "label": ["Be Vietnam Pro"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1, h2, h3 {
+            font-family: 'Epilogue', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#F9F9F9]/80 backdrop-blur-md shadow-sm shadow-[#1A1C1C]/5 h-20 flex flex-row-reverse justify-between items-center px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-outline-variant/30">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a sales agent in a premium attire, soft office lighting, editorial portrait style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3fnYdbbBHRLlKiNR6EThdOUcIUTOAaiC9971rxj-L0p_0ArHqApeKm4IgeZFfyphxSWp0fOCvNeCxNllVsZb9vIhHJ-x_jqMNMWvZOQdiii2dQavgbLldNAyySKnXqFgLHNb-yqw5KUo9kMUBIkrKwzvK9Vr9zvn4dLmU-54TYU8zm2221aMDDPdxhrl_ss4E03ZV70OHmHQOn6PUjKisajspB-t9mVX_diohFQTk-m2qZAG6gnUG5da8uMqFjzt9Dpf25H3xuIbZ"/>
+</div>
+<h1 class="text-2xl font-black text-primary-container uppercase font-headline tracking-tight">לקוחות</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-primary-container">search</span>
+</button>
+</header>
+<main class="pt-24 px-6">
+<!-- Search & Filter Section -->
+<section class="mb-8">
+<div class="relative group">
+<input class="w-full bg-surface-container-high border-none rounded-lg px-12 py-4 text-on-surface focus:ring-1 focus:ring-primary/20 placeholder:text-on-surface-variant/50 font-body transition-all" placeholder="חיפוש לקוח..." type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+</div>
+<!-- Chips -->
+<div class="flex gap-2 mt-6 overflow-x-auto pb-2 no-scrollbar">
+<button class="bg-primary-container text-on-primary px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap active:scale-95 duration-150">הכל</button>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap active:scale-95 duration-150">פעילים</button>
+<button class="bg-surface-container text-on-surface-variant px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap active:scale-95 duration-150">VIP</button>
+<button class="bg-surface-container text-on-surface-variant px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap active:scale-95 duration-150">חדשים</button>
+</div>
+</section>
+<!-- List Section -->
+<div class="space-y-4">
+<!-- Customer Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 flex justify-between items-center shadow-[0_4px_20px_rgba(26,28,28,0.04)] relative overflow-hidden group">
+<div class="absolute right-0 top-0 bottom-0 w-1.5 bg-primary-container opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-lg font-black text-on-surface">אטליז האחים כהן</h3>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">VIP</span>
+</div>
+<div class="flex flex-col gap-1 text-sm text-on-surface-variant font-body">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">location_on</span>
+<span>תל אביב, רחוב החרש 8</span>
+</div>
+<div class="flex items-center gap-1 opacity-70">
+<span class="material-symbols-outlined text-xs">history</span>
+<span>הזמנה אחרונה: 12.05.24</span>
+</div>
+</div>
+</div>
+<button class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center text-secondary active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+<!-- Customer Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 flex justify-between items-center shadow-[0_4px_20px_rgba(26,28,28,0.04)] relative overflow-hidden group">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-lg font-black text-on-surface">מעדניית גורמה</h3>
+<span class="bg-surface-container-high text-on-surface-variant text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">פעיל</span>
+</div>
+<div class="flex flex-col gap-1 text-sm text-on-surface-variant font-body">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">location_on</span>
+<span>רמת גן, ז'בוטינסקי 45</span>
+</div>
+<div class="flex items-center gap-1 opacity-70">
+<span class="material-symbols-outlined text-xs">history</span>
+<span>הזמנה אחרונה: 08.05.24</span>
+</div>
+</div>
+</div>
+<button class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center text-secondary active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+<!-- Customer Card 3 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 flex justify-between items-center shadow-[0_4px_20px_rgba(26,28,28,0.04)] relative overflow-hidden group">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-lg font-black text-on-surface">מסעדת הבשרים</h3>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">חדש</span>
+</div>
+<div class="flex flex-col gap-1 text-sm text-on-surface-variant font-body">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">location_on</span>
+<span>הרצליה, מדינת היהודים 12</span>
+</div>
+<div class="flex items-center gap-1 opacity-70">
+<span class="material-symbols-outlined text-xs">history</span>
+<span>טרם בוצעה הזמנה</span>
+</div>
+</div>
+</div>
+<button class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center text-secondary active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+<!-- Customer Card 4 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 flex justify-between items-center shadow-[0_4px_20px_rgba(26,28,28,0.04)] relative overflow-hidden group">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-lg font-black text-on-surface">סופר מרקט העיר</h3>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">VIP</span>
+</div>
+<div class="flex flex-col gap-1 text-sm text-on-surface-variant font-body">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">location_on</span>
+<span>גבעתיים, כצנלסון 102</span>
+</div>
+<div class="flex items-center gap-1 opacity-70">
+<span class="material-symbols-outlined text-xs">history</span>
+<span>הזמנה אחרונה: 10.05.24</span>
+</div>
+</div>
+</div>
+<button class="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center text-secondary active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call</span>
+</button>
+</div>
+</div>
+</main>
+<!-- FAB: New Customer -->
+<div class="fixed bottom-28 left-6 z-40">
+<button class="bg-gradient-to-br from-[#5B0608] to-[#7A1F1B] text-white flex items-center gap-3 px-6 py-4 rounded-full shadow-[0_8px_30px_rgba(122,31,27,0.3)] active:scale-95 duration-200 group">
+<span class="material-symbols-outlined font-bold">add</span>
+<span class="font-black font-headline text-lg">לקוח חדש</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#F9F9F9] rounded-t-[2rem] shadow-[0_-4px_40px_rgba(26,28,28,0.06)] flex flex-row-reverse justify-around items-center w-full px-4 py-3 pb-safe">
+<a class="flex flex-col items-center justify-center text-[#3C6563] opacity-70 hover:opacity-100 transition-opacity active:translate-y-1 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Be_Vietnam_Pro'] text-xs font-bold leading-[1.4]">בית</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#5B0608] to-[#7A1F1B] text-white rounded-full px-6 py-2 active:translate-y-1 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Be_Vietnam_Pro'] text-xs font-bold leading-[1.4]">לקוחות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3C6563] opacity-70 hover:opacity-100 transition-opacity active:translate-y-1 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-['Be_Vietnam_Pro'] text-xs font-bold leading-[1.4]">הזמנות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#3C6563] opacity-70 hover:opacity-100 transition-opacity active:translate-y-1 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Be_Vietnam_Pro'] text-xs font-bold leading-[1.4]">הגדרות</span>
+</a>
+</nav>
+<!-- Content Separation Logic -->
+<div class="fixed bottom-[88px] w-full h-[1px] bg-[#EEEEED]"></div>
+</body></html>

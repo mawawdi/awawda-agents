@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&amp;family=Sora:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+                primary: {
+                    DEFAULT: '#7f1d1d', // red-900
+                    foreground: '#fef2f2'
+                },
+                secondary: {
+                    DEFAULT: '#0d9488', // teal-600
+                    foreground: '#f0fdfa'
+                },
+                accent: {
+                    DEFAULT: '#b45309', // amber-700/copper
+                },
+                surface: {
+                    DEFAULT: '#fafaf9', // stone-50
+                    muted: '#f5f5f4'    // stone-100
+                }
+            },
+            borderRadius: {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            fontFamily: {
+                    "headline": ["Rubik"],
+                    "body": ["Rubik"],
+                    "label": ["Sora"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .hebrew-sans { font-family: 'Rubik', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-stone-50 text-stone-900 font-body min-h-screen selection:bg-red-100">
+<!-- Auth Layout Wrapper -->
+<div class="min-h-screen flex flex-col md:flex-row-reverse overflow-hidden">
+<!-- Editorial Section (Visual Side) -->
+<section class="hidden md:flex md:w-1/2 lg:w-3/5 bg-stone-900 relative overflow-hidden items-center justify-center">
+<div class="absolute inset-0 z-0">
+<img alt="Premium cuts of dry-aged beef on a dark textured surface with dramatic lighting and copper accents" class="w-full h-full object-cover opacity-60 scale-105" data-alt="Close-up of premium marbled beef steak on dark stone with dramatic side lighting and warm copper highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi0tSvBwKcmabDnFTBOtWiYlhphb0kDljG6gGT3-BXkBIUamfj57V5cSy-bydSaf2UOh4Fm9qBaT61ahpazHnFh7DOT9hO-UXTA2ypHtIWNtiGWmDLTN7WNpQfDi7rioUQAf-TeMGqzmDxh50MN_wZ-VhAplb14VuaL01tPD25GPa8Mht1bkN9K-2HueAVadOa43mZrMXmXlbaCOV3GA_v7fVUQyDUMr_IsM9EpcmRgu9Kujxxv6aUnsaFhOL_bC92q1-aKRE0vx7p"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+</div>
+<div class="relative z-10 px-12 text-right">
+<span class="text-secondary font-label font-semibold tracking-widest uppercase mb-4 block">Operation: Sales Force</span>
+<h2 class="text-7xl lg:text-8xl font-black text-white leading-tight tracking-tighter mb-6 uppercase">
+                    MEAT<br/><span class="text-red-600">LAND</span>
+</h2>
+<p class="text-stone-300 text-xl max-w-md mr-0 ml-auto font-light leading-relaxed">
+                    מערכת ניהול מכירות מתקדמת המשלבת מסורת של קצבות עם טכנולוגיה לוגיסטית מהירה.
+                </p>
+</div>
+<!-- Accent Detail -->
+<div class="absolute bottom-12 right-12 flex items-center gap-4">
+<div class="h-[1px] w-24 bg-stone-700"></div>
+<span class="font-label text-stone-500 text-xs tracking-widest uppercase">Premium Craftsmanship</span>
+</div>
+</section>
+<!-- Login Form Section -->
+<main class="flex-1 flex flex-col items-center justify-center p-6 md:p-12 lg:p-24 bg-stone-50 z-10">
+<div class="w-full max-w-md">
+<!-- Mobile Logo (Visible only on small screens) -->
+<div class="md:hidden mb-12 flex justify-between items-end">
+<h1 class="text-4xl font-black text-red-900 tracking-tighter uppercase">MEATLAND</h1>
+<span class="text-teal-600 font-label text-xs font-bold border-b-2 border-teal-600 pb-1">SALES APP</span>
+</div>
+<!-- Error Banner (Conditional State) -->
+<div class="mb-8 bg-red-50 border-r-4 border-red-600 p-4 flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+<span class="material-symbols-outlined text-red-600 mt-0.5" data-icon="error">error</span>
+<div>
+<p class="text-red-900 font-bold text-sm">שגיאת התחברות</p>
+<p class="text-red-700 text-xs">שם המשתמש או הסיסמה אינם נכונים. אנא נסה שוב.</p>
+</div>
+</div>
+<!-- Header -->
+<header class="mb-10">
+<h2 class="text-3xl font-black text-stone-900 mb-2 leading-tight">כניסת סוכנים</h2>
+<p class="text-stone-500 font-medium">הזן את הפרטים שלך כדי להתחיל יום עבודה</p>
+</header>
+<!-- Form -->
+<form class="space-y-6">
+<!-- Identity Input -->
+<div class="space-y-2 group">
+<label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mr-1" for="identity">
+                            טלפון או דוא״ל
+                        </label>
+<div class="relative">
+<input class="w-full bg-white border-2 border-stone-200 rounded-xl px-5 py-4 text-stone-900 font-medium focus:ring-0 focus:border-teal-600 transition-all duration-200 outline-none shadow-sm group-focus-within:shadow-teal-100 group-focus-within:shadow-lg" id="identity" placeholder="05x-xxxxxxx" type="text"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" data-icon="alternate_email">alternate_email</span>
+</div>
+<div class="flex items-center gap-1.5 text-teal-600 text-[11px] font-bold mt-1 mr-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span>מזוהה ע״י המערכת</span>
+</div>
+</div>
+<!-- Password Input -->
+<div class="space-y-2 group">
+<div class="flex justify-between items-center mb-1">
+<label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mr-1" for="password">
+                                סיסמה
+                            </label>
+<a class="text-xs font-bold text-stone-400 hover:text-red-900 transition-colors" href="#">שכחת סיסמה?</a>
+</div>
+<div class="relative">
+<input class="w-full bg-white border-2 border-stone-200 rounded-xl px-5 py-4 text-stone-900 font-medium focus:ring-0 focus:border-teal-600 transition-all duration-200 outline-none shadow-sm group-focus-within:shadow-teal-100 group-focus-within:shadow-lg" id="password" placeholder="••••••••" type="password"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 cursor-pointer hover:text-stone-600" data-icon="visibility">visibility</span>
+</div>
+</div>
+<!-- Action CTA -->
+<div class="pt-4">
+<button class="w-full bg-red-900 text-white py-4 rounded-xl font-bold text-lg shadow-xl shadow-red-900/20 hover:bg-red-950 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3" type="submit">
+<span>התחברות למערכת</span>
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+<!-- Secondary Option -->
+<div class="pt-6 text-center">
+<p class="text-stone-400 text-sm">
+                            נתקלת בבעיה? 
+                            <a class="text-teal-600 font-bold hover:underline" href="#">צור קשר עם מנהל המחוז</a>
+</p>
+</div>
+</form>
+<!-- Verification Footer -->
+<footer class="mt-20 flex items-center justify-between border-t border-stone-200 pt-6 opacity-60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-stone-400" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-[10px] font-label font-bold text-stone-500 uppercase">Secure Connection v2.4</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-label font-bold text-stone-400">HEBREW (IL)</span>
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+</div>
+</footer>
+</div>
+</main>
+</div>
+<!-- Hidden Loading Overlay (for transition feel) -->
+<div class="hidden fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[100] items-center justify-center">
+<div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+<div class="w-12 h-12 border-4 border-teal-100 border-t-teal-600 rounded-full animate-spin"></div>
+<p class="font-bold text-stone-900">מאמת נתונים...</p>
+</div>
+</div>
+</body></html>
