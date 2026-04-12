@@ -17,7 +17,7 @@ import { PortalApiError, type PortalApiClient } from './portal-api-client';
 const activationResponse: CustomerSessionActivateResponse = {
   sessionToken: 'session-123',
   customer: { customerId: 'cust-1' },
-  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  sessionExpiresAt: '2099-04-08T14:00:00.000Z',
   recentItems: [
     {
       itemId: 'item-1',
@@ -41,7 +41,7 @@ const activationResponse: CustomerSessionActivateResponse = {
 
 const portalDataResponse: CustomerPortalDataResponse = {
   customer: { customerId: 'cust-1' },
-  sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+  sessionExpiresAt: '2099-04-08T14:00:00.000Z',
   recentItems: activationResponse.recentItems,
   approvedItems: activationResponse.approvedItems,
   pricing: activationResponse.pricing,
@@ -125,7 +125,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -152,7 +152,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -184,7 +184,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -210,7 +210,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-stale',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -232,7 +232,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -299,7 +299,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 
@@ -346,7 +346,7 @@ describe('customer portal runtime routes', () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
-      sessionExpiresAt: '2026-04-08T14:00:00.000Z',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
       payload: portalDataResponse,
     });
 

@@ -3,6 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
+import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
+import { Input } from './components/ui/input';
 import {
   clearOrderSubmitting,
   createOrderErrorState,
@@ -163,13 +167,13 @@ function ActivationRoute({
   if (state.status === 'error') {
     return (
       <main className="status-screen" dir="rtl" lang="he">
-        <section className="status-card" data-kind="error">
+        <Card className="status-card status-card-enter" data-kind="error">
           <h1>הפעלת הקישור נכשלה</h1>
           <p>{state.message}</p>
-          <button onClick={() => setState(createActivationIdleState(token))} type="button">
+          <Button onClick={() => setState(createActivationIdleState(token))} size="lg" type="button">
             נסו להפעיל שוב
-          </button>
-        </section>
+          </Button>
+        </Card>
       </main>
     );
   }
@@ -177,23 +181,23 @@ function ActivationRoute({
   if (state.status === 'ready') {
     return (
       <main className="status-screen" dir="rtl" lang="he">
-        <section className="status-card" data-kind="ready">
+        <Card className="status-card status-card-enter" data-kind="ready">
           <h1>פותחים את ההזמנה שלך…</h1>
           <p>הסשן המאובטח מוכן.</p>
-        </section>
+        </Card>
       </main>
     );
   }
 
   return (
     <main className="status-screen" dir="rtl" lang="he">
-      <section className="status-card" data-kind="loading">
+      <Card className="status-card status-card-enter" data-kind="loading">
         <h1>מפעילים את קישור ההזמנה…</h1>
         <p>טוענים את פרטי החשבון שלך, רגע.</p>
         {state.status === 'activating' && state.weakNetworkHint ? (
           <p data-testid="activation-weak-network">זוהתה רשת איטית. השאירו את העמוד פתוח.</p>
         ) : null}
-      </section>
+      </Card>
     </main>
   );
 }
@@ -414,14 +418,14 @@ function OrderRoute({
   if (state.status === 'loading') {
     return (
       <main className="status-screen" dir="rtl" lang="he">
-        <section className="status-card" data-kind="loading">
+        <Card className="status-card status-card-enter" data-kind="loading">
           <h1>טוענים את עמוד ההזמנה…</h1>
           {state.weakNetworkHint ? (
             <p data-testid="order-weak-network">הרשת איטית. התוכן יופיע מיד.</p>
           ) : (
             <p>מכינים את המחירים המעודכנים והקטלוג המאושר.</p>
           )}
-        </section>
+        </Card>
       </main>
     );
   }
@@ -429,10 +433,10 @@ function OrderRoute({
   if (state.status === 'error') {
     return (
       <main className="status-screen" dir="rtl" lang="he">
-        <section className="status-card" data-kind="error">
+        <Card className="status-card status-card-enter" data-kind="error">
           <h1>לא הצלחנו לטעון את ההזמנה</h1>
           <p>{state.message}</p>
-        </section>
+        </Card>
       </main>
     );
   }
@@ -450,16 +454,18 @@ function OrderRoute({
             )}
         </p>
       <div className="qty-row">
-        <button
+        <Button
           aria-label={`הקטנת כמות ${item.name}`}
           className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'decrement')}
+          size="icon"
           type="button"
+          variant="secondary"
         >
           −
-        </button>
-        <input
+        </Button>
+        <Input
           aria-label={`כמות ${item.name}`}
           className="qty-input"
           disabled={state.isSubmitting || submitState.status === 'success'}
@@ -468,15 +474,17 @@ function OrderRoute({
           type="number"
           value={item.quantity}
         />
-        <button
+        <Button
           aria-label={`הגדלת כמות ${item.name}`}
           className="qty-btn"
           disabled={state.isSubmitting || submitState.status === 'success'}
           onClick={() => adjustQuantity(item.itemId, 'increment')}
+          size="icon"
           type="button"
+          variant="secondary"
         >
           +
-        </button>
+        </Button>
       </div>
     </li>
   );
@@ -493,49 +501,51 @@ function OrderRoute({
             </p>
           </div>
           <div className="portal-header-actions">
-            <span className="layout-badge" data-testid="layout-state">
+            <Badge className="layout-badge" data-testid="layout-state" variant="secondary">
               תצוגה: {state.layout === 'mobile' ? 'מובייל' : 'דסקטופ'}
-            </span>
-            <button
+            </Badge>
+            <Button
               className="ghost-action"
               disabled={isLoggingOut}
               onClick={() => void handleLogout()}
+              size="sm"
               type="button"
+              variant="subtle"
             >
               {isLoggingOut ? 'סוגרים סשן…' : 'התנתקות מהסשן'}
-            </button>
+            </Button>
           </div>
         </header>
 
         <div className="portal-content">
           <section className="portal-column">
-            <section className="panel" data-section="recent">
+            <Card className="panel" data-section="recent">
               <div className="panel-heading">
                 <h2>{state.sections.recent.title}</h2>
-                <span className="panel-chip">קבועים</span>
+                <Badge className="panel-chip" variant="outline">קבועים</Badge>
               </div>
               {state.sections.recent.items.length === 0 ? (
                 <p>{state.sections.recent.emptyMessage}</p>
               ) : (
                 <ul className="items-list">{state.sections.recent.items.map(renderItem)}</ul>
               )}
-            </section>
+            </Card>
 
-            <section className="panel" data-section="approved">
+            <Card className="panel" data-section="approved">
               <div className="panel-heading">
                 <h2>{state.sections.approved.title}</h2>
-                <span className="panel-chip">מאושר</span>
+                <Badge className="panel-chip" variant="outline">מאושר</Badge>
               </div>
               {state.sections.approved.items.length === 0 ? (
                 <p>{state.sections.approved.emptyMessage}</p>
               ) : (
                 <ul className="items-list">{state.sections.approved.items.map(renderItem)}</ul>
               )}
-            </section>
+            </Card>
           </section>
 
           <aside className="portal-column">
-            <section aria-label="סיכום הזמנה" className="summary-card">
+            <Card aria-label="סיכום הזמנה" className="summary-card">
               <h2>סיכום הזמנה ואישור</h2>
               <div className="summary-line">
                 <span>סה״כ יחידות: {state.cart.totalUnits}</span>
@@ -570,7 +580,7 @@ function OrderRoute({
                   ))}
                 </ul>
               ) : null}
-            </section>
+            </Card>
 
             {submitState.status === 'mismatch' ? (
               <section aria-live="polite" className="feedback" data-kind="mismatch" data-testid="submit-mismatch">
@@ -584,12 +594,12 @@ function OrderRoute({
                   ))}
                 </ul>
                 <div className="feedback-actions">
-                  <button onClick={() => void refreshAfterMismatch()} type="button">
+                  <Button onClick={() => void refreshAfterMismatch()} type="button" variant="secondary">
                     רענון מחירים
-                  </button>
-                  <button onClick={() => void handleSubmit(true)} type="button">
+                  </Button>
+                  <Button onClick={() => void handleSubmit(true)} type="button">
                     אישור מחדש ושליחה
-                  </button>
+                  </Button>
                 </div>
               </section>
             ) : null}
@@ -599,9 +609,9 @@ function OrderRoute({
                 <h2>שליחת ההזמנה נכשלה</h2>
                 <p>{submitState.message}</p>
                 <div className="feedback-actions">
-                  <button onClick={() => void handleSubmit()} type="button">
+                  <Button onClick={() => void handleSubmit()} type="button">
                     נסו לשלוח שוב
-                  </button>
+                  </Button>
                 </div>
               </section>
             ) : null}
@@ -620,13 +630,16 @@ function OrderRoute({
 
         <footer className="sticky-submit" data-testid="sticky-submit-bar">
           <p>{state.submitBar.summaryLabel}</p>
-          <button
+          <Button
+            className="sticky-submit-button"
             disabled={!state.submitBar.submitEnabled || submitState.status === 'success' || submitState.status === 'mismatch'}
             onClick={() => void handleSubmit()}
+            size="lg"
             type="button"
+            variant="default"
           >
             {state.submitBar.submitLabel}
-          </button>
+          </Button>
         </footer>
       </div>
     </main>

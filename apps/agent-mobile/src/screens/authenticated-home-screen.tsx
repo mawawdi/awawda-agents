@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   I18nManager,
   Linking,
   Pressable,
@@ -100,6 +102,60 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [latestMagicLinkCustomerId, setLatestMagicLinkCustomerId] = useState<string | null>(null)
   const [latestMagicLinkIssuedAt, setLatestMagicLinkIssuedAt] = useState<string | null>(null)
   const [pendingCopyLink, setPendingCopyLink] = useState<string | null>(null)
+  const rootOpacity = useRef(new Animated.Value(0)).current
+  const headerTranslateY = useRef(new Animated.Value(10)).current
+  const contentOpacity = useRef(new Animated.Value(0)).current
+  const contentTranslateY = useRef(new Animated.Value(18)).current
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(rootOpacity, {
+        toValue: 1,
+        duration: 360,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerTranslateY, {
+        toValue: 0,
+        duration: 360,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentOpacity, {
+        toValue: 1,
+        duration: 420,
+        delay: 60,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentTranslateY, {
+        toValue: 0,
+        duration: 420,
+        delay: 60,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [contentOpacity, contentTranslateY, headerTranslateY, rootOpacity])
+
+  useEffect(() => {
+    contentOpacity.setValue(0.4)
+    contentTranslateY.setValue(8)
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentTranslateY, {
+        toValue: 0,
+        duration: 260,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [activeTab, contentOpacity, contentTranslateY])
 
   const beginSlowNetworkTimer = useCallback((setSlowState: (value: boolean) => void): (() => void) => {
     setSlowState(false)
@@ -878,8 +934,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   )
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
+    <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
+      <Animated.View style={[styles.topBar, { transform: [{ translateY: headerTranslateY }] }]}>
         <View style={styles.topBarIdentity}>
           <Text style={styles.brandEyebrow}>The Artisanal Ledger</Text>
           <Text style={styles.title}>לוח הסוכן</Text>
@@ -894,7 +950,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         >
           <Text style={styles.iconPrimary}>↻</Text>
         </Pressable>
-      </View>
+      </Animated.View>
 
       <View style={styles.searchBlock}>
         <Text style={styles.searchIcon}>⌕</Text>
@@ -909,14 +965,16 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         />
       </View>
 
-      <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
-        {activeTab === 'home' ? renderDashboardTab() : null}
-        {activeTab === 'customers' ? renderCustomersTab() : null}
-        {activeTab === 'catalog' ? renderCatalogTab() : null}
-        {activeTab === 'settings' ? renderSettingsTab() : null}
-      </ScrollView>
+      <Animated.View style={[styles.contentLayer, { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }]}>
+        <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
+          {activeTab === 'home' ? renderDashboardTab() : null}
+          {activeTab === 'customers' ? renderCustomersTab() : null}
+          {activeTab === 'catalog' ? renderCatalogTab() : null}
+          {activeTab === 'settings' ? renderSettingsTab() : null}
+        </ScrollView>
+      </Animated.View>
 
-      <View style={styles.bottomTabs}>
+      <Animated.View style={[styles.bottomTabs, { transform: [{ translateY: headerTranslateY }] }]}>
         {TAB_ITEMS.map((tab) => {
           const isActive = tab.id === activeTab
 
@@ -937,8 +995,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             </Pressable>
           )
         })}
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   )
 }
 
@@ -947,6 +1005,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  contentLayer: {
+    flex: 1,
+  },
   topBar: {
     marginTop: spacing.md,
     marginHorizontal: spacing.md,
@@ -954,7 +1015,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderRadius: radius.lg,
-    backgroundColor: palette.surfaceMid,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 4,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -964,11 +1032,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   brandEyebrow: {
-    color: palette.secondary,
+    color: palette.primaryContainer,
     fontSize: 11,
-    letterSpacing: 1.1,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 3,
+    fontWeight: '700',
   },
   title: {
     fontSize: 30,
@@ -991,12 +1060,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
   },
   searchBlock: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.sm,
     borderRadius: radius.lg,
-    backgroundColor: palette.surfaceLow,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -1042,7 +1115,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     color: palette.primary,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   sectionMeta: {
     color: palette.secondary,
@@ -1060,6 +1133,8 @@ const styles = StyleSheet.create({
     width: 290,
     borderRadius: radius.lg,
     backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
     padding: spacing.lg,
     gap: spacing.sm,
   },
@@ -1073,7 +1148,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   panelSection: {
-    backgroundColor: palette.surfaceLow,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -1087,7 +1164,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   activityRow: {
-    backgroundColor: palette.surface,
+    backgroundColor: palette.surfaceLow,
+    borderWidth: 1,
+    borderColor: palette.outline,
     borderRadius: radius.md,
     padding: spacing.md,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
@@ -1157,6 +1236,8 @@ const styles = StyleSheet.create({
   },
   customerCard: {
     backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.xs,
@@ -1264,6 +1345,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.outline,
     gap: spacing.xs,
   },
   detailTitle: {
@@ -1281,7 +1364,9 @@ const styles = StyleSheet.create({
   },
   approvedRow: {
     borderRadius: radius.md,
-    backgroundColor: palette.surface,
+    backgroundColor: palette.surfaceLow,
+    borderWidth: 1,
+    borderColor: palette.outline,
     padding: spacing.md,
     gap: 2,
   },
@@ -1296,6 +1381,8 @@ const styles = StyleSheet.create({
   },
   input: {
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
     paddingHorizontal: 12,
     paddingVertical: 10,
     minHeight: touchTarget.comfortable,
@@ -1489,6 +1576,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     backgroundColor: palette.surface,
+    borderTopWidth: 1,
+    borderColor: palette.outline,
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
