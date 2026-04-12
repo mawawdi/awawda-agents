@@ -19,7 +19,11 @@
     "deploy:up:prod": "HASH_ENV=production pnpm deploy:up",
     "deploy:ps": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml ps",
     "deploy:logs": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml logs --tail=200",
-    "deploy:down": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans"
+    "deploy:down": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans",
+    "test:portal-visual": "playwright test tests/playwright/portal-visual-regression.spec.ts",
+    "test:portal-visual:update": "playwright test tests/playwright/portal-visual-regression.spec.ts --update-snapshots",
+    "test:agent-mobile-visual": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts",
+    "test:agent-mobile-visual:update": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts --update-snapshots"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2"

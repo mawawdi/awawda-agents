@@ -88,7 +88,7 @@ describe('agent dashboard presenter', () => {
       lifecycle: 'issued',
     })
 
-    expect(shareMessage).toContain('cust-alpha')
+    expect(shareMessage).toContain('Alpha')
     expect(shareMessage).toContain('https://portal.example.test/m?token=abc123')
 
     const deepLink = buildWhatsAppDeepLink(shareMessage)
@@ -151,8 +151,10 @@ describe('agent dashboard presenter', () => {
 
     expect(feed).toHaveLength(3)
     expect(feed[0]?.kind).toBe('magic_link')
+    expect(feed[0]?.reference).toBe('קישור פעיל')
     expect(feed[1]?.kind).toBe('approved_item')
     expect(feed[2]?.kind).toBe('order')
+    expect(feed[2]?.reference).toBe('הזמנה פעילה')
     expect(feed[1]?.reference).toBe('עדכון קטלוג')
   })
 })

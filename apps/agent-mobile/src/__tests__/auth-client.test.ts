@@ -55,7 +55,7 @@ describe('auth client', () => {
         phoneOrEmail: 'agent@example.test',
         password: 'Password123',
       }),
-    ).rejects.toThrow('API base URL is not configured')
+    ).rejects.toThrow('כתובת בסיס ה-API אינה מוגדרת')
 
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -72,7 +72,7 @@ describe('auth client', () => {
         phoneOrEmail: 'agent@example.test',
         password: 'Password123',
       }),
-    ).rejects.toThrow('Cannot reach sign-in server')
+    ).rejects.toThrow('לא ניתן להגיע אל שרת ההתחברות')
   })
 
   it('falls back to localhost when configured LAN IP is unreachable', async () => {
@@ -173,5 +173,44 @@ describe('auth client', () => {
         password: 'Password123',
       }),
     ).rejects.toThrow('Invalid credentials')
+  })
+
+  it('normalizes common Android emulator typo host and reaches 10.0.2.2', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'http://10.0.0.2.2:3000'
+    const { loginAgent } = await import('../api/auth-client')
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          accessToken: 'token-typo-fixed',
+          expiresIn: 28800,
+          agentProfile: {
+            id: 'agent-1',
+            name: 'Line Agent',
+            phone: '+972500000000',
+            email: 'agent@example.test',
+          },
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    const result = await loginAgent({
+      phoneOrEmail: 'agent@example.test',
+      password: 'Password123',
+    })
+
+    expect(result.accessToken).toBe('token-typo-fixed')
+    expect(fetchMock).toHaveBeenCalledWith('http://10.0.2.2:3000/v1/agent/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        phoneOrEmail: 'agent@example.test',
+        password: 'Password123',
+      }),
+      signal: expect.any(AbortSignal),
+    })
   })
 })

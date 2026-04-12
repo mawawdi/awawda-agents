@@ -156,7 +156,7 @@ pnpm --filter @meatland/api seed:testing
 
 This seeds:
 
-- realistic test agents (all with password `Password123`)
+- realistic test agents (`Parpar`, `Mohammed Jabarin`, `Keneret`; all with password `Password123`)
 - realistic customer assignment IDs
 - broad approved-items coverage across customers
 - fallback catalog metadata with per-cut icon/image fields (`iconEmoji`, `imageUrl`) for UI testing

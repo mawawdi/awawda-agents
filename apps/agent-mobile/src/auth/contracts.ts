@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const LOGIN_INPUT_SCHEMA = z.object({
-  phoneOrEmail: z.string().trim().min(1, 'Enter your phone number or email.'),
-  password: z.string().trim().min(8, 'Password must contain at least 8 characters.'),
+  phoneOrEmail: z.string().trim().min(1, 'הזינו מספר טלפון או דוא״ל.'),
+  password: z.string().trim().min(8, 'הסיסמה חייבת להכיל לפחות 8 תווים.'),
 })
 
 export const AGENT_PROFILE_SCHEMA = z.object({

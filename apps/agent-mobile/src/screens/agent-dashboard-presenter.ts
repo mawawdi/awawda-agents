@@ -5,7 +5,7 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
-export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'settings'
+export type AgentDashboardTabId = 'home' | 'customers' | 'catalog' | 'orders' | 'settings'
 
 export type AgentRecentTransactionKind = 'magic_link' | 'order' | 'approved_item'
 
@@ -125,7 +125,8 @@ export function formatMagicLinkExpiry(expiresAt: string): string {
 }
 
 export function buildMagicLinkShareMessage(customerId: string, payload: AgentMagicLinkIssueResponse): string {
-  return `שלום, מצורף קישור ההזמנה שלך עבור לקוח ${customerId}: ${normalizeLocalMagicLinkUrl(payload.linkUrl)} (בתוקף עד ${formatMagicLinkExpiry(payload.expiresAt)}).`
+  const customerLabel = humanizeIdentifier(customerId, ['cust-'])
+  return `שלום, מצורף קישור ההזמנה שלך עבור ${customerLabel}: ${normalizeLocalMagicLinkUrl(payload.linkUrl)} (בתוקף עד ${formatMagicLinkExpiry(payload.expiresAt)}).`
 }
 
 export function normalizeMagicLinkForShare(payload: AgentMagicLinkIssueResponse): AgentMagicLinkIssueResponse {
@@ -167,6 +168,19 @@ function formatRelativeTimestampHebrew(timestampMs: number, nowMs: number): stri
   return new Date(timestampMs).toLocaleDateString('he-IL')
 }
 
+export function magicLinkLifecycleLabel(lifecycle: string): string {
+  if (lifecycle === 'issued') {
+    return 'קישור פעיל'
+  }
+  if (lifecycle === 'consumed') {
+    return 'הוזן בהצלחה'
+  }
+  if (lifecycle === 'expired') {
+    return 'פג תוקף'
+  }
+  return 'עדכון קישור'
+}
+
 export function buildRecentTransactions(input: {
   customers: AgentAssignedCustomer[]
   approvedItems: AgentApprovedItem[]
@@ -199,7 +213,7 @@ export function buildRecentTransactions(input: {
       kind: 'magic_link',
       title: `קישור נשלח • ${customerLabel}`,
       detail: `${formatRelativeTimestampHebrew(magicLinkTimestamp, nowMs)} • תוקף ${latestMagicLink.expiresInSeconds} שנ׳`,
-      reference: latestMagicLink.lifecycle,
+      reference: magicLinkLifecycleLabel(latestMagicLink.lifecycle),
       sortTimestamp: magicLinkTimestamp,
     })
   }
@@ -217,7 +231,7 @@ export function buildRecentTransactions(input: {
       kind: 'order',
       title: `הזמנה עודכנה • ${customerLabel}`,
       detail: `${formatRelativeTimestampHebrew(orderTimestamp, nowMs)} • פריטים מאושרים ${customer.approvedItemsCount}`,
-      reference: '#ORDER',
+      reference: 'הזמנה פעילה',
       sortTimestamp: orderTimestamp,
     })
   }

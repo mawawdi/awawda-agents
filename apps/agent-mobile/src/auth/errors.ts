@@ -3,5 +3,5 @@ export function getAuthFailureMessage(error: unknown): string {
     return error.message
   }
 
-  return 'Sign-in failed. Please try again.'
+  return 'ההתחברות נכשלה. נסו שוב.'
 }

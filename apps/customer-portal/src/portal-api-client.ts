@@ -45,14 +45,14 @@ export class PortalApiClient {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new PortalApiError('invalid_token', 'Activation token is invalid');
+        throw new PortalApiError('invalid_token', 'קישור ההפעלה אינו תקין');
       }
 
       if (response.status === 410) {
-        throw new PortalApiError('expired_token', 'Activation token has expired');
+        throw new PortalApiError('expired_token', 'תוקף קישור ההפעלה פג');
       }
 
-      throw new PortalApiError('server', 'Activation request failed');
+      throw new PortalApiError('server', 'בקשת ההפעלה נכשלה');
     }
 
     return (await response.json()) as CustomerSessionActivateResponse;
@@ -70,11 +70,11 @@ export class PortalApiClient {
       if (response.status === 401) {
         const authErrorCode = await this.readErrorCode(response);
         if (authErrorCode === 'AUTH_CUSTOMER_SESSION_EXPIRED') {
-          throw new PortalApiError('expired_token', 'Customer session expired');
+          throw new PortalApiError('expired_token', 'תוקף הסשן פג');
         }
-        throw new PortalApiError('invalid_token', 'Customer session token invalid');
+        throw new PortalApiError('invalid_token', 'אסימון הסשן אינו תקין');
       }
-      throw new PortalApiError('server', 'Portal data request failed');
+      throw new PortalApiError('server', 'טעינת נתוני הפורטל נכשלה');
     }
 
     return (await response.json()) as CustomerPortalDataResponse;
@@ -98,27 +98,27 @@ export class PortalApiClient {
     if (response.status === 409) {
       const body = (await response.json()) as CustomerOrderMismatchResponse | { code?: string };
       if (body && body.code === 'ORDER_LINES_MISMATCH' && 'lines' in body) {
-        throw new PortalApiError('order_mismatch', 'Order lines mismatch current ERP pricing', body);
+        throw new PortalApiError('order_mismatch', 'שורות ההזמנה אינן תואמות למחירי ה-ERP העדכניים', body);
       }
 
-      throw new PortalApiError('idempotency_conflict', 'Duplicate submission key cannot be reused with another payload');
+      throw new PortalApiError('idempotency_conflict', 'לא ניתן להשתמש שוב במפתח שליחה כפול עם מטען אחר');
     }
 
     if (!response.ok) {
       if (response.status === 401) {
         const authErrorCode = await this.readErrorCode(response);
         if (authErrorCode === 'AUTH_CUSTOMER_SESSION_EXPIRED') {
-          throw new PortalApiError('expired_token', 'Customer session expired');
+          throw new PortalApiError('expired_token', 'תוקף הסשן פג');
         }
-        throw new PortalApiError('invalid_token', 'Customer session token invalid');
+        throw new PortalApiError('invalid_token', 'אסימון הסשן אינו תקין');
       }
       if (response.status === 503) {
         const errorCode = await this.readErrorCode(response);
         if (errorCode === 'CUSTOMER_ORDER_ERP_UNAVAILABLE') {
-          throw new PortalApiError('erp_unavailable', 'ERP is temporarily unavailable for order submission');
+          throw new PortalApiError('erp_unavailable', 'מערכת ה-ERP אינה זמינה זמנית לשליחת הזמנה');
         }
       }
-      throw new PortalApiError('server', 'Order submit request failed');
+      throw new PortalApiError('server', 'שליחת ההזמנה נכשלה');
     }
 
     return (await response.json()) as CustomerOrderSubmitResponse;
@@ -133,7 +133,7 @@ export class PortalApiClient {
     });
 
     if (!response.ok && response.status !== 401) {
-      throw new PortalApiError('server', 'Session logout request failed');
+      throw new PortalApiError('server', 'בקשת ההתנתקות נכשלה');
     }
   }
 
@@ -141,7 +141,7 @@ export class PortalApiClient {
     try {
       return await this.fetchImpl(`${this.baseUrl}${path}`, init);
     } catch {
-      throw new PortalApiError('network', 'Network connection failed');
+      throw new PortalApiError('network', 'חיבור הרשת נכשל');
     }
   }
 

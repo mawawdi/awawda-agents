@@ -22,6 +22,7 @@ import {
 } from './order-composition-flow';
 import type { PortalApiClient } from './portal-api-client';
 import { PortalApiError } from './portal-api-client';
+import { PORTAL_SCREEN_TEST_IDS } from './portal-screen-ids';
 import {
   createIdleState,
   markMismatch,
@@ -49,6 +50,7 @@ type StoredPortalSession = {
 const SESSION_STORAGE_KEY = 'customer-portal-session';
 const WEAK_NETWORK_THRESHOLD_MS = 2_500;
 let memoryPortalSession: StoredPortalSession | null = null;
+const DEFAULT_MEDIA_ALT = 'תמונת מוצר אינה זמינה כרגע';
 
 type RouteConfig = {
   weakNetworkThresholdMs: number;
@@ -166,14 +168,35 @@ function ActivationRoute({
 
   if (state.status === 'error') {
     return (
-      <main className="status-screen" dir="rtl" lang="he">
-        <Card className="status-card status-card-enter" data-kind="error" data-testid="screen-portal-session-error">
-          <h1>שגיאת הפעלה</h1>
-          <p>{state.message}</p>
-          <Button onClick={() => setState(createActivationIdleState(token))} size="lg" type="button">
-            נסה הפעלה מחדש
-          </Button>
-        </Card>
+      <main className="status-shell" data-testid={PORTAL_SCREEN_TEST_IDS.sessionError} dir="rtl" lang="he">
+        <header className="status-top-nav">
+          <div className="status-top-brand">MEATLAND</div>
+        </header>
+        <section className="status-main-grid">
+          <div className="status-visual-pane">
+            <DeterministicPlaceholder
+              className="status-visual-placeholder"
+              label="Meatland"
+              seed="activation-error-visual"
+            />
+            <div className="status-visual-copy">
+              <p>איכות ללא פשרות</p>
+              <h2>מצוינות בכל נתח</h2>
+            </div>
+          </div>
+          <Card className="status-content-pane">
+            <div className="status-icon-bubble" aria-hidden="true">!</div>
+            <h1>שגיאת הפעלה</h1>
+            <p>{state.message}</p>
+            <Button onClick={() => setState(createActivationIdleState(token))} size="lg" type="button">
+              נסה הפעלה מחדש
+            </Button>
+            <div className="status-support-pane">
+              <p>זקוק לעזרה?</p>
+              <p>צור קשר עם מוקד הפרימיום שלנו לקבלת סיוע אישי.</p>
+            </div>
+          </Card>
+        </section>
       </main>
     );
   }
@@ -183,7 +206,7 @@ function ActivationRoute({
       <main className="status-screen" dir="rtl" lang="he">
         <Card className="status-card status-card-enter" data-kind="ready">
           <h1>פותחים את ההזמנה שלך…</h1>
-          <p>הסשן המאובטח מוכן.</p>
+          <p>הכול מוכן להזמנה שלך.</p>
         </Card>
       </main>
     );
@@ -228,7 +251,7 @@ function OrderRoute({
   const loadPortalData = useCallback(
     async (preservedQuantities: Record<string, number> = {}): Promise<void> => {
       if (!session) {
-        setState(createOrderErrorState('הסשן לא נמצא. פתחו שוב את קישור ההזמנה.'));
+        setState(createOrderErrorState('לא הצלחנו לזהות את ההזמנה. פתחו שוב את קישור ההזמנה.'));
         return;
       }
 
@@ -266,7 +289,7 @@ function OrderRoute({
 
   useEffect(() => {
     if (!session) {
-      setState(createOrderErrorState('הסשן לא נמצא. פתחו שוב את קישור ההזמנה.'));
+      setState(createOrderErrorState('לא הצלחנו לזהות את ההזמנה. פתחו שוב את קישור ההזמנה.'));
       return;
     }
 
@@ -443,6 +466,10 @@ function OrderRoute({
 
   const renderItem = (item: OrderSectionItem): ReactElement => (
     <li className="item-card" key={item.itemId}>
+      <div className="item-image-wrap">
+        <DeterministicPlaceholder className="item-image-placeholder" label={item.name} seed={item.itemId} />
+      </div>
+      <div className="item-content">
         <h3 className="item-title">{item.name}</h3>
         <p className="item-pricing">
           {item.unitPrice === null
@@ -453,205 +480,248 @@ function OrderRoute({
               </>
             )}
         </p>
-      <div className="qty-row">
-        <Button
-          aria-label={`הקטנת כמות ${item.name}`}
-          className="qty-btn"
-          disabled={state.isSubmitting || submitState.status === 'success'}
-          onClick={() => adjustQuantity(item.itemId, 'decrement')}
-          size="icon"
-          type="button"
-          variant="secondary"
-        >
-          −
-        </Button>
-        <Input
-          aria-label={`כמות ${item.name}`}
-          className="qty-input"
-          disabled={state.isSubmitting || submitState.status === 'success'}
-          inputMode="numeric"
-          onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
-          type="number"
-          value={item.quantity}
-        />
-        <Button
-          aria-label={`הגדלת כמות ${item.name}`}
-          className="qty-btn"
-          disabled={state.isSubmitting || submitState.status === 'success'}
-          onClick={() => adjustQuantity(item.itemId, 'increment')}
-          size="icon"
-          type="button"
-          variant="secondary"
-        >
-          +
-        </Button>
+        <div className="qty-row">
+          <Button
+            aria-label={`הקטנת כמות ${item.name}`}
+            className="qty-btn"
+            disabled={state.isSubmitting || submitState.status === 'success'}
+            onClick={() => adjustQuantity(item.itemId, 'decrement')}
+            size="icon"
+            type="button"
+            variant="secondary"
+          >
+            −
+          </Button>
+          <Input
+            aria-label={`כמות ${item.name}`}
+            className="qty-input"
+            disabled={state.isSubmitting || submitState.status === 'success'}
+            inputMode="numeric"
+            onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
+            type="number"
+            value={item.quantity}
+          />
+          <Button
+            aria-label={`הגדלת כמות ${item.name}`}
+            className="qty-btn"
+            disabled={state.isSubmitting || submitState.status === 'success'}
+            onClick={() => adjustQuantity(item.itemId, 'increment')}
+            size="icon"
+            type="button"
+            variant="secondary"
+          >
+            +
+          </Button>
+        </div>
       </div>
     </li>
   );
 
   const itemNameById = new Map(state.cart.lines.map((line) => [line.itemId, line.name]));
   const customerLabel = humanizeIdentifier(session?.customerId ?? 'unknown-customer', 'cust-');
+  const subtotal = state.cart.estimatedTotal;
+  const logisticsFee = 0;
+  const submitLocked = submitState.status === 'success';
 
   return (
-    <main className="portal-shell" data-testid="screen-portal-order-composer" dir="rtl" lang="he">
-      <div className="portal-frame">
-        <header className="portal-header">
-          <div className="portal-brand-stack">
-            <p className="portal-kicker">SALES APP</p>
-            <h1 className="portal-brand" data-testid="portal-heading">MEATLAND</h1>
-            <p className="portal-meta">
-              לקוח פעיל: {customerLabel} · סשן מאובטח
-            </p>
+    <main className="portal-shell" data-testid={PORTAL_SCREEN_TEST_IDS.orderComposer} dir="rtl" lang="he">
+      <header className="portal-top-nav">
+        <div className="portal-top-brand" data-testid="portal-heading">Meatland</div>
+        <nav className="portal-top-links" aria-hidden="true">
+          <span>לוח בקרה</span>
+          <span>היסטוריית הזמנות</span>
+          <span className="is-active">מחירון</span>
+          <span>תמיכה</span>
+        </nav>
+        <div className="portal-top-actions">
+          <div className="portal-session-chip" aria-hidden="true">
+            <span>חשבון מאומת</span>
+            <DeterministicPlaceholder className="portal-avatar-placeholder" label={customerLabel} seed={customerLabel} />
           </div>
-          <div className="portal-header-actions">
-            <Badge className="layout-badge" data-testid="layout-state" variant="secondary">
-              תצוגה: {state.layout === 'mobile' ? 'מובייל' : 'דסקטופ'}
-            </Badge>
-            <Button
-              className="ghost-action"
-              disabled={isLoggingOut}
-              onClick={() => void handleLogout()}
-              size="sm"
-              type="button"
-              variant="subtle"
-            >
-              {isLoggingOut ? 'סוגרים סשן…' : 'התנתקות מהסשן'}
-            </Button>
-          </div>
-        </header>
-
-        <div className="portal-content">
-          <section className="portal-column">
-            <Card className="panel" data-section="recent">
-              <div className="panel-heading">
-                <h2>{state.sections.recent.title}</h2>
-                <Badge className="panel-chip" variant="outline">הזמנות אחרונות</Badge>
-              </div>
-              {state.sections.recent.items.length === 0 ? (
-                <p>{state.sections.recent.emptyMessage}</p>
-              ) : (
-                <ul className="items-list">{state.sections.recent.items.map(renderItem)}</ul>
-              )}
-            </Card>
-
-            <Card className="panel" data-section="approved">
-              <div className="panel-heading">
-                <h2>{state.sections.approved.title}</h2>
-                <Badge className="panel-chip" variant="outline">מוצרים מאושרים</Badge>
-              </div>
-              {state.sections.approved.items.length === 0 ? (
-                <p>{state.sections.approved.emptyMessage}</p>
-              ) : (
-                <ul className="items-list">{state.sections.approved.items.map(renderItem)}</ul>
-              )}
-            </Card>
-          </section>
-
-          <aside className="portal-column">
-            <Card aria-label="סיכום הזמנה" className="summary-card">
-              <h2>סיכום הזמנה</h2>
-              <div className="summary-line">
-                <span>כמות כוללת</span>
-                <span>
-                  <bdi dir="ltr">{state.cart.totalUnits}</bdi>
-                </span>
-              </div>
-              <div className="summary-line">
-                <span>סכום ביניים</span>
-                <span>
-                  <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
-                </span>
-              </div>
-              <div className="summary-line summary-total">
-                <span>סה״כ לתשלום</span>
-                <span>
-                  <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
-                </span>
-              </div>
-              <p className="summary-microcopy">מחירים לפני מע״מ, כפוף לשקילה סופית.</p>
-              {state.cart.lines.length > 0 ? (
-                <ul className="summary-lines">
-                  {state.cart.lines.map((line) => (
-                    <li className="summary-line" key={line.itemId}>
-                      <span>{line.name}</span>
-                      <span>
-                        <bdi dir="ltr">{line.quantity}</bdi> ·{' '}
-                        {line.lineEstimate === null
-                          ? 'ממתין'
-                          : <bdi dir="ltr">{formatCurrency(line.currency, line.lineEstimate)}</bdi>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </Card>
-
-            {submitState.status === 'mismatch' ? (
-              <section
-                aria-live="polite"
-                className="feedback"
-                data-kind="mismatch"
-                data-testid="screen-portal-order-mismatch"
-              >
-                <h2>נמצאה אי-התאמה במחירים (Conflict 409)</h2>
-                <p>בדקו את השורות שסומנו, ואז רעננו מחירים או אשרו מחדש את ההזמנה.</p>
-                <ul>
-                  {submitState.lines.map((line) => (
-                    <li key={`${line.itemId}-${line.lineIndex}`}>
-                      {itemNameById.get(line.itemId) ?? humanizeIdentifier(line.itemId, 'itm-')}: {line.reason}
-                    </li>
-                  ))}
-                </ul>
-                <div className="feedback-actions">
-                  <Button onClick={() => void refreshAfterMismatch()} type="button" variant="secondary">
-                    רענון מחירים
-                  </Button>
-                  <Button onClick={() => void handleSubmit(true)} type="button">
-                    אישור מחדש ושליחה
-                  </Button>
-                </div>
-              </section>
-            ) : null}
-
-            {submitState.status === 'error' ? (
-              <section aria-live="polite" className="feedback" data-kind="error" data-testid="submit-error">
-                <h2>שליחת ההזמנה נכשלה</h2>
-                <p>{submitState.message}</p>
-                <div className="feedback-actions">
-                  <Button onClick={() => void handleSubmit()} type="button">
-                    נסו לשלוח שוב
-                  </Button>
-                </div>
-              </section>
-            ) : null}
-
-            {submitState.status === 'success' ? (
-              <section aria-live="polite" className="feedback" data-kind="success" data-testid="screen-portal-order-success">
-                <h2>ההזמנה נקלטה בהצלחה!</h2>
-                <p>
-                  אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi>
-                </p>
-                <p>לחצן השליחה נעול למניעת כפילויות.</p>
-                <p>תמיכה זמינה בטלפון 1-800-MEAT.</p>
-              </section>
-            ) : null}
-          </aside>
-        </div>
-
-        <footer className="sticky-submit" data-testid="sticky-submit-bar">
-          <p>{state.submitBar.summaryLabel}</p>
           <Button
-            className="sticky-submit-button"
-            disabled={!state.submitBar.submitEnabled || submitState.status === 'success' || submitState.status === 'mismatch'}
-            onClick={() => void handleSubmit()}
-            size="lg"
+            className="ghost-action"
+            disabled={isLoggingOut}
+            onClick={() => void handleLogout()}
+            size="sm"
             type="button"
-            variant="default"
+            variant="subtle"
           >
-            {state.submitBar.submitLabel}
+            {isLoggingOut ? 'מתנתקים…' : 'התנתקות'}
           </Button>
-        </footer>
+        </div>
+      </header>
+      <div className="portal-layout">
+        <aside className="portal-side-nav">
+          <div className="portal-side-heading">
+            <h2>מרכז ההזמנה</h2>
+            <p>בחירה מובחרת</p>
+            <p>לקוח פעיל: {customerLabel}</p>
+          </div>
+        </aside>
+        <div className="portal-main-content">
+          <section className="hero-banner">
+            <DeterministicPlaceholder className="hero-media" label="השקת העונה" seed="seasonal-release" />
+            <div className="hero-overlay">
+              <span>השקת העונה</span>
+              <h1>ריזרב פרימיום מיושן</h1>
+              <p>נתחים מיושנים 45 יום במלח הימלאיה זמינים כעת להזמנה סיטונאית מוקדמת.</p>
+            </div>
+          </section>
+          <section className="catalog-section">
+            <div className="panel-heading">
+              <h2>{state.sections.recent.title}</h2>
+              <Badge className="panel-chip" variant="outline">הזמנות אחרונות</Badge>
+            </div>
+            {state.sections.recent.items.length === 0 ? (
+              <p>{state.sections.recent.emptyMessage}</p>
+            ) : (
+              <ul className="items-list">{state.sections.recent.items.map(renderItem)}</ul>
+            )}
+          </section>
+          <section className="catalog-section">
+            <div className="panel-heading">
+              <h2>{state.sections.approved.title}</h2>
+              <Badge className="panel-chip" variant="outline">מוצרים מאושרים</Badge>
+            </div>
+            {state.sections.approved.items.length === 0 ? (
+              <p>{state.sections.approved.emptyMessage}</p>
+            ) : (
+              <ul className="items-list">{state.sections.approved.items.map(renderItem)}</ul>
+            )}
+          </section>
+        </div>
+        <aside className="summary-rail">
+          <Card aria-label="סיכום הזמנה" className="summary-card">
+            <h2>סיכום הזמנה</h2>
+            <div className="summary-line">
+              <span>פריטים</span>
+              <span>
+                <bdi dir="ltr">{state.cart.totalUnits}</bdi>
+              </span>
+            </div>
+            <div className="summary-line">
+              <span>סכום ביניים</span>
+              <span>
+                <bdi dir="ltr">{formatCurrency(state.cart.currency, subtotal)}</bdi>
+              </span>
+            </div>
+            <div className="summary-line">
+              <span>דמי לוגיסטיקה</span>
+              <span>
+                <bdi dir="ltr">{formatCurrency(state.cart.currency, logisticsFee)}</bdi>
+              </span>
+            </div>
+            <div className="summary-line summary-total">
+              <span>סכום כולל</span>
+              <span>
+                <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
+              </span>
+            </div>
+            <p className="summary-microcopy">המחירים אינם כוללים מע״מ, לפי הצורך.</p>
+            {state.cart.lines.length > 0 ? (
+              <ul className="summary-lines">
+                {state.cart.lines.map((line) => (
+                  <li className="summary-line" key={line.itemId}>
+                    <span>{line.name}</span>
+                    <span>
+                      <bdi dir="ltr">{line.quantity}</bdi> ·{' '}
+                      {line.lineEstimate === null
+                        ? 'ממתין'
+                        : <bdi dir="ltr">{formatCurrency(line.currency, line.lineEstimate)}</bdi>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {submitState.status === 'success' ? <p className="success-lock-copy">ההזמנה ננעלה לאחר אישור כדי למנוע שליחה כפולה.</p> : null}
+          </Card>
+
+          {submitState.status === 'mismatch' ? (
+            <section
+              aria-live="polite"
+              className="feedback"
+              data-kind="mismatch"
+              data-testid={PORTAL_SCREEN_TEST_IDS.orderMismatch}
+            >
+              <h2>נמצאו פערי מחיר בהזמנה</h2>
+              <p>המחירים עודכנו מאז הוספת המוצרים לסל. עברו על העדכונים לפני המשך ההזמנה.</p>
+              <ul>
+                {submitState.lines.map((line) => (
+                  <li key={`${line.itemId}-${line.lineIndex}`}>
+                    {itemNameById.get(line.itemId) ?? humanizeIdentifier(line.itemId, 'itm-')}: {line.reason}
+                  </li>
+                ))}
+              </ul>
+              <div className="feedback-actions">
+                <Button onClick={() => void refreshAfterMismatch()} type="button" variant="secondary">
+                  עדכון מחירים
+                </Button>
+                <Button onClick={() => void handleSubmit(true)} type="button">
+                  אשר ושדר הזמנה
+                </Button>
+              </div>
+            </section>
+          ) : null}
+
+          {submitState.status === 'error' ? (
+            <section aria-live="polite" className="feedback" data-kind="error" data-testid="submit-error">
+              <h2>לא הצלחנו לשלוח את ההזמנה</h2>
+              <p>{submitState.message}</p>
+              <div className="feedback-actions">
+                <Button onClick={() => void handleSubmit()} type="button">
+                  נסו לשלוח שוב
+                </Button>
+              </div>
+            </section>
+          ) : null}
+
+          {submitState.status === 'success' ? (
+            <section aria-live="polite" className="feedback success-panel" data-kind="success" data-testid={PORTAL_SCREEN_TEST_IDS.orderSuccess}>
+              <h2>ההזמנה נקלטה בהצלחה!</h2>
+              <p>
+                אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi>
+              </p>
+              <p>תודה שבחרת ב-Meatland. הצוות שלנו כבר התחיל בטיפול בנתחים המובחרים שלך.</p>
+              <div className="success-metrics-grid">
+                <div className="success-metric-card">
+                  <span className="success-metric-label">מספר הזמנה</span>
+                  <span className="success-metric-value">
+                    <bdi dir="ltr">{submitState.orderRef}</bdi>
+                  </span>
+                </div>
+                <div className="success-metric-card">
+                  <span className="success-metric-label">סה״כ לתשלום</span>
+                  <span className="success-metric-value">
+                    <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
+                  </span>
+                </div>
+                <div className="success-metric-card">
+                  <span className="success-metric-label">מועד משלוח משוער</span>
+                  <span className="success-metric-value">יום שלישי, 24 באוקטובר</span>
+                </div>
+                <div className="success-metric-card">
+                  <span className="success-metric-label">סטטוס משלוח</span>
+                  <span className="success-metric-value success-metric-value-secondary">מעובד במפעל</span>
+                </div>
+              </div>
+              <p className="success-lock-copy">ההזמנה ננעלה לאחר אישור כדי למנוע שליחה כפולה.</p>
+            </section>
+          ) : null}
+        </aside>
       </div>
+      <footer className="sticky-submit" data-testid="sticky-submit-bar">
+        <p>{state.submitBar.summaryLabel}</p>
+        <Button
+          className="sticky-submit-button"
+          disabled={!state.submitBar.submitEnabled || submitLocked || submitState.status === 'mismatch'}
+          onClick={() => void handleSubmit()}
+          size="lg"
+          type="button"
+          variant="default"
+        >
+          {state.submitBar.submitLabel}
+        </Button>
+      </footer>
     </main>
   );
 }
@@ -683,7 +753,7 @@ function toOrderSubmitErrorMessage(error: unknown): string {
     }
 
     if (error.kind === 'erp_unavailable') {
-      return 'ההזמנות זמנית לא זמינות בגלל תקלה ב-ERP. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".';
+      return 'המערכת עמוסה זמנית ולא ניתן להשלים את ההזמנה כרגע. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".';
     }
 
     if (error.kind === 'idempotency_conflict') {
@@ -717,6 +787,47 @@ function humanizeIdentifier(value: string, prefix: string): string {
     .filter((segment) => segment.length > 0)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function DeterministicPlaceholder({
+  className,
+  label,
+  seed,
+}: {
+  className: string;
+  label: string;
+  seed: string;
+}): ReactElement {
+  const hue = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 360;
+  const accentHue = (hue + 42) % 360;
+  const bg = `linear-gradient(140deg, hsl(${hue} 32% 20%), hsl(${(hue + 28) % 360} 36% 36%))`;
+  const texture = [
+    `radial-gradient(circle at 18% 20%, hsl(${accentHue} 64% 58% / 0.24), transparent 52%)`,
+    `radial-gradient(circle at 82% 84%, hsl(${(accentHue + 70) % 360} 72% 62% / 0.2), transparent 46%)`,
+    `repeating-linear-gradient(35deg, hsl(${hue} 50% 12% / 0.08) 0 14px, hsl(${(hue + 16) % 360} 38% 94% / 0.02) 14px 26px)`,
+  ].join(', ');
+  const initials = label
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((chunk) => chunk[0]?.toUpperCase())
+    .join('');
+
+  return (
+    <div
+      aria-label={DEFAULT_MEDIA_ALT}
+      className={className}
+      role="img"
+      style={{
+        backgroundImage: `${texture}, ${bg}`,
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+      }}
+      title={label}
+    >
+      <span>{initials || 'ML'}</span>
+    </div>
+  );
 }
 
 function toOrderInput(payload: CustomerPortalDataPayload) {

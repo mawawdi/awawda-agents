@@ -6,8 +6,8 @@ describe('validateLoginInput', () => {
   it('returns helpful messages for missing phone/email and short password', () => {
     const result = validateLoginInput({ phoneOrEmail: ' ', password: '123' })
 
-    expect(result.phoneOrEmail).toBe('Enter your phone number or email.')
-    expect(result.password).toBe('Password must contain at least 8 characters.')
+    expect(result.phoneOrEmail).toBe('הזינו מספר טלפון או דוא״ל.')
+    expect(result.password).toBe('הסיסמה חייבת להכיל לפחות 8 תווים.')
   })
 
   it('returns no errors for valid values', () => {

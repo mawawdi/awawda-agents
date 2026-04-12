@@ -13,12 +13,9 @@ const TEST_AGENTS: Array<{
   email: string
   password: string
 }> = [
-  { name: 'Test Agent', phone: '+972500000000', email: 'agent@meatland.test', password: 'Password123' },
-  { name: 'Yossi Cohen', phone: '+972501100001', email: 'yossi.cohen@meatland.test', password: 'Password123' },
-  { name: 'Maya Levi', phone: '+972501100002', email: 'maya.levi@meatland.test', password: 'Password123' },
-  { name: 'Roi Ben David', phone: '+972501100003', email: 'roi.bendavid@meatland.test', password: 'Password123' },
-  { name: 'Shira Azulay', phone: '+972501100004', email: 'shira.azulay@meatland.test', password: 'Password123' },
-  { name: 'Eitan Mizrahi', phone: '+972501100005', email: 'eitan.mizrahi@meatland.test', password: 'Password123' },
+  { name: 'Parpar', phone: '+972500000000', email: 'parpar@meatland.test', password: 'Password123' },
+  { name: 'Mohammed Jabarin', phone: '+972501100001', email: 'mohammed.jabarin@meatland.test', password: 'Password123' },
+  { name: 'Keneret', phone: '+972501100002', email: 'keneret@meatland.test', password: 'Password123' },
 ]
 
 const TEST_CUSTOMERS: string[] = [
@@ -73,10 +70,10 @@ const TEST_CATALOG_ITEM_IDS: string[] = [
   'itm-chicken-drumstick',
   'itm-chicken-wing',
   'itm-chicken-whole',
-  'itm-turkey-breast',
-  'itm-turkey-thigh',
-  'itm-sausage-merguez',
-  'itm-sausage-bratwurst',
+  'itm-chicken-bones',
+  'itm-chicken-schnitzel',
+  'itm-lamb-mince',
+  'itm-beef-bones',
   'itm-beef-burger-patty',
   'itm-beef-smoked-brisket',
 ]

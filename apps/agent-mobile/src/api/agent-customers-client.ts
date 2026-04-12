@@ -11,6 +11,7 @@ import type {
 import { z } from 'zod'
 
 import { API_BASE_URL } from '../config/env'
+import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
 
 const AGENT_ASSIGNED_CUSTOMER_SCHEMA: z.ZodType<AgentAssignedCustomer> = z.object({
   customerId: z.string().trim().min(1),
@@ -104,12 +105,12 @@ function parseErrorBody(payload: unknown): string | null {
 function mapAgentApiError(status: number, payload: unknown): Error {
   const fallback =
     status === 401
-      ? 'Session expired. Please sign in again.'
+      ? 'תוקף הסשן פג. התחברו מחדש.'
       : status === 403
-        ? 'You are not assigned to this customer yet.'
+        ? 'עדיין לא שובצתם ללקוח הזה.'
         : status === 404
-          ? 'The requested order was not found for your account.'
-        : 'Unable to reach Meatland right now. Please try again.'
+          ? 'ההזמנה המבוקשת לא נמצאה עבור החשבון שלכם.'
+        : 'לא ניתן להתחבר ל-Meatland כעת. נסו שוב.'
 
   return new Error(parseErrorBody(payload) ?? fallback)
 }
@@ -126,14 +127,27 @@ async function parseValidatedResponse<T>(
 
   const parsed = schema.safeParse(payload)
   if (!parsed.success) {
-    throw new Error('Unexpected response from server.')
+    throw new Error('התקבלה תשובה לא צפויה מהשרת.')
   }
 
   return parsed.data
 }
 
+async function requestAgentApi(path: string, init: RequestInit): Promise<Response> {
+  if (/YOUR_LAN_IP/i.test(API_BASE_URL)) {
+    throw new Error('כתובת בסיס ה-API אינה מוגדרת. הגדירו EXPO_PUBLIC_API_BASE_URL בקובץ apps/agent-mobile/.env.')
+  }
+
+  const { response } = await fetchWithBaseUrlFallback(path, init, {
+    requestLabel: 'שרת ה-API',
+    timeoutMs: 8000,
+  })
+
+  return response
+}
+
 export async function listAssignedCustomers(accessToken: string): Promise<AgentCustomersResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/agent/customers`, {
+  const response = await requestAgentApi('/v1/agent/customers', {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -148,7 +162,7 @@ export async function listApprovedItems(
   accessToken: string,
   customerId: string,
 ): Promise<AgentApprovedItemsResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/agent/customers/${encodeURIComponent(customerId)}/approved-items`, {
+  const response = await requestAgentApi(`/v1/agent/customers/${encodeURIComponent(customerId)}/approved-items`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -167,10 +181,10 @@ export async function addApprovedItem(
   const normalizedHashItemId = hashItemId.trim()
 
   if (!normalizedHashItemId) {
-    throw new Error('Enter an item ID before adding.')
+    throw new Error('יש להזין מזהה פריט לפני ההוספה.')
   }
 
-  const response = await fetch(`${API_BASE_URL}/v1/agent/customers/${encodeURIComponent(customerId)}/approved-items`, {
+  const response = await requestAgentApi(`/v1/agent/customers/${encodeURIComponent(customerId)}/approved-items`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -187,7 +201,7 @@ export async function generateMagicLink(
   accessToken: string,
   customerId: string,
 ): Promise<AgentMagicLinkIssueResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/agent/customers/${encodeURIComponent(customerId)}/magic-links`, {
+  const response = await requestAgentApi(`/v1/agent/customers/${encodeURIComponent(customerId)}/magic-links`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -231,7 +245,7 @@ export async function listAgentOrders(
   }
 
   const querySuffix = params.toString().length > 0 ? `?${params.toString()}` : ''
-  const response = await fetch(`${API_BASE_URL}/v1/agent/orders${querySuffix}`, {
+  const response = await requestAgentApi(`/v1/agent/orders${querySuffix}`, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -249,10 +263,10 @@ export async function cancelAgentOrder(
 ): Promise<AgentOrderCancelResponse> {
   const normalizedOrderId = orderId.trim()
   if (!normalizedOrderId) {
-    throw new Error('Order ID is required to cancel an order.')
+    throw new Error('נדרש מזהה הזמנה כדי לבטל הזמנה.')
   }
 
-  const response = await fetch(`${API_BASE_URL}/v1/agent/orders/${encodeURIComponent(normalizedOrderId)}/cancel`, {
+  const response = await requestAgentApi(`/v1/agent/orders/${encodeURIComponent(normalizedOrderId)}/cancel`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

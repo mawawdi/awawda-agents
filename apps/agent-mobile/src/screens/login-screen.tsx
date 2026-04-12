@@ -63,7 +63,7 @@ export function LoginScreen(): React.JSX.Element {
         ]}
       >
         <View style={styles.topMeta}>
-          <Text style={styles.salesApp}>SALES APP</Text>
+          <Text style={styles.salesApp}>אפליקציית סוכנים</Text>
           <Text style={styles.wordmark}>MEATLAND</Text>
         </View>
 
@@ -87,7 +87,7 @@ export function LoginScreen(): React.JSX.Element {
             <Text style={styles.label}>טלפון או דוא״ל</Text>
             <View style={styles.inputShell}>
               <TextInput
-                accessibilityLabel="Phone or email"
+                accessibilityLabel="טלפון או דוא״ל"
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -118,7 +118,7 @@ export function LoginScreen(): React.JSX.Element {
             </View>
             <View style={styles.inputShell}>
               <TextInput
-                accessibilityLabel="Password"
+                accessibilityLabel="סיסמה"
                 placeholder="••••••••"
                 placeholderTextColor="#9ca3af"
                 secureTextEntry
@@ -163,11 +163,11 @@ export function LoginScreen(): React.JSX.Element {
 
         <View style={styles.footer}>
           <View style={styles.footerSide}>
-            <Text style={styles.footerLabel}>HEBREW (IL)</Text>
+              <Text style={styles.footerLabel}>עברית (ישראל)</Text>
             <View style={styles.footerDot} />
           </View>
           <View style={styles.footerSide}>
-            <Text style={styles.footerLabel}>SECURE CONNECTION v2.4</Text>
+              <Text style={styles.footerLabel}>חיבור מאובטח v2.4</Text>
             <MaterialIcons color="#a8a29e" name="lock" size={12} />
           </View>
         </View>

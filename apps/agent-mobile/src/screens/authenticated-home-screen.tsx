@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  ImageBackground,
   I18nManager,
   Linking,
   Pressable,
@@ -44,13 +45,22 @@ import {
   mergeApprovedItems,
   normalizeMagicLinkForShare,
   shouldUseCopyLinkFallback,
+  magicLinkLifecycleLabel,
 } from './agent-dashboard-presenter'
+import {
+  getCurrentTimeLabel,
+  placeholderColor,
+  placeholderImageUri,
+  placeholderSeed,
+} from './authenticated-home-screen.helpers'
+import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
 const SLOW_NETWORK_THRESHOLD_MS = 1800
 
 const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }> = [
   { id: 'home', label: 'בית', icon: 'home' },
   { id: 'customers', label: 'לקוחות', icon: 'group' },
+  { id: 'catalog', label: 'קטלוג', icon: 'menu-book' },
   { id: 'orders', label: 'הזמנות', icon: 'receipt' },
   { id: 'settings', label: 'הגדרות', icon: 'settings' },
 ]
@@ -92,13 +102,6 @@ function getTransactionDotColor(kind: ReturnType<typeof buildRecentTransactions>
   }
 
   return palette.success
-}
-
-function getCurrentTimeLabel(): string {
-  const now = new Date()
-  const hours = `${now.getHours()}`.padStart(2, '0')
-  const minutes = `${now.getMinutes()}`.padStart(2, '0')
-  return `${hours}:${minutes}`
 }
 
 const CITY_NAME_BY_CODE: Record<string, string> = {
@@ -144,6 +147,30 @@ function formatCurrency(value: number, currency: string): string {
   }
 
   return `${value.toFixed(2)} ${currency}`
+}
+
+function estimateCatalogUnitPrice(itemId: string): number {
+  const hashSeed = itemId.split('').reduce((accumulator, character) => accumulator + character.charCodeAt(0), 0)
+  return 95 + (hashSeed % 9) * 17
+}
+
+function initialsFromLabel(label: string): string {
+  return (
+    label
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((chunk) => chunk.charAt(0).toUpperCase())
+      .join('') || 'ML'
+  )
+}
+
+function customerBadgeLabel(customerId: string, approvedItemsCount: number): string {
+  if (approvedItemsCount === 0) {
+    return 'חדש'
+  }
+
+  return placeholderSeed(customerId) % 2 === 0 ? 'פרימיום' : 'פעיל'
 }
 
 function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; toDate?: string } {
@@ -464,7 +491,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const dashboardKpis = useMemo(() => {
     const activeCustomers = customers.filter((customer) => customer.approvedItemsCount > 0).length
-    const dailySalesEstimate = (approvedItems.length * 850 + activeCustomers * 220).toLocaleString('en-US')
+  const dailySalesEstimate = (approvedItems.length * 850 + activeCustomers * 220).toLocaleString('he-IL')
     const targetProgress = customers.length === 0 ? 0 : Math.round((activeCustomers / customers.length) * 100)
 
     return [
@@ -655,7 +682,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         ) : null}
         {latestMagicLink && latestMagicLinkCustomerId === customerId ? (
           <Text style={styles.customerMeta}>
-            לקוח {latestMagicLinkCustomerId} · פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · {latestMagicLink.lifecycle}
+            לקוח {latestMagicLinkCustomerId} · פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · {magicLinkLifecycleLabel(latestMagicLink.lifecycle)}
           </Text>
         ) : null}
       </View>
@@ -773,10 +800,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                     <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
                     <Text style={styles.statusText}>{status.label}</Text>
                   </View>
-                  <Text style={styles.customerCode}>#{customer.customerId}</Text>
+                  <Text style={styles.customerCode}>כרטיס לקוח</Text>
                 </View>
 
-                <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
+                <View style={styles.customerNameRow}>
+                  <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
+                  <Text style={styles.customerBadge}>{customerBadgeLabel(customer.customerId, customer.approvedItemsCount)}</Text>
+                </View>
+                <Text style={styles.customerMeta}>חשבון עסקי פעיל</Text>
                 <Text style={styles.customerMeta}>{customerCityLabel(customer.customerId)}</Text>
                 <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
                 <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
@@ -819,7 +850,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                       <View style={styles.customerExpandedSection}>
                         <View style={styles.customerDetailGrid}>
                           <View style={styles.customerDetailCell}>
-                            <Text style={styles.customerDetailLabel}>מזהה לקוח</Text>
+                            <Text style={styles.customerDetailLabel}>שם לקוח</Text>
                             <Text style={styles.customerDetailValue}>{humanizeCustomerName(customer.customerId)}</Text>
                           </View>
                           <View style={styles.customerDetailCell}>
@@ -843,20 +874,27 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   }
 
   const renderDashboardTab = (): React.JSX.Element => (
-    <View style={styles.tabSection} testID="screen-agent-dashboard">
+    <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.dashboard}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>ביצועים היום</Text>
         <Text style={styles.sectionMeta}>עדכני ל-{getCurrentTimeLabel()}</Text>
       </View>
+      <View style={styles.dashboardHeroCard}>
+        <Text style={styles.dashboardHeroLabel}>{dashboardKpis[0]?.label ?? 'מכירות יומיות'}</Text>
+        <Text style={styles.dashboardHeroValue}>{dashboardKpis[0]?.value ?? '₪0'}</Text>
+        <View style={styles.dashboardHeroMetaRow}>
+          <Text style={styles.dashboardHeroMeta}>{dashboardKpis[0]?.meta ?? ''}</Text>
+          <MaterialIcons color="#fecaca" name="payments" size={24} />
+        </View>
+      </View>
       <View style={styles.kpiGrid}>
-        {dashboardKpis.map((kpi) => (
+        {dashboardKpis.slice(1).map((kpi) => (
           <View key={kpi.id} style={styles.kpiCard}>
             <View style={styles.kpiHeader}>
               <Text style={styles.kpiLabel}>{kpi.label}</Text>
               <MaterialIcons color={palette.secondary} name={kpi.icon} size={18} />
             </View>
             <Text style={styles.kpiValue}>{kpi.value}</Text>
-            <Text style={styles.kpiMeta}>{kpi.meta}</Text>
           </View>
         ))}
       </View>
@@ -877,7 +915,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         >
           {priorityQueueCustomers.map((customer) => (
             <View key={`queue-${customer.customerId}`} style={styles.queueCard}>
-              <MaterialIcons color={palette.warning} name="priority-high" size={18} />
+              <View style={styles.urgentIconChip}>
+                <MaterialIcons color={palette.warning} name="priority-high" size={16} />
+              </View>
               <Text style={styles.queueCardTitle}>{humanizeCustomerName(customer.customerId)}</Text>
               <Text style={styles.queueCardMeta}>{customerCityLabel(customer.customerId)}</Text>
               <Text style={styles.queueCardMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
@@ -922,6 +962,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         )}
       </View>
 
+      <ImageBackground
+        accessibilityIgnoresInvertColors
+        source={{ uri: placeholderImageUri('premium-collection', 960, 360) }}
+        style={styles.premiumBanner}
+        imageStyle={styles.premiumBannerImage}
+      >
+        <View style={styles.premiumBannerOverlay}>
+          <Text style={styles.premiumEyebrow}>קולקציית Meatland</Text>
+          <Text style={styles.premiumTitle}>מבצעי השבוע</Text>
+          <Text style={styles.premiumLink}>לצפייה בקטלוג</Text>
+        </View>
+      </ImageBackground>
+
       {renderCustomersList(true)}
     </View>
   )
@@ -938,19 +991,22 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     const status = getCustomerStatus(selectedCustomer)
 
     return (
-      <View style={styles.tabSection} testID="screen-agent-customer-detail">
-        <View style={styles.sectionHeader}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setIsCustomerDetailOpen(false)
-            }}
-            style={({ pressed }) => [styles.backButton, pressed && styles.linkButtonDisabled]}
-          >
-            <MaterialIcons color={palette.primaryContainer} name="arrow-forward" size={18} />
-            <Text style={styles.linkButtonText}>חזרה לרשימה</Text>
-          </Pressable>
-          <Text style={styles.sectionMeta}>מסך לקוח</Text>
+      <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.customerDetail}>
+        <View style={styles.customerDetailHero}>
+          <Text style={styles.customerDetailBadge}>מועדון Meatland</Text>
+          <Text style={styles.detailTitle}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
+          <Text style={styles.customerMeta}>חשבון עסקי פעיל</Text>
+        </View>
+
+        <View style={styles.detailInfoGrid}>
+          <View style={styles.detailInfoCard}>
+            <Text style={styles.customerDetailLabel}>טלפון ליצירת קשר</Text>
+            <Text style={styles.customerDetailValue}>054-000-0000</Text>
+          </View>
+          <View style={styles.detailInfoCard}>
+            <Text style={styles.customerDetailLabel}>כתובת העסק</Text>
+            <Text style={styles.customerDetailValue}>{customerCityLabel(selectedCustomer.customerId)}</Text>
+          </View>
         </View>
 
         <View style={styles.detailCard}>
@@ -959,10 +1015,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
               <Text style={styles.statusText}>{status.label}</Text>
             </View>
-            <Text style={styles.customerCode}>#{selectedCustomer.customerId}</Text>
+            <Text style={styles.customerCode}>פרופיל לקוח פעיל</Text>
           </View>
-          <Text style={styles.detailTitle}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
-          <Text style={styles.customerMeta}>{customerCityLabel(selectedCustomer.customerId)}</Text>
+          <Text style={styles.panelTitle}>סיכום הזמנה אחרונה</Text>
+          <Text style={styles.customerMeta}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
           <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
           <Text style={styles.customerMeta}>סה״כ פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
           <Pressable
@@ -991,16 +1047,27 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור הלקוח הזה.</Text>
             </View>
           ) : (
-            <View style={styles.approvedList}>
+              <View style={styles.approvedList}>
                 {approvedItems.slice(0, 8).map((item) => (
-                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRow}>
-                    <Text style={styles.approvedTitle}>{humanizeItemName(item.hashItemId)}</Text>
-                    <Text style={styles.approvedMeta}>מק״ט: {item.hashItemId}</Text>
-                    <Text style={styles.approvedMeta}>עודכן ע״י נציג</Text>
-                    <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRowCard}>
+                    <ImageBackground
+                      accessibilityIgnoresInvertColors
+                      source={{ uri: placeholderImageUri(item.hashItemId, 224, 224) }}
+                      style={[styles.approvedImagePlaceholder, { backgroundColor: placeholderColor(item.hashItemId) }]}
+                      imageStyle={styles.approvedImageAsset}
+                    >
+                      <View style={styles.approvedImageScrim}>
+                        <MaterialIcons color="#fff" name="restaurant" size={18} />
+                      </View>
+                    </ImageBackground>
+                    <View style={styles.approvedRowContent}>
+                      <Text style={styles.approvedTitle}>{humanizeItemName(item.hashItemId)}</Text>
+                      <Text style={styles.approvedMeta}>קוד פריט: {item.hashItemId}</Text>
+                      <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                    </View>
                   </View>
                 ))}
-            </View>
+              </View>
           )}
         </View>
       </View>
@@ -1008,7 +1075,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   }
 
   const renderCustomersTab = (): React.JSX.Element => (
-    <View style={styles.tabSection} testID={isCustomerDetailOpen ? 'screen-agent-customer-detail' : 'screen-agent-customers-list'}>
+    <View
+      style={styles.tabSection}
+      testID={isCustomerDetailOpen ? AGENT_SCREEN_TEST_IDS.customerDetail : AGENT_SCREEN_TEST_IDS.customersList}
+    >
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>לקוחות</Text>
         <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
@@ -1018,8 +1088,118 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
+  const renderApprovedCatalogTab = (): React.JSX.Element => {
+    const catalogRows = approvedItems.slice(0, 10).map((item) => {
+      const unitPrice = estimateCatalogUnitPrice(item.hashItemId)
+      return {
+        ...item,
+        unitPrice,
+        quantity: 1,
+        lineTotal: unitPrice,
+      }
+    })
+    const estimatedTotal = catalogRows.reduce((accumulator, item) => accumulator + item.lineTotal, 0)
+
+    return (
+      <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.approvedCatalog}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>ניהול קטלוג מאושר</Text>
+          <Text style={styles.sectionMeta}>{selectedCustomer ? humanizeCustomerName(selectedCustomer.customerId) : 'בחרו לקוח'}</Text>
+        </View>
+
+        <View style={styles.catalogWarningBanner}>
+          <MaterialIcons color={palette.warning} name="warning" size={18} />
+          <View style={styles.catalogWarningContent}>
+            <Text style={styles.catalogWarningTitle}>חריגה במלאי זמין</Text>
+            <Text style={styles.catalogWarningText}>שים לב: 3 פריטים בקטלוג אינם זמינים כרגע במחסן המרכזי. יש לעדכן כמויות.</Text>
+          </View>
+        </View>
+
+        <View style={styles.catalogMetricGrid}>
+          <View style={styles.catalogMetricCard}>
+            <Text style={styles.catalogMetricLabel}>פריטים מאושרים</Text>
+            <Text style={styles.catalogMetricValue}>{approvedItems.length}</Text>
+          </View>
+          <View style={styles.catalogMetricCard}>
+            <Text style={styles.catalogMetricLabel}>סה״כ הזמנה</Text>
+            <Text style={styles.catalogMetricValue}>{formatCurrency(estimatedTotal, 'ILS')}</Text>
+          </View>
+        </View>
+
+        {isApprovedItemsLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator />
+            <Text style={styles.mutedText}>טוענים פריטי קטלוג…</Text>
+          </View>
+        ) : catalogRows.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.mutedText}>עדיין אין פריטים בקטלוג המאושר עבור הלקוח הנבחר.</Text>
+          </View>
+        ) : (
+          <View style={styles.catalogCardList}>
+            {catalogRows.map((item, index) => (
+              <View
+                key={`${item.hashItemId}-${item.createdAt}`}
+                style={[styles.catalogItemCard, index === 2 && styles.catalogItemCardUnavailable]}
+              >
+                <ImageBackground
+                  accessibilityIgnoresInvertColors
+                  source={{ uri: placeholderImageUri(item.hashItemId, 640, 280) }}
+                  style={[styles.catalogItemImagePlaceholder, { backgroundColor: placeholderColor(item.hashItemId) }]}
+                  imageStyle={styles.catalogItemImageAsset}
+                >
+                  <View style={styles.catalogItemImageScrim}>
+                    <MaterialIcons color="#fff" name="menu-book" size={18} />
+                  </View>
+                </ImageBackground>
+                <View style={styles.catalogItemHeader}>
+                  <Text style={styles.catalogSku}>קוד פריט: {item.hashItemId}</Text>
+                  <Text style={styles.catalogItemTitle}>{humanizeItemName(item.hashItemId)}</Text>
+                </View>
+                <Text style={styles.catalogItemMeta}>מחיר ליחידה: {formatCurrency(item.unitPrice, 'ILS')}</Text>
+                <Text style={styles.catalogItemMeta}>עודכן: {formatApprovedItemTimestamp(item.createdAt)}</Text>
+                {index === 2 ? (
+                  <View style={styles.catalogUnavailableBadge}>
+                    <Text style={styles.catalogUnavailableBadgeText}>לא זמין</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.panelSection}>
+          <Text style={styles.panelTitle}>הוספת פריט חדש לקטלוג</Text>
+          <View style={styles.catalogAddRow}>
+            <TextInput
+              accessibilityLabel="הוספת פריט מאושר לקטלוג"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={setNewItemId}
+              placeholder="הכנס שם פריט או קוד פריט"
+              style={styles.input}
+              value={newItemId}
+            />
+            <Pressable
+              accessibilityRole="button"
+              disabled={isAddingItem}
+              onPress={() => {
+                void submitApprovedItem()
+              }}
+              style={({ pressed }) => [styles.catalogAddButton, (pressed || isAddingItem) && styles.primaryButtonDisabled]}
+            >
+              {isAddingItem ? <ActivityIndicator color="#fff" /> : <MaterialIcons color="#fff" name="add" size={18} />}
+            </Pressable>
+          </View>
+          {renderBanner(addError, true)}
+          {renderBanner(addInfoMessage)}
+        </View>
+      </View>
+    )
+  }
+
   const renderOrdersTab = (): React.JSX.Element => (
-    <View style={styles.tabSection} testID="screen-agent-orders-list">
+    <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.ordersList}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>הזמנות קודמות</Text>
         <Text style={styles.sectionMeta}>{ordersTotal} הזמנות</Text>
@@ -1072,8 +1252,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <View style={styles.orderHeader}>
                 <View>
                   <Text style={styles.orderTitle}>{order.customerName}</Text>
-                  <Text style={styles.orderMeta}>לקוח: {order.customerId}</Text>
                   <Text style={styles.orderMeta}>אסמכתה: {order.orderRef ?? order.orderId}</Text>
+                  {!order.orderRef ? <Text style={styles.orderMeta}>קוד הזמנה פנימי: {order.orderId}</Text> : null}
                 </View>
                 <Text style={styles.orderTotal}>{formatCurrency(order.estimatedTotal, order.currency)}</Text>
               </View>
@@ -1140,7 +1320,62 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   )
 
   const renderSettingsTab = (): React.JSX.Element => (
-    <View style={styles.tabSection} testID="screen-agent-settings-sync">
+    <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.settingsSync}>
+      <View style={styles.settingsProfileCard}>
+        <ImageBackground
+          accessibilityIgnoresInvertColors
+          source={{ uri: placeholderImageUri(profile?.id ?? profileDisplayName, 200, 200) }}
+          style={styles.settingsAvatarPlaceholder}
+          imageStyle={styles.settingsAvatarImage}
+        >
+          <View style={styles.settingsAvatarScrim}>
+            <Text style={styles.settingsAvatarInitials}>{(profile?.name ?? 'אבי כהן').slice(0, 2)}</Text>
+          </View>
+        </ImageBackground>
+        <View style={styles.settingsProfileMeta}>
+          <Text style={styles.settingsProfileName}>{profile?.name ?? 'אבי כהן'}</Text>
+          <Text style={styles.settingsProfileSub}>סוכן מכירות אזורי</Text>
+        </View>
+      </View>
+
+      <View style={styles.settingsMetricsGrid}>
+        <View style={styles.settingsMetricCard}>
+          <Text style={styles.catalogMetricLabel}>סטטוס רשת</Text>
+          <Text style={styles.catalogMetricValue}>מחובר</Text>
+        </View>
+        <View style={styles.settingsMetricCard}>
+          <Text style={styles.catalogMetricLabel}>סנכרון ERP</Text>
+          <Text style={styles.catalogMetricValue}>94%</Text>
+        </View>
+      </View>
+
+      <View style={styles.panelSection}>
+        <Pressable accessibilityRole="button" style={styles.settingsMenuRow}>
+          <View style={styles.settingsMenuLeading}>
+            <MaterialIcons color={palette.textMuted} name="person" size={16} />
+            <Text style={styles.settingsMenuLabel}>עריכת פרופיל</Text>
+          </View>
+          <MaterialIcons color={palette.outline} name="chevron-left" size={18} />
+        </Pressable>
+        <Pressable accessibilityRole="button" style={styles.settingsMenuRow}>
+          <View style={styles.settingsMenuLeading}>
+            <MaterialIcons color={palette.textMuted} name="notifications-active" size={16} />
+            <Text style={styles.settingsMenuLabel}>הגדרות התראות</Text>
+          </View>
+          <MaterialIcons color={palette.outline} name="chevron-left" size={18} />
+        </Pressable>
+        <Pressable accessibilityRole="button" style={styles.settingsMenuRowLast}>
+          <View style={styles.settingsMenuLeading}>
+            <MaterialIcons color={palette.textMuted} name="language" size={16} />
+            <Text style={styles.settingsMenuLabel}>שפת ממשק</Text>
+          </View>
+          <View style={styles.settingsMenuTrailing}>
+            <Text style={styles.settingsMenuHint}>עברית</Text>
+            <MaterialIcons color={palette.outline} name="chevron-left" size={18} />
+          </View>
+        </Pressable>
+      </View>
+
       <View style={styles.panelSection}>
         <Text style={styles.panelTitle}>פרופיל סוכן</Text>
         <View style={styles.settingsRow}>
@@ -1183,13 +1418,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           }}
           style={({ pressed }) => [styles.dangerButton, pressed && styles.primaryButtonDisabled]}
         >
-          <Text style={styles.dangerButtonText}>התנתקות</Text>
+          <Text style={styles.dangerButtonText}>יציאה מהמערכת</Text>
         </Pressable>
       </View>
     </View>
   )
 
   const connectionWarning = customersError ?? approvedItemsError ?? ordersError
+  const profileDisplayName = profile?.name ?? 'אבי כהן'
+  const profileInitials = initialsFromLabel(profileDisplayName)
 
   const refreshActiveTab = useCallback(() => {
     if (activeTab === 'orders') {
@@ -1217,45 +1454,72 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       ) : null}
       <Animated.View style={[styles.topBar, { transform: [{ translateY: headerTranslateY }] }]}>
         <View style={styles.topBarIdentity}>
-          <Text style={styles.brandEyebrow}>SALES APP</Text>
-          <Text style={styles.title}>MEATLAND</Text>
-          <Text style={styles.subtitle}>{profile?.name ?? 'אבי כהן'}</Text>
-          <Text style={styles.subtitleSecondary}>סוכן שטח מרכז</Text>
+          <Text style={styles.brandEyebrow}>אפליקציית סוכנים</Text>
+          <Text style={styles.title}>
+            {activeTab === 'customers'
+              ? isCustomerDetailOpen
+                ? 'פרטי לקוח'
+                : 'לקוחות'
+              : activeTab === 'catalog'
+                ? 'ניהול קטלוג מאושר'
+                : activeTab === 'orders'
+                  ? 'הזמנות'
+                  : activeTab === 'settings'
+                    ? 'הגדרות וסנכרון'
+                     : 'MEATLAND'}
+          </Text>
+          <Text style={styles.subtitle}>{profileDisplayName}</Text>
+          <Text style={styles.subtitleSecondary}>{activeTab === 'home' ? 'סוכן שטח מרכז' : 'ממשק מותאם למובייל'}</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            refreshActiveTab()
-          }}
-          style={({ pressed }) => [styles.refreshButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
-        >
-          <MaterialIcons color={palette.primaryContainer} name="sync" size={18} />
-        </Pressable>
+        <View style={styles.topBarActions}>
+          <ImageBackground
+            accessibilityIgnoresInvertColors
+            source={{ uri: placeholderImageUri(profile?.id ?? profileDisplayName, 160, 160) }}
+            style={styles.profileAvatar}
+            imageStyle={styles.profileAvatarImage}
+          >
+            <View style={styles.profileAvatarScrim}>
+              <Text style={styles.profileAvatarText}>{profileInitials}</Text>
+            </View>
+          </ImageBackground>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              refreshActiveTab()
+            }}
+            style={({ pressed }) => [styles.refreshButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
+          >
+            <MaterialIcons color={palette.primaryContainer} name="sync" size={18} />
+          </Pressable>
+        </View>
       </Animated.View>
 
-      <View style={styles.searchBlock}>
-        <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
-        <TextInput
-          accessibilityLabel="Search customers"
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, מזהה פריט או שם פריט...' : 'חיפוש לפי שם לקוח או מזהה...'}
-          value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
-          onChangeText={(value) => {
-            if (activeTab === 'orders') {
-              setOrdersSearchQuery(value)
-              return
-            }
-            setCustomerSearchQuery(value)
-          }}
-          style={styles.searchInput}
-        />
-      </View>
+      {activeTab === 'customers' || activeTab === 'orders' ? (
+        <View style={styles.searchBlock}>
+          <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
+          <TextInput
+            accessibilityLabel="חיפוש לקוחות"
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, קוד פריט או שם פריט...' : 'חיפוש לקוח...'}
+            value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
+            onChangeText={(value) => {
+              if (activeTab === 'orders') {
+                setOrdersSearchQuery(value)
+                return
+              }
+              setCustomerSearchQuery(value)
+            }}
+            style={styles.searchInput}
+          />
+        </View>
+      ) : null}
 
       <Animated.View style={[styles.contentLayer, { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }]}>
         <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
           {activeTab === 'home' ? renderDashboardTab() : null}
           {activeTab === 'customers' ? renderCustomersTab() : null}
+          {activeTab === 'catalog' ? renderApprovedCatalogTab() : null}
           {activeTab === 'orders' ? renderOrdersTab() : null}
           {activeTab === 'settings' ? renderSettingsTab() : null}
         </ScrollView>
@@ -1329,11 +1593,11 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   topBar: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     marginHorizontal: spacing.md,
     marginBottom: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     borderRadius: radius.lg,
     backgroundColor: palette.surface,
     borderWidth: 1,
@@ -1346,20 +1610,22 @@ const styles = StyleSheet.create({
   topBarIdentity: {
     flex: 1,
   },
+  topBarActions: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   brandEyebrow: {
     color: palette.secondary,
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 2,
     fontWeight: '700',
-    borderBottomWidth: 2,
-    borderBottomColor: palette.secondary,
-    paddingBottom: 2,
     alignSelf: 'flex-start',
   },
   title: {
-    fontSize: 34,
+    fontSize: 22,
     color: palette.primaryContainer,
     fontWeight: '800',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
@@ -1368,15 +1634,15 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 2,
     color: palette.textMuted,
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
   subtitleSecondary: {
-    marginTop: 2,
+    marginTop: 1,
     color: palette.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
@@ -1389,6 +1655,29 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.outline,
+  },
+  profileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.outline,
+  },
+  profileAvatarImage: {
+    borderRadius: radius.pill,
+  },
+  profileAvatarScrim: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28, 25, 23, 0.34)',
+  },
+  profileAvatarText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   searchBlock: {
     marginHorizontal: spacing.md,
@@ -1453,6 +1742,36 @@ const styles = StyleSheet.create({
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     gap: spacing.sm,
   },
+  dashboardHeroCard: {
+    borderRadius: radius.lg,
+    backgroundColor: palette.primaryContainer,
+    padding: spacing.lg,
+    gap: spacing.xs,
+    shadowColor: palette.primaryContainer,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+  },
+  dashboardHeroLabel: {
+    color: '#fecaca',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  dashboardHeroValue: {
+    color: '#fff',
+    fontSize: 34,
+    fontWeight: '900',
+  },
+  dashboardHeroMetaRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dashboardHeroMeta: {
+    color: '#fecaca',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   kpiCard: {
     flex: 1,
     borderWidth: 1,
@@ -1499,6 +1818,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
   },
+  urgentIconChip: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: '#fff7ed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+  },
   queueCardTitle: {
     color: palette.primary,
     fontWeight: '700',
@@ -1520,6 +1848,167 @@ const styles = StyleSheet.create({
     color: palette.primary,
     fontWeight: '700',
     fontSize: 17,
+  },
+  premiumBanner: {
+    minHeight: 128,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+  },
+  premiumBannerImage: {
+    borderRadius: radius.xl,
+  },
+  premiumBannerOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    backgroundColor: 'rgba(69, 10, 10, 0.7)',
+    padding: spacing.lg,
+    gap: 4,
+  },
+  premiumEyebrow: {
+    color: '#fecaca',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  premiumTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  premiumLink: {
+    color: '#fdba74',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  catalogWarningBanner: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#f5d18f',
+    backgroundColor: '#fff4dc',
+    padding: spacing.md,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  catalogWarningContent: {
+    flex: 1,
+    gap: 4,
+  },
+  catalogWarningTitle: {
+    color: palette.warning,
+    fontSize: 13,
+    fontWeight: '800',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  catalogWarningText: {
+    color: palette.warning,
+    fontSize: 11,
+    fontWeight: '600',
+    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  catalogMetricGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  catalogMetricCard: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  catalogMetricLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  catalogMetricValue: {
+    color: palette.primaryContainer,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  catalogCardList: {
+    gap: spacing.sm,
+  },
+  catalogItemCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  catalogItemCardUnavailable: {
+    opacity: 0.75,
+    borderColor: '#fecaca',
+  },
+  catalogItemHeader: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  catalogItemImagePlaceholder: {
+    width: '100%',
+    height: 96,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catalogItemImageAsset: {
+    borderRadius: radius.md,
+  },
+  catalogItemImageScrim: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28, 25, 23, 0.24)',
+    borderRadius: radius.md,
+  },
+  catalogSku: {
+    color: palette.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  catalogItemTitle: {
+    color: palette.primary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  catalogItemMeta: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+  catalogUnavailableBadge: {
+    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    backgroundColor: '#e7e5e4',
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  catalogUnavailableBadgeText: {
+    color: '#78716c',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  catalogAddRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  catalogAddButton: {
+    borderRadius: radius.md,
+    minHeight: touchTarget.comfortable,
+    minWidth: touchTarget.comfortable,
+    backgroundColor: palette.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   activityList: {
     gap: spacing.sm,
@@ -1650,6 +2139,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  customerNameRow: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  customerBadge: {
+    borderRadius: radius.pill,
+    backgroundColor: palette.secondaryFixed,
+    color: palette.secondary,
+    fontSize: 10,
+    fontWeight: '800',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    overflow: 'hidden',
+  },
   customerMeta: {
     color: palette.textMuted,
     fontSize: 13,
@@ -1709,6 +2214,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.outline,
     gap: spacing.xs,
+  },
+  customerDetailHero: {
+    borderRadius: radius.lg,
+    backgroundColor: palette.primary,
+    padding: spacing.lg,
+    gap: 4,
+  },
+  customerDetailBadge: {
+    alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+    borderRadius: radius.pill,
+    backgroundColor: palette.warning,
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  detailInfoGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  detailInfoCard: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: 4,
   },
   detailTitle: {
     color: palette.primary,
@@ -1783,6 +2317,36 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 2,
   },
+  approvedRowCard: {
+    borderRadius: radius.md,
+    backgroundColor: palette.surfaceLow,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    padding: spacing.sm,
+    gap: spacing.sm,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+  },
+  approvedImagePlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  approvedImageAsset: {
+    borderRadius: radius.md,
+  },
+  approvedImageScrim: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28, 25, 23, 0.24)',
+    borderRadius: radius.md,
+  },
+  approvedRowContent: {
+    flex: 1,
+    gap: 2,
+  },
   approvedTitle: {
     color: palette.primary,
     fontWeight: '700',
@@ -1822,6 +2386,100 @@ const styles = StyleSheet.create({
   settingsActionRow: {
     flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
     gap: spacing.sm,
+  },
+  settingsProfileCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.lg,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  settingsAvatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: '#fef2f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  settingsAvatarImage: {
+    borderRadius: radius.pill,
+  },
+  settingsAvatarScrim: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28, 25, 23, 0.3)',
+  },
+  settingsAvatarInitials: {
+    color: palette.primaryContainer,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  settingsProfileMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  settingsProfileName: {
+    color: palette.primary,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  settingsProfileSub: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+  settingsMetricsGrid: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    gap: spacing.sm,
+  },
+  settingsMetricCard: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  settingsMenuRow: {
+    minHeight: 46,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.outline,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  settingsMenuRowLast: {
+    minHeight: 46,
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  settingsMenuLeading: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  settingsMenuLabel: {
+    color: palette.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  settingsMenuTrailing: {
+    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  settingsMenuHint: {
+    color: palette.textMuted,
+    fontSize: 11,
   },
   loadingState: {
     minHeight: 88,

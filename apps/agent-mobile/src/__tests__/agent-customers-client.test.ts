@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 describe('agent customers client', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.resetModules()
+    delete process.env.EXPO_PUBLIC_EXPO_GO_HOST
   })
 
   it('loads assigned customers with authorized contract headers', async () => {
@@ -31,13 +33,53 @@ describe('agent customers client', () => {
     const result = await listAssignedCustomers('token-42')
 
     expect(result.total).toBe(1)
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/customers'), {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: 'Bearer token-42',
-      },
-    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/agent/customers'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-42',
+        },
+      }),
+    )
+  })
+
+  it('falls back to Expo Go LAN host for customer fetch when localhost is unreachable', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'http://localhost:3000'
+    process.env.EXPO_PUBLIC_EXPO_GO_HOST = '192.168.1.160'
+    const { listAssignedCustomers } = await import('../api/agent-customers-client')
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('Network request failed'))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            customers: [],
+            total: 0,
+            generatedAt: '2026-04-12T19:00:00.000Z',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+
+    const result = await listAssignedCustomers('token-42')
+
+    expect(result.total).toBe(0)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://localhost:3000/v1/agent/customers',
+      expect.objectContaining({ method: 'GET' }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://192.168.1.160:3000/v1/agent/customers',
+      expect.objectContaining({ method: 'GET' }),
+    )
+    delete process.env.EXPO_PUBLIC_EXPO_GO_HOST
   })
 
   it('supports duplicate-safe add-item responses and trims field input', async () => {
@@ -117,13 +159,16 @@ describe('agent customers client', () => {
       expiresInSeconds: 5400,
       lifecycle: 'issued',
     })
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/customers/cust-alpha/magic-links'), {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        Authorization: 'Bearer token-42',
-      },
-    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/agent/customers/cust-alpha/magic-links'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-42',
+        },
+      }),
+    )
   })
 
   it('loads paginated orders with date/search filters', async () => {
@@ -178,13 +223,13 @@ describe('agent customers client', () => {
     expect(response.totalPages).toBe(3)
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/v1/agent/orders?page=2&pageSize=1&fromDate=2026-04-01&toDate=2026-04-30&query=ribeye'),
-      {
+      expect.objectContaining({
         method: 'GET',
         headers: {
           Accept: 'application/json',
           Authorization: 'Bearer token-42',
         },
-      },
+      }),
     )
   })
 
@@ -214,17 +259,20 @@ describe('agent customers client', () => {
       status: 'cancelled',
       mode: 'testing_local_delete',
     })
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/orders/order-7/cancel'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: 'Bearer token-42',
-      },
-      body: JSON.stringify({
-        reason: 'לקוח ביטל',
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/agent/orders/order-7/cancel'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: 'Bearer token-42',
+        },
+        body: JSON.stringify({
+          reason: 'לקוח ביטל',
+        }),
       }),
-    })
+    )
   })
 
   it('surfaces operator-friendly message when order cancellation target is missing', async () => {
@@ -251,7 +299,7 @@ describe('agent customers client', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
 
     await expect(cancelAgentOrder('token-42', '   ')).rejects.toThrow(
-      'Order ID is required to cancel an order.',
+      'נדרש מזהה הזמנה כדי לבטל הזמנה.',
     )
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -277,14 +325,17 @@ describe('agent customers client', () => {
 
     await cancelAgentOrder('token-42', 'order-8')
 
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/v1/agent/orders/order-8/cancel'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: 'Bearer token-42',
-      },
-      body: JSON.stringify({}),
-    })
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/agent/orders/order-8/cancel'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: 'Bearer token-42',
+        },
+        body: JSON.stringify({}),
+      }),
+    )
   })
 })
