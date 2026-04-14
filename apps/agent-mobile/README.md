@@ -30,21 +30,49 @@ if `localhost` is unreachable.
 
 ## Deployment (Expo EAS)
 
-`eas.json` is now configured with `development`, `preview`, and `production` profiles.
+`eas.json` is configured with `development`, `preview`, and `production` profiles.
+
+### Prerequisites
+
+1. Expo account login (`eas login`).
+2. Apple Developer account + App Store Connect app.
+3. Google Play Console app + service account JSON for automated submit.
+4. Store assets (icon, splash, screenshots, privacy policy URL).
+5. Production API base URL configured in build env (`EXPO_PUBLIC_API_BASE_URL`).
 
 From `apps/agent-mobile`:
 
 ```bash
-pnpm dlx eas login
-pnpm dlx eas build --platform ios --profile preview
-pnpm dlx eas build --platform android --profile preview
+pnpm eas:login
+pnpm eas:whoami
+pnpm eas:init
+pnpm eas:build:preview:ios
+pnpm eas:build:preview:android
 ```
 
 For production builds:
 
 ```bash
-pnpm dlx eas build --platform all --profile production
+pnpm eas:build:production:all
 ```
+
+Submit to stores:
+
+```bash
+pnpm eas:submit:production:android
+pnpm eas:submit:production:ios
+```
+
+### Current mobile release readiness (summary)
+
+- ✅ Runtime + core UX flow is implemented and tested.
+- ✅ EAS build and submit profiles exist (`preview`, `production`).
+- ✅ Android release profile is set to `app-bundle` for Play Store submission.
+- 🟡 Store identity is scaffolded (`co.meatland.agent`) and may still need final organization-owned IDs.
+- 🟡 No app icon/splash assets are committed yet (required before final store submission).
+- 🟡 App Store / Play Console credentials are required to complete real submission from CLI.
+
+See `docs/mobile-store-release-readiness.md` for the full production-readiness gate checklist.
 
 ## Reviewer validation baseline
 

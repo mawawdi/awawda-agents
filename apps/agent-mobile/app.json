@@ -4,11 +4,25 @@
     "slug": "meatland-agent-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
+    "scheme": "meatland-agent",
+    "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
     ],
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "co.meatland.agent",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "co.meatland.agent",
+      "versionCode": 1
+    }
   }
 }

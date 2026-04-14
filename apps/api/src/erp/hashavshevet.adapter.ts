@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { AgentCatalogItem } from '@meatland/shared-types';
 
+import { listTestingCutAssetItemIds } from '../catalog/data/testing-cut-assets';
 import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
@@ -87,6 +88,7 @@ const DEFAULT_HCONNECT_ENDPOINT_URL = 'https://ws.wizground.com/api';
 const REPORTS_PLUGIN = 'reports';
 const DEFAULT_HANDOFF_PLUGIN = 'imovein';
 const DEFAULT_HANDOFF_DOCUMENT_ID = '30';
+const TESTING_CUT_ASSET_ITEM_IDS = listTestingCutAssetItemIds();
 const HCONNECT_DEFAULT_PLUGIN_BY_FAMILY: Record<HConnectPluginFamily, string> = {
   heshin: 'iheshin',
   kupain: 'ikupain',
@@ -94,44 +96,6 @@ const HCONNECT_DEFAULT_PLUGIN_BY_FAMILY: Record<HConnectPluginFamily, string> = 
   itemin: 'iitemin',
   movein: DEFAULT_HANDOFF_PLUGIN,
   stockheaderin: 'istockheaderin',
-};
-
-const CUT_VISUALS: Record<
-  NonNullable<AgentCatalogItem['category']>,
-  { iconEmoji: string; imageUrl: string }
-> = {
-  beef: {
-    iconEmoji: '🥩',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
-  },
-  chicken: {
-    iconEmoji: '🍗',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f357.svg',
-  },
-  lamb: {
-    iconEmoji: '🍖',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f356.svg',
-  },
-  turkey: {
-    iconEmoji: '🦃',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f983.svg',
-  },
-  veal: {
-    iconEmoji: '🥩',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
-  },
-  offal: {
-    iconEmoji: '🥩',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f969.svg',
-  },
-  prepared: {
-    iconEmoji: '🍢',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f362.svg',
-  },
-  seafood: {
-    iconEmoji: '🐟',
-    imageUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f41f.svg',
-  },
 };
 
 @Injectable()
@@ -283,22 +247,10 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
-      const testingItems = buildTestingCatalogItems().map((item) => {
-        if (!item.category) {
-          return item;
-        }
-
-        return {
-          ...item,
-          iconEmoji: CUT_VISUALS[item.category].iconEmoji,
-          imageUrl: CUT_VISUALS[item.category].imageUrl,
-        };
-      });
-
       return {
         source: 'hashavshevet',
         syncedAt: new Date().toISOString(),
-        items: testingItems,
+        items: buildTestingCatalogItems(),
       };
     }
 
@@ -317,19 +269,20 @@ export class HashavshevetAdapter {
 
     if (!this.config.restEnabled) {
       const now = new Date().toISOString();
+      const [primaryItemId, secondaryItemId] = resolveFallbackTestingItemIds();
 
       return {
         source: 'hashavshevet',
         syncedAt: now,
         items: [
           {
-            itemId: `recent-${customerId}-1`,
-            name: 'Ribeye Steak',
+            itemId: primaryItemId,
+            name: humanizeFallbackItemName(primaryItemId),
             lastOrderedAt: now,
           },
           {
-            itemId: `recent-${customerId}-2`,
-            name: 'Ground Beef Premium',
+            itemId: secondaryItemId,
+            name: humanizeFallbackItemName(secondaryItemId),
             lastOrderedAt: now,
           },
         ],
@@ -355,6 +308,7 @@ export class HashavshevetAdapter {
 
     if (!this.config.restEnabled) {
       const now = new Date().toISOString();
+      const [primaryItemId, secondaryItemId] = resolveFallbackTestingItemIds();
 
       return {
         source: 'hashavshevet',
@@ -362,12 +316,12 @@ export class HashavshevetAdapter {
         version: `price-list-${customerId}`,
         lines: [
           {
-            itemId: 'itm-beef-entrecote',
+            itemId: primaryItemId,
             unitPrice: 109.9,
             currency: 'ILS',
           },
           {
-            itemId: 'itm-lamb-ribs',
+            itemId: secondaryItemId,
             unitPrice: 84.5,
             currency: 'ILS',
           },
@@ -1497,4 +1451,21 @@ function interpolatePath(pathTemplate: string, params: Record<string, string>): 
 
     return encodeURIComponent(value);
   });
+}
+
+function resolveFallbackTestingItemIds(): [string, string] {
+  const primary = TESTING_CUT_ASSET_ITEM_IDS[0] ?? 'beef_ribeye_steak_boneless';
+  const secondary = TESTING_CUT_ASSET_ITEM_IDS[1] ?? primary;
+  return [primary, secondary];
+}
+
+function humanizeFallbackItemName(itemId: string): string {
+  const words = itemId
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+
+  return words.join(' ');
 }

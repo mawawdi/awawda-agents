@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
-  I18nManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,13 +12,23 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useAuth } from '../auth/auth-provider'
 import { validateLoginInput, type LoginValidationErrors } from '../auth/validation'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 
+const IS_RTL_LAYOUT = true
+const BASE_VIEWPORT_WIDTH = 430
+const FONT_SCALE = Math.max(0.82, Math.min(1, Dimensions.get('window').width / BASE_VIEWPORT_WIDTH))
+
+function scaledFont(baseSize: number): number {
+  return Math.max(10, Math.round(baseSize * FONT_SCALE))
+}
+
 export function LoginScreen(): React.JSX.Element {
   const { signIn, errorMessage, clearError } = useAuth()
+  const insets = useSafeAreaInsets()
   const [phoneOrEmail, setPhoneOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,7 +62,13 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} style={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: spacing.xl + Math.max(insets.top, spacing.sm), paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.sm) },
+      ]}
+      style={styles.container}
+    >
       <Animated.View
         style={[
           styles.shell,
@@ -185,7 +201,7 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     justifyContent: 'center',
     paddingHorizontal: 14,
-    paddingVertical: spacing.xl,
+    paddingVertical: 0,
   },
   shell: {
     borderRadius: 4,
@@ -194,7 +210,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   topMeta: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     marginBottom: spacing.xl,
@@ -202,7 +218,7 @@ const styles = StyleSheet.create({
   },
   salesApp: {
     color: '#0d9488',
-    fontSize: 12,
+    fontSize: scaledFont(11),
     fontWeight: '700',
     borderBottomWidth: 2,
     borderBottomColor: '#0d9488',
@@ -211,7 +227,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     color: '#7f1d1d',
-    fontSize: 44,
+    fontSize: scaledFont(36),
     fontWeight: '900',
     letterSpacing: -0.8,
   },
@@ -222,13 +238,13 @@ const styles = StyleSheet.create({
     borderRightColor: '#dc2626',
     paddingVertical: 10,
     paddingHorizontal: 12,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
   errorTextGroup: {
     flex: 1,
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    alignItems: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
   },
   errorTitle: {
     color: '#7f1d1d',
@@ -242,23 +258,23 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     marginBottom: spacing.xl,
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    alignItems: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
   },
   title: {
     color: '#1c1917',
-    fontSize: 47,
+    fontSize: scaledFont(36),
     fontWeight: '900',
     letterSpacing: -0.8,
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   subtitle: {
     marginTop: 4,
     color: '#78716c',
-    fontSize: 18,
+    fontSize: scaledFont(14),
     fontWeight: '500',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   form: {
     gap: spacing.lg,
@@ -272,8 +288,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   inputShell: {
     borderWidth: 2,
@@ -293,19 +309,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingLeft: 44,
     color: '#1c1917',
-    fontSize: 16,
+    fontSize: scaledFont(14),
     fontWeight: '500',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   inputIcon: {
     position: 'absolute',
-    left: 14,
+    right: IS_RTL_LAYOUT ? 14 : undefined,
+    left: IS_RTL_LAYOUT ? undefined : 14,
     top: 17,
   },
   verifiedRow: {
     marginTop: 2,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 4,
   },
@@ -315,7 +332,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   passwordHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -341,13 +358,13 @@ const styles = StyleSheet.create({
     opacity: 0.62,
   },
   buttonContent: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: scaledFont(18),
     fontWeight: '800',
   },
   helpRow: {
@@ -367,12 +384,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: '#e7e5e4',
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   footerSide: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 4,
   },

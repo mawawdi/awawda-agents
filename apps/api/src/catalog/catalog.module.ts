@@ -6,10 +6,11 @@ import { loadCatalogConfig } from './catalog.config';
 import { CATALOG_CONFIG } from './catalog.constants';
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from './catalog.service';
+import { TestingAssetsController } from './testing-assets.controller';
 
 @Module({
   imports: [AuthModule, ErpModule],
-  controllers: [CatalogController],
+  controllers: [CatalogController, TestingAssetsController],
   providers: [
     CatalogService,
     {

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.1.0",
   "species": [
     {
       "id": "beef",
@@ -7,150 +7,649 @@
       "nameHe": "בקר",
       "primals": [
         {
+          "id": "chuck-shoulder-neck",
+          "nameEn": "Chuck (Shoulder & Neck)",
+          "nameHe": "צ'אק (כתף וצוואר)",
+          "groups": [
+            {
+              "id": "chuck-cuts",
+              "nameEn": "Chuck Cuts",
+              "nameHe": "נתחי צ'אק",
+              "cuts": [
+                {
+                  "itemId": "itm-beef-001",
+                  "sku": "BEEF-001",
+                  "nameEn": "Chuck eye roast",
+                  "nameHe": "צלי צ'אק איי",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-002",
+                  "sku": "BEEF-002",
+                  "nameEn": "Chuck eye steak",
+                  "nameHe": "סטייק צ'אק איי",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-003",
+                  "sku": "BEEF-003",
+                  "nameEn": "Shoulder roast",
+                  "nameHe": "צלי כתף",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-004",
+                  "sku": "BEEF-004",
+                  "nameEn": "Shoulder steak",
+                  "nameHe": "סטייק כתף",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-005",
+                  "sku": "BEEF-005",
+                  "nameEn": "Flat iron steak",
+                  "nameHe": "סטייק פלאט איירון",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-006",
+                  "sku": "BEEF-006",
+                  "nameEn": "Denver steak",
+                  "nameHe": "סטייק דנבר",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-007",
+                  "sku": "BEEF-007",
+                  "nameEn": "Chuck tender (mock tender)",
+                  "nameHe": "צ'אק טנדר (מוק טנדר)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-008",
+                  "sku": "BEEF-008",
+                  "nameEn": "Ranch steak",
+                  "nameHe": "סטייק ראנץ'",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-009",
+                  "sku": "BEEF-009",
+                  "nameEn": "Chuck short ribs",
+                  "nameHe": "צלעות קצרות מצ'אק",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-010",
+                  "sku": "BEEF-010",
+                  "nameEn": "Top blade steak",
+                  "nameHe": "סטייק טופ בלייד",
+                  "unit": "kg",
+                  "category": "beef"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "id": "rib",
           "nameEn": "Rib",
-          "nameHe": "צלעות",
+          "nameHe": "צלע",
           "groups": [
             {
-              "id": "premium-steaks",
-              "nameEn": "Premium Steaks",
-              "nameHe": "סטייקים מובחרים",
+              "id": "rib-cuts",
+              "nameEn": "Rib Cuts",
+              "nameHe": "נתחי צלע",
               "cuts": [
-                { "itemId": "itm-beef-entrecote", "sku": "BEEF-ENT-001", "nameEn": "Beef Entrecôte", "nameHe": "אנטרקוט בקר", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-ribeye", "sku": "BEEF-RBY-003", "nameEn": "Ribeye Steak Prime", "nameHe": "ריב איי פריים", "unit": "kg", "category": "beef" }
-              ]
-            },
-            {
-              "id": "bone-in-ribs",
-              "nameEn": "Bone-In Ribs",
-              "nameHe": "צלעות עם עצם",
-              "cuts": [
-                { "itemId": "itm-beef-short-ribs", "sku": "BEEF-SRB-007", "nameEn": "Short Ribs Bone-In", "nameHe": "אסאדו בקר עם עצם", "unit": "kg", "category": "beef" }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "loin",
-          "nameEn": "Loin",
-          "nameHe": "מותן",
-          "groups": [
-            {
-              "id": "center-cuts",
-              "nameEn": "Center Cuts",
-              "nameHe": "נתחי מרכז",
-              "cuts": [
-                { "itemId": "itm-beef-tenderloin", "sku": "BEEF-TND-005", "nameEn": "Tenderloin Center Cut", "nameHe": "פילה בקר מרכזי", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-striploin", "sku": "BEEF-STR-006", "nameEn": "Striploin NY", "nameHe": "סטריפלוין ניו יורק", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-picanha", "sku": "BEEF-PIC-009", "nameEn": "Picanha", "nameHe": "פיקניה", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-carpaccio", "sku": "BEEF-CRP-039", "nameEn": "Carpaccio Slices", "nameHe": "קרפצ׳יו בקר", "unit": "kg", "category": "beef" }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "chuck-neck",
-          "nameEn": "Chuck & Neck",
-          "nameHe": "כתף וצוואר",
-          "groups": [
-            {
-              "id": "slow-cook-and-grind",
-              "nameEn": "Slow Cook & Grind",
-              "nameHe": "לבישול ארוך וטחינה",
-              "cuts": [
-                { "itemId": "itm-beef-mince", "sku": "BEEF-MIN-010", "nameEn": "Beef Mince 20% Fat", "nameHe": "בשר בקר טחון 20% שומן", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-chuck-roll", "sku": "BEEF-CHK-011", "nameEn": "Chuck Roll", "nameHe": "צוואר בקר", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-kebab", "sku": "BEEF-KBB-012", "nameEn": "Kebab Skewers", "nameHe": "שיפודי קבב בקר", "unit": "kg", "category": "prepared" },
-                { "itemId": "itm-beef-burger-patty", "sku": "PRP-BRG-032", "nameEn": "Burger Patty 180g", "nameHe": "קציצת המבורגר 180 גרם", "unit": "unit", "category": "prepared" }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "plate-brisket",
-          "nameEn": "Plate & Brisket",
-          "nameHe": "חזה ושפונדרה",
-          "groups": [
-            {
-              "id": "bbq-and-braise",
-              "nameEn": "BBQ & Braise",
-              "nameHe": "לעישון ובישול ארוך",
-              "cuts": [
-                { "itemId": "itm-beef-brisket", "sku": "BEEF-BRS-004", "nameEn": "Beef Brisket Whole", "nameHe": "בריסקט בקר שלם", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-smoked-brisket", "sku": "PRP-SMK-033", "nameEn": "Smoked Brisket Slices", "nameHe": "פרוסות בריסקט מעושן", "unit": "kg", "category": "prepared" },
-                { "itemId": "itm-beef-bones", "sku": "BEEF-BON-036", "nameEn": "Marrow Bones", "nameHe": "עצמות מח בקר", "unit": "kg", "category": "beef" }
+                {
+                  "itemId": "itm-beef-011",
+                  "sku": "BEEF-011",
+                  "nameEn": "Prime rib roast (standing rib roast)",
+                  "nameHe": "צלי פריים ריב (צלי צלע עומד)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-012",
+                  "sku": "BEEF-012",
+                  "nameEn": "Ribeye steak (bone-in)",
+                  "nameHe": "סטייק ריבאיי עם עצם",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-013",
+                  "sku": "BEEF-013",
+                  "nameEn": "Ribeye steak (boneless)",
+                  "nameHe": "סטייק ריבאיי ללא עצם",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-014",
+                  "sku": "BEEF-014",
+                  "nameEn": "Ribeye cap steak (Spinalis)",
+                  "nameHe": "סטייק כיפת ריבאיי (ספינליס)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-015",
+                  "sku": "BEEF-015",
+                  "nameEn": "Beef back ribs",
+                  "nameHe": "צלעות גב בקר",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-016",
+                  "sku": "BEEF-016",
+                  "nameEn": "Rib short ribs",
+                  "nameHe": "צלעות קצרות מהצלע",
+                  "unit": "kg",
+                  "category": "beef"
+                }
               ]
             }
           ]
         },
         {
-          "id": "shank-offal",
-          "nameEn": "Shank & Offal",
-          "nameHe": "שוק ופנימיות",
+          "id": "loin-short-loin-sirloin",
+          "nameEn": "Loin (Short Loin & Sirloin)",
+          "nameHe": "מותן (שורט לוין וסירלוין)",
           "groups": [
             {
-              "id": "braise-and-specialty",
-              "nameEn": "Braise & Specialty",
-              "nameHe": "לבישול ארוך ומיוחדים",
+              "id": "loin-cuts",
+              "nameEn": "Loin Cuts",
+              "nameHe": "נתחי מותן",
               "cuts": [
-                { "itemId": "itm-beef-osso-buco", "sku": "BEEF-OSS-008", "nameEn": "Osso Buco", "nameHe": "אוסובוקו בקר", "unit": "kg", "category": "beef" },
-                { "itemId": "itm-beef-liver", "sku": "BEEF-LVR-027", "nameEn": "Beef Liver", "nameHe": "כבד בקר", "unit": "kg", "category": "offal" },
-                { "itemId": "itm-beef-heart", "sku": "BEEF-HRT-029", "nameEn": "Beef Heart", "nameHe": "לב בקר", "unit": "kg", "category": "offal" }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "lamb",
-      "nameEn": "Lamb",
-      "nameHe": "טלה",
-      "primals": [
-        {
-          "id": "rack-rib",
-          "nameEn": "Rack & Rib",
-          "nameHe": "כתף קדמית וצלעות",
-          "groups": [
-            {
-              "id": "grill-cuts",
-              "nameEn": "Grill Cuts",
-              "nameHe": "נתחים לגריל",
-              "cuts": [
-                { "itemId": "itm-lamb-ribs", "sku": "LAMB-RIB-002", "nameEn": "Lamb Ribs", "nameHe": "צלעות טלה", "unit": "kg", "category": "lamb" },
-                { "itemId": "itm-lamb-chops", "sku": "LAMB-CHP-015", "nameEn": "Lamb Chops", "nameHe": "צלעות טלה פרוסות", "unit": "kg", "category": "lamb" }
+                {
+                  "itemId": "itm-beef-017",
+                  "sku": "BEEF-017",
+                  "nameEn": "Porterhouse steak",
+                  "nameHe": "סטייק פורטרהאוס",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-018",
+                  "sku": "BEEF-018",
+                  "nameEn": "T-bone steak",
+                  "nameHe": "סטייק טי-בון",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-019",
+                  "sku": "BEEF-019",
+                  "nameEn": "Strip steak (New York Strip)",
+                  "nameHe": "סטייק סטריפ (ניו יורק סטריפ)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-020",
+                  "sku": "BEEF-020",
+                  "nameEn": "Strip steak (Kansas City Strip)",
+                  "nameHe": "סטייק סטריפ (קנזס סיטי סטריפ)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-021",
+                  "sku": "BEEF-021",
+                  "nameEn": "Bone-in strip steak (Club steak)",
+                  "nameHe": "סטייק סטריפ עם עצם (קלאב סטייק)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-022",
+                  "sku": "BEEF-022",
+                  "nameEn": "Filet mignon",
+                  "nameHe": "פילה מיניון",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-023",
+                  "sku": "BEEF-023",
+                  "nameEn": "Chateaubriand (center cut)",
+                  "nameHe": "שאטובריאן (נתח מרכזי)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-024",
+                  "sku": "BEEF-024",
+                  "nameEn": "Tournedos",
+                  "nameHe": "טורנדו",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-025",
+                  "sku": "BEEF-025",
+                  "nameEn": "Tenderloin tips",
+                  "nameHe": "קצוות פילה",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-026",
+                  "sku": "BEEF-026",
+                  "nameEn": "Top sirloin steak",
+                  "nameHe": "סטייק טופ סירלוין",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-027",
+                  "sku": "BEEF-027",
+                  "nameEn": "Bottom sirloin",
+                  "nameHe": "בוטום סירלוין",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-028",
+                  "sku": "BEEF-028",
+                  "nameEn": "Tri-tip roast",
+                  "nameHe": "צלי טריי-טיפ",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-029",
+                  "sku": "BEEF-029",
+                  "nameEn": "Tri-tip steak",
+                  "nameHe": "סטייק טריי-טיפ",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-030",
+                  "sku": "BEEF-030",
+                  "nameEn": "Sirloin bavette (flap steak)",
+                  "nameHe": "סירלוין בוואט (פלאפ סטייק)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-031",
+                  "sku": "BEEF-031",
+                  "nameEn": "Coulotte steak (Picanha)",
+                  "nameHe": "סטייק קולוט (פיקניה)",
+                  "unit": "kg",
+                  "category": "beef"
+                }
               ]
             }
           ]
         },
         {
-          "id": "shoulder-neck",
-          "nameEn": "Shoulder & Neck",
-          "nameHe": "כתף וצוואר",
+          "id": "round-hind-leg",
+          "nameEn": "Round (Hind Leg)",
+          "nameHe": "ראונד (רגל אחורית)",
           "groups": [
             {
-              "id": "stew-and-mince",
-              "nameEn": "Stew & Mince",
-              "nameHe": "לתבשיל וטחינה",
+              "id": "round-cuts",
+              "nameEn": "Round Cuts",
+              "nameHe": "נתחי ראונד",
               "cuts": [
-                { "itemId": "itm-lamb-shoulder", "sku": "LAMB-SHD-016", "nameEn": "Lamb Shoulder", "nameHe": "כתף טלה", "unit": "kg", "category": "lamb" },
-                { "itemId": "itm-lamb-neck", "sku": "LAMB-NCK-018", "nameEn": "Lamb Neck Fillet", "nameHe": "פילה צוואר טלה", "unit": "kg", "category": "lamb" },
-                { "itemId": "itm-lamb-mince", "sku": "LAMB-MIN-038", "nameEn": "Lamb Mince", "nameHe": "בשר טלה טחון", "unit": "kg", "category": "lamb" }
+                {
+                  "itemId": "itm-beef-032",
+                  "sku": "BEEF-032",
+                  "nameEn": "Top round roast",
+                  "nameHe": "צלי טופ ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-033",
+                  "sku": "BEEF-033",
+                  "nameEn": "Top round steak",
+                  "nameHe": "סטייק טופ ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-034",
+                  "sku": "BEEF-034",
+                  "nameEn": "Bottom round roast",
+                  "nameHe": "צלי בוטום ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-035",
+                  "sku": "BEEF-035",
+                  "nameEn": "Bottom round steak",
+                  "nameHe": "סטייק בוטום ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-036",
+                  "sku": "BEEF-036",
+                  "nameEn": "Eye of round roast",
+                  "nameHe": "צלי איי אוף ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-037",
+                  "sku": "BEEF-037",
+                  "nameEn": "Eye of round steak",
+                  "nameHe": "סטייק איי אוף ראונד",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-038",
+                  "sku": "BEEF-038",
+                  "nameEn": "Sirloin tip roast (knuckle)",
+                  "nameHe": "צלי סירלוין טיפ (נאקל)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-039",
+                  "sku": "BEEF-039",
+                  "nameEn": "Sirloin tip center steak",
+                  "nameHe": "סטייק סירלוין טיפ סנטר",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-040",
+                  "sku": "BEEF-040",
+                  "nameEn": "Rump roast",
+                  "nameHe": "צלי ראמפ",
+                  "unit": "kg",
+                  "category": "beef"
+                }
               ]
             }
           ]
         },
         {
-          "id": "leg-shank",
-          "nameEn": "Leg & Shank",
-          "nameHe": "רגל ושוק",
+          "id": "plate-flank-belly",
+          "nameEn": "Plate & Flank (Belly)",
+          "nameHe": "פלאטה ופלאנק (בטן)",
           "groups": [
             {
-              "id": "braising-cuts",
-              "nameEn": "Braising Cuts",
-              "nameHe": "נתחים לבישול ארוך",
+              "id": "plate-flank-cuts",
+              "nameEn": "Plate & Flank Cuts",
+              "nameHe": "נתחי פלאטה ופלאנק",
               "cuts": [
-                { "itemId": "itm-lamb-shank", "sku": "LAMB-SHK-017", "nameEn": "Lamb Shank", "nameHe": "שוק טלה", "unit": "kg", "category": "lamb" }
+                {
+                  "itemId": "itm-beef-041",
+                  "sku": "BEEF-041",
+                  "nameEn": "Skirt steak (Inside skirt)",
+                  "nameHe": "סטייק סקרט (אינסייד סקרט)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-042",
+                  "sku": "BEEF-042",
+                  "nameEn": "Skirt steak (Outside skirt)",
+                  "nameHe": "סטייק סקרט (אאוטסייד סקרט)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-043",
+                  "sku": "BEEF-043",
+                  "nameEn": "Flank steak",
+                  "nameHe": "סטייק פלאנק",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-044",
+                  "sku": "BEEF-044",
+                  "nameEn": "Hanger steak (Onglet)",
+                  "nameHe": "סטייק הנגר (אונגלט)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-045",
+                  "sku": "BEEF-045",
+                  "nameEn": "Plate short ribs (Flanken-cut)",
+                  "nameHe": "צלעות קצרות פלאטה (חתך פלאנקן)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-046",
+                  "sku": "BEEF-046",
+                  "nameEn": "Plate short ribs (English-cut)",
+                  "nameHe": "צלעות קצרות פלאטה (חתך אנגלי)",
+                  "unit": "kg",
+                  "category": "beef"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "brisket-chest",
+          "nameEn": "Brisket (Chest)",
+          "nameHe": "בריסקט (חזה)",
+          "groups": [
+            {
+              "id": "brisket-cuts",
+              "nameEn": "Brisket Cuts",
+              "nameHe": "נתחי בריסקט",
+              "cuts": [
+                {
+                  "itemId": "itm-beef-047",
+                  "sku": "BEEF-047",
+                  "nameEn": "Whole packer brisket",
+                  "nameHe": "בריסקט פקר שלם",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-048",
+                  "sku": "BEEF-048",
+                  "nameEn": "Brisket flat (first cut)",
+                  "nameHe": "בריסקט פלאט (חתך ראשון)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-049",
+                  "sku": "BEEF-049",
+                  "nameEn": "Brisket point (second cut)",
+                  "nameHe": "בריסקט פוינט (חתך שני)",
+                  "unit": "kg",
+                  "category": "beef"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shank-legs",
+          "nameEn": "Shank (Legs)",
+          "nameHe": "שוק (רגליים)",
+          "groups": [
+            {
+              "id": "shank-cuts",
+              "nameEn": "Shank Cuts",
+              "nameHe": "נתחי שוק",
+              "cuts": [
+                {
+                  "itemId": "itm-beef-050",
+                  "sku": "BEEF-050",
+                  "nameEn": "Fore shank",
+                  "nameHe": "שוק קדמי",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-051",
+                  "sku": "BEEF-051",
+                  "nameEn": "Hind shank",
+                  "nameHe": "שוק אחורי",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-052",
+                  "sku": "BEEF-052",
+                  "nameEn": "Cross-cut shanks",
+                  "nameHe": "שוק פרוס לרוחב",
+                  "unit": "kg",
+                  "category": "beef"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "other-offal-specialty",
+          "nameEn": "Other / Offal / Specialty",
+          "nameHe": "אחר / פנימיות / מיוחדים",
+          "groups": [
+            {
+              "id": "specialty-cuts",
+              "nameEn": "Specialty Cuts",
+              "nameHe": "נתחים מיוחדים",
+              "cuts": [
+                {
+                  "itemId": "itm-beef-053",
+                  "sku": "BEEF-053",
+                  "nameEn": "Oxtail",
+                  "nameHe": "זנב שור",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-054",
+                  "sku": "BEEF-054",
+                  "nameEn": "Beef cheeks",
+                  "nameHe": "לחיי בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-055",
+                  "sku": "BEEF-055",
+                  "nameEn": "Tongue",
+                  "nameHe": "לשון בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-056",
+                  "sku": "BEEF-056",
+                  "nameEn": "Beef liver",
+                  "nameHe": "כבד בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-057",
+                  "sku": "BEEF-057",
+                  "nameEn": "Beef heart",
+                  "nameHe": "לב בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-058",
+                  "sku": "BEEF-058",
+                  "nameEn": "Beef kidneys",
+                  "nameHe": "כליות בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-059",
+                  "sku": "BEEF-059",
+                  "nameEn": "Beef tripe",
+                  "nameHe": "קיבה בקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-060",
+                  "sku": "BEEF-060",
+                  "nameEn": "Beef sweetbreads",
+                  "nameHe": "שקדים מתוקים מבקר",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-061",
+                  "sku": "BEEF-061",
+                  "nameEn": "Marrow bones",
+                  "nameHe": "עצמות מח",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-062",
+                  "sku": "BEEF-062",
+                  "nameEn": "Soup bones",
+                  "nameHe": "עצמות למרק",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-beef-063",
+                  "sku": "BEEF-063",
+                  "nameEn": "Suet (hard fat)",
+                  "nameHe": "שומן בקר קשה (סואט)",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-064",
+                  "sku": "BEEF-064",
+                  "nameEn": "Ground beef 90/10",
+                  "nameHe": "בשר בקר טחון 90/10",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-065",
+                  "sku": "BEEF-065",
+                  "nameEn": "Ground beef 80/20",
+                  "nameHe": "בשר בקר טחון 80/20",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-066",
+                  "sku": "BEEF-066",
+                  "nameEn": "Ground beef 73/27",
+                  "nameHe": "בשר בקר טחון 73/27",
+                  "unit": "kg",
+                  "category": "beef"
+                },
+                {
+                  "itemId": "itm-beef-067",
+                  "sku": "BEEF-067",
+                  "nameEn": "Stew meat (beef trimmings)",
+                  "nameHe": "בשר בקר לתבשיל",
+                  "unit": "kg",
+                  "category": "beef"
+                }
               ]
             }
           ]
@@ -163,79 +662,712 @@
       "nameHe": "עוף",
       "primals": [
         {
+          "id": "whole-bird-preparations",
+          "nameEn": "Whole Bird Preparations",
+          "nameHe": "הכנות לעוף שלם",
+          "groups": [
+            {
+              "id": "whole-bird-cuts",
+              "nameEn": "Whole Bird Cuts",
+              "nameHe": "נתחי עוף שלם",
+              "cuts": [
+                {
+                  "itemId": "itm-chicken-001",
+                  "sku": "CHICKEN-001",
+                  "nameEn": "Whole roaster",
+                  "nameHe": "עוף שלם לצלייה",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-002",
+                  "sku": "CHICKEN-002",
+                  "nameEn": "Whole broiler / fryer",
+                  "nameHe": "עוף שלם ברוילר / פרייר",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-003",
+                  "sku": "CHICKEN-003",
+                  "nameEn": "Spatchcocked (butterflied)",
+                  "nameHe": "עוף ספצ'קוק (פרוס לפרפר)",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-004",
+                  "sku": "CHICKEN-004",
+                  "nameEn": "8-piece cut",
+                  "nameHe": "חיתוך ל-8 חלקים",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-005",
+                  "sku": "CHICKEN-005",
+                  "nameEn": "Cornish game hen",
+                  "nameHe": "קורניש גיים הן",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-006",
+                  "sku": "CHICKEN-006",
+                  "nameEn": "Whole broiler",
+                  "nameHe": "עוף שלם ברוילר",
+                  "unit": "unit",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-007",
+                  "sku": "CHICKEN-007",
+                  "nameEn": "Whole fryer",
+                  "nameHe": "עוף שלם פרייר",
+                  "unit": "unit",
+                  "category": "chicken"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "id": "breast",
           "nameEn": "Breast",
           "nameHe": "חזה",
           "groups": [
             {
-              "id": "quick-cook",
-              "nameEn": "Quick Cook",
-              "nameHe": "לבישול מהיר",
+              "id": "breast-cuts",
+              "nameEn": "Breast Cuts",
+              "nameHe": "נתחי חזה",
               "cuts": [
-                { "itemId": "itm-chicken-breast", "sku": "CHK-BRS-019", "nameEn": "Chicken Breast Skinless", "nameHe": "חזה עוף ללא עור", "unit": "kg", "category": "chicken" },
-                { "itemId": "itm-chicken-schnitzel", "sku": "CHK-SNZ-040", "nameEn": "Chicken Schnitzel Cut", "nameHe": "שניצל עוף", "unit": "kg", "category": "chicken" }
+                {
+                  "itemId": "itm-chicken-008",
+                  "sku": "CHICKEN-008",
+                  "nameEn": "Boneless skinless chicken breast",
+                  "nameHe": "חזה עוף ללא עצם וללא עור",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-009",
+                  "sku": "CHICKEN-009",
+                  "nameEn": "Bone-in, skin-on breast (Split chicken breast)",
+                  "nameHe": "חזה עוף עם עצם ועור (חזה מפוצל)",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-010",
+                  "sku": "CHICKEN-010",
+                  "nameEn": "Chicken tenderloins (tenders)",
+                  "nameHe": "פילה עוף (טנדרים)",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-011",
+                  "sku": "CHICKEN-011",
+                  "nameEn": "Airline chicken breast",
+                  "nameHe": "חזה עוף איירליין",
+                  "unit": "kg",
+                  "category": "chicken"
+                }
               ]
             }
           ]
         },
         {
-          "id": "thigh-leg",
-          "nameEn": "Thigh & Leg",
-          "nameHe": "ירך ושוק",
+          "id": "legs",
+          "nameEn": "Legs",
+          "nameHe": "רגליים",
           "groups": [
             {
-              "id": "roast-and-grill",
-              "nameEn": "Roast & Grill",
-              "nameHe": "לצלייה וגריל",
+              "id": "leg-cuts",
+              "nameEn": "Leg Cuts",
+              "nameHe": "נתחי רגל",
               "cuts": [
-                { "itemId": "itm-chicken-thigh", "sku": "CHK-THG-020", "nameEn": "Chicken Thigh Boneless", "nameHe": "פרגית ללא עצם", "unit": "kg", "category": "chicken" },
-                { "itemId": "itm-chicken-drumstick", "sku": "CHK-DRM-021", "nameEn": "Chicken Drumstick", "nameHe": "שוק עוף", "unit": "kg", "category": "chicken" }
+                {
+                  "itemId": "itm-chicken-012",
+                  "sku": "CHICKEN-012",
+                  "nameEn": "Whole leg quarter",
+                  "nameHe": "רבע עוף שלם",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-013",
+                  "sku": "CHICKEN-013",
+                  "nameEn": "Drumstick",
+                  "nameHe": "שוק עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-014",
+                  "sku": "CHICKEN-014",
+                  "nameEn": "Thigh (Bone-in, skin-on)",
+                  "nameHe": "ירך עוף עם עצם ועור",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-015",
+                  "sku": "CHICKEN-015",
+                  "nameEn": "Thigh (Boneless, skinless)",
+                  "nameHe": "ירך עוף ללא עצם וללא עור",
+                  "unit": "kg",
+                  "category": "chicken"
+                }
               ]
             }
           ]
         },
         {
-          "id": "wing",
-          "nameEn": "Wing",
-          "nameHe": "כנף",
+          "id": "wings",
+          "nameEn": "Wings",
+          "nameHe": "כנפיים",
           "groups": [
             {
-              "id": "snack-and-grill",
-              "nameEn": "Snack & Grill",
-              "nameHe": "לנשנוש ולגריל",
+              "id": "wing-cuts",
+              "nameEn": "Wing Cuts",
+              "nameHe": "נתחי כנף",
               "cuts": [
-                { "itemId": "itm-chicken-wing", "sku": "CHK-WNG-022", "nameEn": "Chicken Wing Party Cut", "nameHe": "כנפיים חתוכות", "unit": "kg", "category": "chicken" }
+                {
+                  "itemId": "itm-chicken-016",
+                  "sku": "CHICKEN-016",
+                  "nameEn": "Whole wing",
+                  "nameHe": "כנף עוף שלמה",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-017",
+                  "sku": "CHICKEN-017",
+                  "nameEn": "Drumette",
+                  "nameHe": "דרמט",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-018",
+                  "sku": "CHICKEN-018",
+                  "nameEn": "Flat / Wingette",
+                  "nameHe": "פלאט / ווינגט",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-019",
+                  "sku": "CHICKEN-019",
+                  "nameEn": "Wing tip / Flapper",
+                  "nameHe": "קצה כנף / פלאפר",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-020",
+                  "sku": "CHICKEN-020",
+                  "nameEn": "Flat",
+                  "nameHe": "פלאט",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-021",
+                  "sku": "CHICKEN-021",
+                  "nameEn": "Wingette",
+                  "nameHe": "ווינגט",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-022",
+                  "sku": "CHICKEN-022",
+                  "nameEn": "Wing tip",
+                  "nameHe": "קצה כנף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-023",
+                  "sku": "CHICKEN-023",
+                  "nameEn": "Flapper",
+                  "nameHe": "פלאפר",
+                  "unit": "kg",
+                  "category": "chicken"
+                }
               ]
             }
           ]
         },
         {
-          "id": "whole-carcass",
-          "nameEn": "Whole & Carcass",
-          "nameHe": "עוף שלם ושלד",
+          "id": "other-offal",
+          "nameEn": "Other / Offal",
+          "nameHe": "אחר / פנימיות",
           "groups": [
             {
-              "id": "whole-and-stock",
-              "nameEn": "Whole & Stock",
-              "nameHe": "שלם ומרק",
+              "id": "other-cuts",
+              "nameEn": "Other Cuts",
+              "nameHe": "נתחים נוספים",
               "cuts": [
-                { "itemId": "itm-chicken-whole", "sku": "CHK-WHL-023", "nameEn": "Whole Chicken", "nameHe": "עוף שלם", "unit": "unit", "category": "chicken" },
-                { "itemId": "itm-chicken-bones", "sku": "CHK-BON-037", "nameEn": "Chicken Soup Bones", "nameHe": "עצמות עוף למרק", "unit": "kg", "category": "chicken" }
+                {
+                  "itemId": "itm-chicken-024",
+                  "sku": "CHICKEN-024",
+                  "nameEn": "Chicken livers",
+                  "nameHe": "כבדי עוף",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-chicken-025",
+                  "sku": "CHICKEN-025",
+                  "nameEn": "Chicken hearts",
+                  "nameHe": "לבבות עוף",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-chicken-026",
+                  "sku": "CHICKEN-026",
+                  "nameEn": "Chicken gizzards",
+                  "nameHe": "קיבות עוף",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-chicken-027",
+                  "sku": "CHICKEN-027",
+                  "nameEn": "Chicken paws / feet",
+                  "nameHe": "כפות / רגלי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-028",
+                  "sku": "CHICKEN-028",
+                  "nameEn": "Chicken backs / frames",
+                  "nameHe": "גבים / שלדי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-029",
+                  "sku": "CHICKEN-029",
+                  "nameEn": "Chicken necks",
+                  "nameHe": "צווארי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-030",
+                  "sku": "CHICKEN-030",
+                  "nameEn": "Ground chicken",
+                  "nameHe": "עוף טחון",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-031",
+                  "sku": "CHICKEN-031",
+                  "nameEn": "Schmaltz (rendered chicken fat)",
+                  "nameHe": "שמאלץ (שומן עוף מזוקק)",
+                  "unit": "kg",
+                  "category": "prepared"
+                },
+                {
+                  "itemId": "itm-chicken-032",
+                  "sku": "CHICKEN-032",
+                  "nameEn": "Chicken paws",
+                  "nameHe": "כפות עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-033",
+                  "sku": "CHICKEN-033",
+                  "nameEn": "Chicken feet",
+                  "nameHe": "רגלי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-034",
+                  "sku": "CHICKEN-034",
+                  "nameEn": "Chicken backs",
+                  "nameHe": "גבי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-035",
+                  "sku": "CHICKEN-035",
+                  "nameEn": "Chicken frames",
+                  "nameHe": "שלדי עוף",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-036",
+                  "sku": "CHICKEN-036",
+                  "nameEn": "Ground chicken (Breast-only)",
+                  "nameHe": "עוף טחון (חזה בלבד)",
+                  "unit": "kg",
+                  "category": "chicken"
+                },
+                {
+                  "itemId": "itm-chicken-037",
+                  "sku": "CHICKEN-037",
+                  "nameEn": "Ground chicken (Mixed dark/white meat)",
+                  "nameHe": "עוף טחון (תערובת כהה/לבן)",
+                  "unit": "kg",
+                  "category": "chicken"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lamb",
+      "nameEn": "Lamb",
+      "nameHe": "טלה",
+      "primals": [
+        {
+          "id": "leg",
+          "nameEn": "Leg",
+          "nameHe": "רגל",
+          "groups": [
+            {
+              "id": "leg-cuts",
+              "nameEn": "Leg Cuts",
+              "nameHe": "נתחי רגל",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-001",
+                  "sku": "LAMB-001",
+                  "nameEn": "Whole leg of lamb (bone-in)",
+                  "nameHe": "רגל טלה שלמה עם עצם",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-002",
+                  "sku": "LAMB-002",
+                  "nameEn": "Boneless leg of lamb (rolled and tied)",
+                  "nameHe": "רגל טלה ללא עצם (מגולגלת וקשורה)",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-003",
+                  "sku": "LAMB-003",
+                  "nameEn": "Butterflied leg of lamb",
+                  "nameHe": "רגל טלה פרוסה לפרפר",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-004",
+                  "sku": "LAMB-004",
+                  "nameEn": "Sirloin half",
+                  "nameHe": "חצי סירלוין",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-005",
+                  "sku": "LAMB-005",
+                  "nameEn": "Shank half",
+                  "nameHe": "חצי שוק",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-006",
+                  "sku": "LAMB-006",
+                  "nameEn": "Leg steaks (center cut)",
+                  "nameHe": "סטייקים מרגל טלה (חתך מרכזי)",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
               ]
             }
           ]
         },
         {
-          "id": "giblets",
-          "nameEn": "Giblets",
-          "nameHe": "פנימיות",
+          "id": "loin",
+          "nameEn": "Loin",
+          "nameHe": "מותן",
           "groups": [
             {
-              "id": "specialty",
-              "nameEn": "Specialty",
-              "nameHe": "מיוחדים",
+              "id": "loin-cuts",
+              "nameEn": "Loin Cuts",
+              "nameHe": "נתחי מותן",
               "cuts": [
-                { "itemId": "itm-chicken-liver", "sku": "CHK-LVR-028", "nameEn": "Chicken Liver", "nameHe": "כבד עוף", "unit": "kg", "category": "offal" }
+                {
+                  "itemId": "itm-lamb-007",
+                  "sku": "LAMB-007",
+                  "nameEn": "Loin roast (saddle of lamb)",
+                  "nameHe": "צלי מותן (סאדל טלה)",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-008",
+                  "sku": "LAMB-008",
+                  "nameEn": "Loin chops",
+                  "nameHe": "צלעות מותן",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "rack-rib",
+          "nameEn": "Rack (Rib)",
+          "nameHe": "ראק (צלע)",
+          "groups": [
+            {
+              "id": "rack-cuts",
+              "nameEn": "Rack Cuts",
+              "nameHe": "נתחי ראק",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-009",
+                  "sku": "LAMB-009",
+                  "nameEn": "Whole rack of lamb",
+                  "nameHe": "ראק טלה שלם",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-010",
+                  "sku": "LAMB-010",
+                  "nameEn": "Frenched rack of lamb",
+                  "nameHe": "ראק טלה פרנץ'",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-011",
+                  "sku": "LAMB-011",
+                  "nameEn": "Crown roast",
+                  "nameHe": "צלי קראון",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-012",
+                  "sku": "LAMB-012",
+                  "nameEn": "Rib chops",
+                  "nameHe": "צלעות מהראק",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shoulder",
+          "nameEn": "Shoulder",
+          "nameHe": "כתף",
+          "groups": [
+            {
+              "id": "shoulder-cuts",
+              "nameEn": "Shoulder Cuts",
+              "nameHe": "נתחי כתף",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-013",
+                  "sku": "LAMB-013",
+                  "nameEn": "Square-cut shoulder roast (bone-in)",
+                  "nameHe": "צלי כתף חתך מרובע עם עצם",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-014",
+                  "sku": "LAMB-014",
+                  "nameEn": "Rolled shoulder roast (boneless)",
+                  "nameHe": "צלי כתף מגולגל ללא עצם",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-015",
+                  "sku": "LAMB-015",
+                  "nameEn": "Shoulder blade chops",
+                  "nameHe": "צלעות להב כתף",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-016",
+                  "sku": "LAMB-016",
+                  "nameEn": "Shoulder arm chops",
+                  "nameHe": "צלעות זרוע כתף",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-017",
+                  "sku": "LAMB-017",
+                  "nameEn": "Neck slices",
+                  "nameHe": "פרוסות צוואר",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "breast-flank",
+          "nameEn": "Breast & Flank",
+          "nameHe": "חזה ופלאנק",
+          "groups": [
+            {
+              "id": "breast-flank-cuts",
+              "nameEn": "Breast & Flank Cuts",
+              "nameHe": "נתחי חזה ופלאנק",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-018",
+                  "sku": "LAMB-018",
+                  "nameEn": "Lamb breast",
+                  "nameHe": "חזה טלה",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-019",
+                  "sku": "LAMB-019",
+                  "nameEn": "Lamb riblets",
+                  "nameHe": "ריבלס טלה",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-020",
+                  "sku": "LAMB-020",
+                  "nameEn": "Lamb spareribs",
+                  "nameHe": "ספרריבס טלה",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-021",
+                  "sku": "LAMB-021",
+                  "nameEn": "Lamb flank",
+                  "nameHe": "פלאנק טלה",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shank",
+          "nameEn": "Shank",
+          "nameHe": "שוק",
+          "groups": [
+            {
+              "id": "shank-cuts",
+              "nameEn": "Shank Cuts",
+              "nameHe": "נתחי שוק",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-022",
+                  "sku": "LAMB-022",
+                  "nameEn": "Foreshank",
+                  "nameHe": "שוק קדמי",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-023",
+                  "sku": "LAMB-023",
+                  "nameEn": "Hindshank",
+                  "nameHe": "שוק אחורי",
+                  "unit": "kg",
+                  "category": "lamb"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "other-offal",
+          "nameEn": "Other / Offal",
+          "nameHe": "אחר / פנימיות",
+          "groups": [
+            {
+              "id": "other-cuts",
+              "nameEn": "Other Cuts",
+              "nameHe": "נתחים נוספים",
+              "cuts": [
+                {
+                  "itemId": "itm-lamb-024",
+                  "sku": "LAMB-024",
+                  "nameEn": "Ground lamb",
+                  "nameHe": "בשר טלה טחון",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-025",
+                  "sku": "LAMB-025",
+                  "nameEn": "Lamb stew meat",
+                  "nameHe": "בשר טלה לתבשיל",
+                  "unit": "kg",
+                  "category": "lamb"
+                },
+                {
+                  "itemId": "itm-lamb-026",
+                  "sku": "LAMB-026",
+                  "nameEn": "Lamb liver",
+                  "nameHe": "כבד טלה",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-lamb-027",
+                  "sku": "LAMB-027",
+                  "nameEn": "Lamb kidneys",
+                  "nameHe": "כליות טלה",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-lamb-028",
+                  "sku": "LAMB-028",
+                  "nameEn": "Lamb heart",
+                  "nameHe": "לב טלה",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-lamb-029",
+                  "sku": "LAMB-029",
+                  "nameEn": "Lamb brains",
+                  "nameHe": "מוח טלה",
+                  "unit": "kg",
+                  "category": "offal"
+                },
+                {
+                  "itemId": "itm-lamb-030",
+                  "sku": "LAMB-030",
+                  "nameEn": "Lamb sweetbreads",
+                  "nameHe": "שקדים מתוקים מטלה",
+                  "unit": "kg",
+                  "category": "offal"
+                }
               ]
             }
           ]

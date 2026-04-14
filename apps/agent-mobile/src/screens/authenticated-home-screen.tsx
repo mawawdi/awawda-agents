@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MaterialIcons } from '@expo/vector-icons'
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
   ImageBackground,
-  I18nManager,
   Linking,
   Pressable,
   ScrollView,
@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type {
   AgentApprovedItem,
   AgentAssignedCustomer,
@@ -22,36 +23,29 @@ import type {
   AgentOrderCard,
 } from '@meatland/shared-types'
 
+import { buildCandidateBaseUrls } from '../api/api-base-url-fallback'
 import {
-  addApprovedItem,
   cancelAgentOrder,
   generateMagicLink,
   listAgentOrders,
   listApprovedItems,
   listAssignedCustomers,
 } from '../api/agent-customers-client'
+import { API_BASE_URL } from '../config/env'
 import { useAuth } from '../auth/auth-provider'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 import {
   type AgentDashboardTabId,
-  applyApprovedCountMutation,
   buildMagicLinkShareMessage,
-  buildRecentTransactions,
   buildWhatsAppDeepLink,
-  formatApprovedItemTimestamp,
-  formatLastOrderLabel,
   formatMagicLinkExpiry,
   getResilienceHint,
-  mergeApprovedItems,
   normalizeMagicLinkForShare,
   shouldUseCopyLinkFallback,
-  magicLinkLifecycleLabel,
 } from './agent-dashboard-presenter'
 import {
-  getCurrentTimeLabel,
   placeholderColor,
   placeholderImageUri,
-  placeholderSeed,
 } from './authenticated-home-screen.helpers'
 import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
@@ -60,7 +54,6 @@ const SLOW_NETWORK_THRESHOLD_MS = 1800
 const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }> = [
   { id: 'home', label: 'בית', icon: 'home' },
   { id: 'customers', label: 'לקוחות', icon: 'group' },
-  { id: 'catalog', label: 'קטלוג', icon: 'menu-book' },
   { id: 'orders', label: 'הזמנות', icon: 'receipt' },
   { id: 'settings', label: 'הגדרות', icon: 'settings' },
 ]
@@ -84,6 +77,120 @@ const ORDER_DATE_FILTERS: Array<{ id: OrderDateFilterId; label: string; days?: n
 ]
 
 const ORDERS_PAGE_SIZE = 6
+const TESTING_CUT_MIN_DIMENSION_PX = 512
+const CATALOG_GRID_GAP = spacing.sm
+const CATALOG_GRID_ROWS_PER_PAGE = 3
+const CATALOG_GRID_COLUMNS = 3
+const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v2'
+const TESTING_IMAGE_BASE_URLS = buildCandidateBaseUrls(API_BASE_URL)
+const IS_RTL_LAYOUT = true
+const DEFAULT_CUSTOMER_PHONE = '054-000-0000'
+const BASE_VIEWPORT_WIDTH = 430
+const FONT_SCALE = Math.max(0.82, Math.min(1, Dimensions.get('window').width / BASE_VIEWPORT_WIDTH))
+
+type ItemSpecies = 'beef' | 'chicken' | 'lamb'
+
+const SPECIES_BADGE_ICON_BY_SPECIES: Record<ItemSpecies, React.ComponentProps<typeof MaterialCommunityIcons>['name']> = {
+  beef: 'cow',
+  chicken: 'bird',
+  lamb: 'sheep',
+}
+
+const ITEM_TOKEN_LABEL_HEBREW: Record<string, string> = {
+  arm: 'כתף',
+  back: 'גב',
+  backs: 'גבים',
+  bavette: 'באבט',
+  belly: 'בטן',
+  blade: 'בלייד',
+  boneless: 'ללא עצם',
+  breast: 'חזה',
+  ribeye: 'ריבאיי',
+  steak: 'סטייק',
+  steaks: 'סטייקים',
+  brisket: 'בריסקט',
+  tenderloin: 'פילה',
+  tenderloins: 'פילה',
+  tender: 'טנדר',
+  striploin: 'סינטה',
+  strip: 'סטריפ',
+  strips: 'סטריפים',
+  sirloin: 'סירלוין',
+  short: 'קצר',
+  ribs: 'צלעות',
+  riblets: 'צלעוניות',
+  rib: 'צלע',
+  top: 'טופ',
+  tip: 'קצה',
+  tips: 'קצוות',
+  osso: 'אוסו',
+  buco: 'בוקה',
+  picanha: 'פיקניה',
+  chops: 'צלעות',
+  chop: 'צלע',
+  cap: 'כיפה',
+  club: 'קלאב',
+  denver: 'דנבר',
+  eye: 'איי',
+  filet: 'פילה',
+  flank: 'פלאנק',
+  flanken: 'פלאנקן',
+  flat: 'פלאט',
+  game: 'ציד',
+  hanger: 'הנגר',
+  inside: 'פנימי',
+  iron: 'איירון',
+  kansas: 'קנזס',
+  knuckle: 'ברך',
+  loin: 'מותן',
+  marrow: 'מח עצם',
+  mignon: 'מיניון',
+  mock: 'מוק',
+  neck: 'צוואר',
+  necks: 'צווארים',
+  new: 'ניו',
+  onglet: 'אונגלֶה',
+  outside: 'חיצוני',
+  oxtail: 'זנב שור',
+  porterhouse: 'פורטרהאוס',
+  prime: 'פריים',
+  ranch: 'ראנץ׳',
+  rolled: 'מגולגל',
+  round: 'עגול',
+  rump: 'ראמפ',
+  schnitzel: 'שניצל',
+  skirt: 'סקירט',
+  spinalis: 'ספינליס',
+  standing: 'עומד',
+  t: 'טי',
+  tournedos: 'טורנדו',
+  tri: 'טרי',
+  tongue: 'לשון',
+  white: 'לבן',
+  shoulder: 'כתף',
+  shank: 'שוק',
+  thigh: 'ירך',
+  drumstick: 'שוק',
+  drumette: 'כנף אמצעית',
+  wing: 'כנף',
+  wingette: 'כנף אמצעית',
+  wings: 'כנפיים',
+  whole: 'שלם',
+  mince: 'טחון',
+  minced: 'טחון',
+  ground: 'טחון',
+  bones: 'עצמות',
+  bone: 'עצם',
+  burger: 'המבורגר',
+  patty: 'קציצה',
+  smoked: 'מעושן',
+  entrecote: 'אנטרקוט',
+  lamb: 'טלה',
+  chicken: 'עוף',
+  beef: 'בקר',
+}
+
+const ITEM_TOKEN_SKIP = new Set(['itm', 'item', 'in', 'of', 'on', 'the', 'for', 'to', 'and'])
 
 function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; tone: 'success' | 'warning' } {
   if (customer.approvedItemsCount === 0) {
@@ -91,17 +198,6 @@ function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; to
   }
 
   return { label: 'פעיל', tone: 'success' }
-}
-
-function getTransactionDotColor(kind: ReturnType<typeof buildRecentTransactions>[number]['kind']): string {
-  if (kind === 'magic_link') {
-    return palette.primaryContainer
-  }
-  if (kind === 'approved_item') {
-    return palette.secondary
-  }
-
-  return palette.success
 }
 
 const CITY_NAME_BY_CODE: Record<string, string> = {
@@ -136,9 +232,175 @@ function customerCityLabel(customerId: string): string {
   return CITY_NAME_BY_CODE[cityCode] ?? 'לקוח אזורי'
 }
 
+function inferItemSpecies(itemId: string): ItemSpecies | null {
+  const normalized = itemId.toLowerCase()
+  if (normalized.includes('beef')) {
+    return 'beef'
+  }
+  if (normalized.includes('chicken')) {
+    return 'chicken'
+  }
+  if (normalized.includes('lamb')) {
+    return 'lamb'
+  }
+  return null
+}
+
+function normalizeItemTokens(itemId: string): string[] {
+  return itemId
+    .toLowerCase()
+    .replace(/^itm[-_]?/, '')
+    .replace(/^item[-_]?/, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 0 && !ITEM_TOKEN_SKIP.has(token))
+}
+
 function humanizeItemName(itemId: string): string {
-  const cleaned = itemId.replace(/^itm-/, '').replaceAll('-', ' ').trim()
-  return toTitleCase(cleaned) || itemId
+  const species = inferItemSpecies(itemId)
+  const speciesPrefix = species ? new Set([species]) : new Set<string>()
+  const tokens = normalizeItemTokens(itemId).filter((token) => !speciesPrefix.has(token))
+
+  if (tokens.length === 0) {
+    const cleaned = itemId.replace(/^itm-/, '').replaceAll('-', ' ').replaceAll('_', ' ').trim()
+    return toTitleCase(cleaned) || itemId
+  }
+
+  const translated = tokens.map((token) => ITEM_TOKEN_LABEL_HEBREW[token] ?? token)
+  const hasHebrewTranslation = tokens.some((token) => ITEM_TOKEN_LABEL_HEBREW[token] !== undefined)
+  if (!hasHebrewTranslation) {
+    return toTitleCase(tokens.join(' ')) || itemId
+  }
+
+  return translated.join(' ')
+}
+
+function latinCharacterCount(value: string): number {
+  const matches = value.match(/[A-Za-z]/g)
+  return matches ? matches.length : 0
+}
+
+function resolveOrderItemDisplayName(itemId: string, itemName: string): string {
+  const rawName = itemName.trim()
+  const normalizedFromName = rawName ? humanizeItemName(rawName) : ''
+  const normalizedFromId = humanizeItemName(itemId)
+  const candidates = [rawName, normalizedFromName, normalizedFromId].filter((candidate) => candidate.length > 0)
+
+  if (candidates.length === 0) {
+    return itemId
+  }
+
+  const ranked = candidates.sort((left, right) => {
+    const latinDelta = latinCharacterCount(left) - latinCharacterCount(right)
+    if (latinDelta !== 0) {
+      return latinDelta
+    }
+    return left.length - right.length
+  })
+
+  return ranked[0] ?? itemId
+}
+
+function renderSpeciesBadge(itemId: string, size: 'default' | 'small' = 'default'): React.JSX.Element | null {
+  const species = inferItemSpecies(itemId)
+  if (!species) {
+    return null
+  }
+
+  const speciesStyle =
+    species === 'beef' ? styles.speciesBadgeBeef : species === 'chicken' ? styles.speciesBadgeChicken : styles.speciesBadgeLamb
+  const iconName = SPECIES_BADGE_ICON_BY_SPECIES[species]
+  const iconSize = size === 'small' ? 12 : 14
+
+  return (
+    <View style={[styles.speciesBadge, size === 'small' && styles.speciesBadgeSmall, speciesStyle]}>
+      <MaterialCommunityIcons color="#fff" name={iconName} size={iconSize} />
+    </View>
+  )
+}
+
+function buildTestingItemImageUri(itemId: string, baseUrl: string): string | null {
+  const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/g, '')
+  if (!normalizedBaseUrl || !itemId.trim()) {
+    return null
+  }
+
+  if (/YOUR_LAN_IP/i.test(normalizedBaseUrl)) {
+    return null
+  }
+
+  const encodedItemId = encodeURIComponent(itemId.trim().toLowerCase())
+  return `${normalizedBaseUrl}/v1/testing-assets/items/${encodedItemId}/image?v=${TESTING_CUT_IMAGE_CACHE_BUSTER}`
+}
+
+function getNextTestingImageCandidateIndex(currentIndex: number): number | null {
+  const nextIndex = currentIndex + 1
+  if (nextIndex >= TESTING_IMAGE_BASE_URLS.length) {
+    return null
+  }
+
+  return nextIndex
+}
+
+function resolveTestingImageCandidateIndex(itemId: string, map: Record<string, number>): number {
+  const index = map[itemId]
+  if (typeof index === 'number' && Number.isFinite(index)) {
+    return index
+  }
+
+  return 0
+}
+
+function resolveTestingImageUriFromCandidates(
+  itemId: string,
+  candidateIndexByItemId: Record<string, number>,
+): string | null {
+  const candidateIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
+  const baseUrl = TESTING_IMAGE_BASE_URLS[candidateIndex]
+  if (!baseUrl) {
+    return null
+  }
+
+  return buildTestingItemImageUri(itemId, baseUrl)
+}
+
+function isTestingImageCandidateExhausted(itemId: string, candidateIndexByItemId: Record<string, number>): boolean {
+  const candidateIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
+  return candidateIndex >= TESTING_IMAGE_BASE_URLS.length
+}
+
+function moveToNextTestingImageCandidate(
+  itemId: string,
+  candidateIndexByItemId: Record<string, number>,
+): Record<string, number> {
+  const currentIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
+  const nextIndex = getNextTestingImageCandidateIndex(currentIndex)
+  if (nextIndex === null) {
+    return {
+      ...candidateIndexByItemId,
+      [itemId]: TESTING_IMAGE_BASE_URLS.length,
+    }
+  }
+
+  return {
+    ...candidateIndexByItemId,
+    [itemId]: nextIndex,
+  }
+}
+
+function resolveCatalogGridColumnCount(_containerWidth: number): number {
+  return CATALOG_GRID_COLUMNS
+}
+
+function resolveCatalogGridCellDimension(containerWidth: number, columns: number): number {
+  if (!Number.isFinite(containerWidth) || containerWidth <= 0 || columns <= 0) {
+    return 240
+  }
+
+  const totalGap = CATALOG_GRID_GAP * Math.max(0, columns - 1)
+  const dimension = Math.floor((containerWidth - totalGap - 2) / columns)
+  return Math.max(1, Math.min(TESTING_CUT_MIN_DIMENSION_PX, dimension))
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -152,25 +414,6 @@ function formatCurrency(value: number, currency: string): string {
 function estimateCatalogUnitPrice(itemId: string): number {
   const hashSeed = itemId.split('').reduce((accumulator, character) => accumulator + character.charCodeAt(0), 0)
   return 95 + (hashSeed % 9) * 17
-}
-
-function initialsFromLabel(label: string): string {
-  return (
-    label
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((chunk) => chunk.charAt(0).toUpperCase())
-      .join('') || 'ML'
-  )
-}
-
-function customerBadgeLabel(customerId: string, approvedItemsCount: number): string {
-  if (approvedItemsCount === 0) {
-    return 'חדש'
-  }
-
-  return placeholderSeed(customerId) % 2 === 0 ? 'פרימיום' : 'פעיל'
 }
 
 function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; toDate?: string } {
@@ -194,13 +437,85 @@ function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; to
   }
 }
 
+function toApiDateInput(date: Date): string {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function sumOrdersEstimatedTotal(orders: AgentOrderCard[]): number {
+  return orders.reduce((total, order) => total + order.estimatedTotal, 0)
+}
+
+function formatRelativeLastOrder(lastOrderAt: string | null): string {
+  if (!lastOrderAt) {
+    return 'ללא הזמנה קודמת'
+  }
+
+  const parsed = Date.parse(lastOrderAt)
+  if (Number.isNaN(parsed)) {
+    return 'זמן הזמנה לא זמין'
+  }
+
+  const minutes = Math.max(1, Math.floor((Date.now() - parsed) / 60000))
+  if (minutes < 60) {
+    return `לפני ${minutes} דק׳`
+  }
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    return `לפני ${hours} שעות`
+  }
+
+  const days = Math.floor(hours / 24)
+  if (days < 14) {
+    return `לפני ${days} ימים`
+  }
+
+  const weeks = Math.floor(days / 7)
+  if (weeks < 8) {
+    return `לפני ${weeks} שבועות`
+  }
+
+  const months = Math.floor(days / 30)
+  return `לפני ${Math.max(1, months)} חודשים`
+}
+
+function formatOrderDateTime(submittedAt: string): string {
+  const parsed = Date.parse(submittedAt)
+  if (Number.isNaN(parsed)) {
+    return 'מועד הזמנה לא זמין'
+  }
+
+  const date = new Date(parsed)
+  return `${date.toLocaleDateString('he-IL')} · ${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+function formatOrderTime(submittedAt: string): string {
+  const parsed = Date.parse(submittedAt)
+  if (Number.isNaN(parsed)) {
+    return 'שעה לא זמינה'
+  }
+
+  return new Date(parsed).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatOrderUnitLabel(unit: 'kg' | 'unit'): string {
+  return unit === 'kg' ? 'ק״ג' : 'יח׳'
+}
+
+function scaledFont(baseSize: number): number {
+  return Math.max(10, Math.round(baseSize * FONT_SCALE))
+}
+
 export function AuthenticatedHomeScreen(): React.JSX.Element {
   const { signOut, profile, token } = useAuth()
+  const insets = useSafeAreaInsets()
   const [activeTab, setActiveTab] = useState<AgentDashboardTabId>('home')
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
   const [ordersSearchQuery, setOrdersSearchQuery] = useState('')
   const [activeCustomerFilter, setActiveCustomerFilter] = useState<CustomerFilterId>('all')
-  const [expandedCustomerIds, setExpandedCustomerIds] = useState<string[]>([])
 
   const [customers, setCustomers] = useState<AgentAssignedCustomer[]>([])
   const [isCustomersLoading, setIsCustomersLoading] = useState(true)
@@ -213,19 +528,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [isApprovedItemsLoading, setIsApprovedItemsLoading] = useState(false)
   const [approvedItemsError, setApprovedItemsError] = useState<string | null>(null)
   const [isApprovedItemsSlow, setIsApprovedItemsSlow] = useState(false)
-
-  const [newItemId, setNewItemId] = useState('')
-  const [isAddingItem, setIsAddingItem] = useState(false)
-  const [isAddSlow, setIsAddSlow] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
-  const [addInfoMessage, setAddInfoMessage] = useState<string | null>(null)
+  const [itemImageCandidateIndexByItemId, setItemImageCandidateIndexByItemId] = useState<Record<string, number>>({})
+  const [catalogPage, setCatalogPage] = useState(1)
+  const [catalogGridWidth, setCatalogGridWidth] = useState(0)
 
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
   const [magicLinkError, setMagicLinkError] = useState<string | null>(null)
   const [magicLinkInfo, setMagicLinkInfo] = useState<string | null>(null)
   const [latestMagicLink, setLatestMagicLink] = useState<AgentMagicLinkIssueResponse | null>(null)
   const [latestMagicLinkCustomerId, setLatestMagicLinkCustomerId] = useState<string | null>(null)
-  const [latestMagicLinkIssuedAt, setLatestMagicLinkIssuedAt] = useState<string | null>(null)
   const [pendingCopyLink, setPendingCopyLink] = useState<string | null>(null)
 
   const [orders, setOrders] = useState<AgentOrderCard[]>([])
@@ -237,6 +548,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [ordersTotal, setOrdersTotal] = useState(0)
   const [ordersTotalPages, setOrdersTotalPages] = useState(1)
   const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [homeOrdersToday, setHomeOrdersToday] = useState<AgentOrderCard[]>([])
+  const [isHomeOrdersLoading, setIsHomeOrdersLoading] = useState(false)
+  const [homeOrdersError, setHomeOrdersError] = useState<string | null>(null)
+  const [monthlySalesTotal, setMonthlySalesTotal] = useState(0)
+  const [monthlyGoalAmount, setMonthlyGoalAmount] = useState(120_000)
+  const [monthlyGoalDraft, setMonthlyGoalDraft] = useState('120000')
+  const [monthlyGoalError, setMonthlyGoalError] = useState<string | null>(null)
 
   const rootOpacity = useRef(new Animated.Value(1)).current
   const headerTranslateY = useRef(new Animated.Value(0)).current
@@ -357,6 +676,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       try {
         const response = await listApprovedItems(token, customerId)
         setApprovedItems(response.items)
+        setItemImageCandidateIndexByItemId({})
       } catch (error) {
         setApprovedItems([])
         setApprovedItemsError(error instanceof Error ? error.message : 'לא הצלחנו לטעון פריטים מאושרים.')
@@ -381,6 +701,21 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
     void loadApprovedItemsForCustomer(selectedCustomerId)
   }, [loadApprovedItemsForCustomer, selectedCustomerId])
+
+  useEffect(() => {
+    setItemImageCandidateIndexByItemId({})
+  }, [selectedCustomerId, token])
+
+  useEffect(() => {
+    setCatalogPage(1)
+  }, [selectedCustomerId])
+
+  useEffect(() => {
+    const nextColumns = resolveCatalogGridColumnCount(catalogGridWidth)
+    const nextPageSize = Math.max(nextColumns * CATALOG_GRID_ROWS_PER_PAGE, 1)
+    const nextTotalPages = Math.max(1, Math.ceil(approvedItems.length / nextPageSize))
+    setCatalogPage((current) => Math.min(current, nextTotalPages))
+  }, [approvedItems.length, catalogGridWidth])
 
   const loadOrders = useCallback(async () => {
     if (!token) {
@@ -421,21 +756,126 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
   }, [activeOrderDateFilter, beginSlowNetworkTimer, ordersPage, ordersSearchQuery, token])
 
-  useEffect(() => {
-    if (activeTab !== 'orders') {
+  const loadOrdersInRange = useCallback(
+    async (fromDate: string, toDate: string): Promise<AgentOrderCard[]> => {
+      if (!token) {
+        return []
+      }
+
+      const aggregatedOrders: AgentOrderCard[] = []
+      let page = 1
+      let totalPages = 1
+
+      while (page <= totalPages) {
+        const response = await listAgentOrders(token, {
+          page,
+          pageSize: 50,
+          fromDate,
+          toDate,
+        })
+        aggregatedOrders.push(...response.orders)
+        totalPages = response.totalPages
+        page += 1
+      }
+
+      return aggregatedOrders
+    },
+    [token],
+  )
+
+  const loadHomeOrdersSnapshot = useCallback(async () => {
+    if (!token) {
+      setHomeOrdersToday([])
+      setMonthlySalesTotal(0)
+      setHomeOrdersError('הסשן חסר. התחברו מחדש כדי להמשיך.')
       return
     }
 
-    void loadOrders()
-  }, [activeTab, loadOrders])
+    const today = new Date()
+    const todayDate = toApiDateInput(today)
+    const monthStartDate = toApiDateInput(new Date(today.getFullYear(), today.getMonth(), 1))
+
+    setIsHomeOrdersLoading(true)
+    setHomeOrdersError(null)
+
+    try {
+      const [todayOrders, monthOrders] = await Promise.all([
+        loadOrdersInRange(todayDate, todayDate),
+        loadOrdersInRange(monthStartDate, todayDate),
+      ])
+
+      setHomeOrdersToday(
+        todayOrders.sort((left, right) => Date.parse(right.submittedAt) - Date.parse(left.submittedAt)),
+      )
+      setMonthlySalesTotal(sumOrdersEstimatedTotal(monthOrders))
+    } catch (error) {
+      setHomeOrdersToday([])
+      setMonthlySalesTotal(0)
+      setHomeOrdersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את נתוני המכירות.')
+    } finally {
+      setIsHomeOrdersLoading(false)
+    }
+  }, [loadOrdersInRange, token])
+
+  const applyMonthlyGoal = useCallback(() => {
+    const normalized = Number(monthlyGoalDraft.replace(/[^\d]/g, ''))
+    if (!Number.isFinite(normalized) || normalized <= 0) {
+      setMonthlyGoalError('יש להזין יעד חודשי מספרי גדול מאפס.')
+      return
+    }
+
+    setMonthlyGoalAmount(normalized)
+    setMonthlyGoalDraft(String(normalized))
+    setMonthlyGoalError(null)
+  }, [monthlyGoalDraft])
 
   useEffect(() => {
     setOrdersPage(1)
   }, [activeOrderDateFilter, ordersSearchQuery])
 
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      void loadOrders()
+      return
+    }
+
+    if (activeTab === 'home') {
+      void loadHomeOrdersSnapshot()
+      return
+    }
+
+    if (activeTab === 'customers') {
+      void loadCustomers()
+    }
+  }, [activeTab, loadCustomers, loadHomeOrdersSnapshot, loadOrders])
+
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
+  )
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.orderId === selectedOrderId) ?? null,
+    [orders, selectedOrderId],
+  )
+  useEffect(() => {
+    if (selectedOrderId && !orders.some((order) => order.orderId === selectedOrderId)) {
+      setSelectedOrderId(null)
+    }
+  }, [orders, selectedOrderId])
+  const markItemImageUnavailable = useCallback((itemId: string) => {
+    setItemImageCandidateIndexByItemId((current) => {
+      if (isTestingImageCandidateExhausted(itemId, current)) {
+        return current
+      }
+      return moveToNextTestingImageCandidate(itemId, current)
+    })
+  }, [])
+
+  const resolveItemImageUri = useCallback(
+    (itemId: string, width: number, height: number): string => {
+      return resolveTestingImageUriFromCandidates(itemId, itemImageCandidateIndexByItemId) ?? placeholderImageUri(itemId, width, height)
+    },
+    [itemImageCandidateIndexByItemId],
   )
 
   const normalizedSearchQuery = customerSearchQuery.trim().toLowerCase()
@@ -469,92 +909,49 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     return scopedCustomers.filter(matchesCustomerFilter)
   }, [customers, matchesCustomerFilter, normalizedSearchQuery])
 
-  const toggleCustomerExpanded = useCallback((customerId: string) => {
-    setExpandedCustomerIds((current) =>
-      current.includes(customerId) ? current.filter((id) => id !== customerId) : [...current, customerId],
-    )
-  }, [])
-
-  const priorityQueueCustomers = useMemo(() => {
-    return [...filteredCustomers]
-      .sort((left, right) => {
-        if (left.lastOrderAt && !right.lastOrderAt) {
-          return 1
-        }
-        if (!left.lastOrderAt && right.lastOrderAt) {
-          return -1
-        }
-        return left.approvedItemsCount - right.approvedItemsCount
-      })
-      .slice(0, 4)
-  }, [filteredCustomers])
+  const todaySalesTotal = useMemo(() => sumOrdersEstimatedTotal(homeOrdersToday), [homeOrdersToday])
 
   const dashboardKpis = useMemo(() => {
+    const monthlyProgress = monthlyGoalAmount <= 0 ? 0 : Math.round((monthlySalesTotal / monthlyGoalAmount) * 100)
+    const clampedProgress = Math.max(0, Math.min(999, monthlyProgress))
     const activeCustomers = customers.filter((customer) => customer.approvedItemsCount > 0).length
-  const dailySalesEstimate = (approvedItems.length * 850 + activeCustomers * 220).toLocaleString('he-IL')
-    const targetProgress = customers.length === 0 ? 0 : Math.round((activeCustomers / customers.length) * 100)
 
     return [
-      { id: 'sales', label: 'מכירות יומיות', value: `₪${dailySalesEstimate}`, meta: '+12% מאתמול', icon: 'payments' as const },
-      { id: 'target', label: 'יעד חודשי', value: `${Math.max(0, Math.min(99, targetProgress))}%`, meta: 'התקדמות', icon: 'trending-up' as const },
-      { id: 'active', label: 'לקוחות פעילים', value: `${activeCustomers}`, meta: 'פעילים כרגע', icon: 'group' as const },
+      {
+        id: 'sales',
+        label: 'מכירות היום',
+        value: formatCurrency(todaySalesTotal, 'ILS'),
+        meta: `${homeOrdersToday.length} הזמנות`,
+        icon: 'payments' as const,
+      },
+      {
+        id: 'target',
+        label: 'יעד חודשי',
+        value: `${clampedProgress}%`,
+        meta: `${formatCurrency(monthlySalesTotal, 'ILS')} / ${formatCurrency(monthlyGoalAmount, 'ILS')}`,
+        icon: 'flag' as const,
+      },
+      {
+        id: 'orders_today',
+        label: 'הזמנות היום',
+        value: `${homeOrdersToday.length}`,
+        meta: 'בוצעו על ידי לקוחות',
+        icon: 'receipt-long' as const,
+      },
+      { id: 'active', label: 'לקוחות פעילים', value: `${activeCustomers}`, meta: 'במערכת', icon: 'group' as const },
     ]
-  }, [approvedItems.length, customers])
-
-  const recentTransactions = useMemo(
-    () =>
-      buildRecentTransactions({
-        customers,
-        approvedItems,
-        selectedCustomerId,
-        latestMagicLink,
-        latestMagicLinkCustomerId,
-        latestMagicLinkIssuedAt,
-      }),
-    [approvedItems, customers, latestMagicLink, latestMagicLinkCustomerId, latestMagicLinkIssuedAt, selectedCustomerId],
-  )
-
-  const submitApprovedItem = useCallback(async () => {
-    if (!token) {
-      setAddError('הסשן פג. התחברו מחדש.')
-      return
-    }
-
-    if (!selectedCustomerId) {
-      setAddError('בחרו לקוח לפני הוספת פריט מאושר.')
-      return
-    }
-
-    setAddError(null)
-    setAddInfoMessage(null)
-    setIsAddingItem(true)
-    const clearSlowState = beginSlowNetworkTimer(setIsAddSlow)
-
-    try {
-      const mutation = await addApprovedItem(token, selectedCustomerId, newItemId)
-      setApprovedItems((current) => mergeApprovedItems(current, mutation))
-      setCustomers((current) => applyApprovedCountMutation(current, selectedCustomerId, mutation.created))
-      setNewItemId('')
-      setAddInfoMessage(mutation.created ? 'הפריט נוסף בהצלחה.' : 'הפריט כבר קיים ברשימת הלקוח.')
-    } catch (error) {
-      setAddError(error instanceof Error ? error.message : 'לא הצלחנו להוסיף פריט מאושר.')
-    } finally {
-      clearSlowState()
-      setIsAddingItem(false)
-    }
-  }, [beginSlowNetworkTimer, newItemId, selectedCustomerId, token])
+  }, [customers, homeOrdersToday.length, monthlyGoalAmount, monthlySalesTotal, todaySalesTotal])
 
   const openCustomerDetail = useCallback((customerId: string) => {
     setSelectedCustomerId(customerId)
     setIsCustomerDetailOpen(true)
     setActiveTab('customers')
-    setAddError(null)
-    setAddInfoMessage(null)
   }, [])
 
   const openCustomerOrders = useCallback((customerId: string) => {
     setSelectedCustomerId(customerId)
     setIsCustomerDetailOpen(false)
+    setSelectedOrderId(null)
     setOrdersSearchQuery(customerId)
     setOrdersPage(1)
     setActiveTab('orders')
@@ -593,6 +990,33 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     setPendingCopyLink(null)
   }, [pendingCopyLink])
 
+  const openCustomerCall = useCallback(async (phoneNumber: string) => {
+    const sanitizedPhone = phoneNumber.replace(/[^\d+]/g, '')
+    if (!sanitizedPhone) {
+      return
+    }
+
+    try {
+      await Linking.openURL(`tel:${sanitizedPhone}`)
+    } catch (error) {
+      setMagicLinkError(error instanceof Error ? error.message : 'לא הצלחנו לפתוח את אפליקציית החיוג.')
+    }
+  }, [])
+
+  const openCustomerAddressInWaze = useCallback(async (address: string) => {
+    const trimmedAddress = address.trim()
+    if (!trimmedAddress) {
+      return
+    }
+
+    const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(trimmedAddress)}&navigate=yes`
+    try {
+      await Linking.openURL(wazeUrl)
+    } catch (error) {
+      setMagicLinkError(error instanceof Error ? error.message : 'לא הצלחנו לפתוח ניווט ב-Waze.')
+    }
+  }, [])
+
   const generateAndShareLink = useCallback(
     async (customerIdOverride?: string) => {
       const targetCustomerId = customerIdOverride ?? selectedCustomerId
@@ -618,22 +1042,27 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       try {
         const payload = await generateMagicLink(token, targetCustomerId)
         const normalizedPayload = normalizeMagicLinkForShare(payload)
-        generatedLink = normalizedPayload
-        setLatestMagicLink(normalizedPayload)
+        const expiresAtIn24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        const presentationPayload: AgentMagicLinkIssueResponse = {
+          ...normalizedPayload,
+          expiresAt: expiresAtIn24Hours,
+          expiresInSeconds: 24 * 60 * 60,
+        }
+        generatedLink = presentationPayload
+        setLatestMagicLink(presentationPayload)
         setLatestMagicLinkCustomerId(targetCustomerId)
-        setLatestMagicLinkIssuedAt(new Date().toISOString())
-        const message = buildMagicLinkShareMessage(targetCustomerId, normalizedPayload)
+        const message = buildMagicLinkShareMessage(targetCustomerId, presentationPayload)
         const deepLink = buildWhatsAppDeepLink(message)
         const canOpenWhatsApp = await Linking.canOpenURL(deepLink)
 
         if (shouldUseCopyLinkFallback(canOpenWhatsApp)) {
-          setPendingCopyLink(normalizedPayload.linkUrl)
+          setPendingCopyLink(presentationPayload.linkUrl)
           setMagicLinkError('וואטסאפ לא זמין במכשיר הזה. העתיקו את הקישור במקום.')
           return
         }
 
         await Linking.openURL(deepLink)
-        setMagicLinkInfo(`הקישור נוצר ונשלח עבור ${targetCustomerId}.`)
+        setMagicLinkInfo('הקישור נוצר ונשלח בהצלחה.')
       } catch (error) {
         const message = error instanceof Error ? error.message : 'לא הצלחנו ליצור קישור ללקוח.'
         setMagicLinkError(message)
@@ -656,17 +1085,32 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const renderMagicLinkActions = (customerId: string | null): React.JSX.Element => {
     return (
       <View style={styles.panelSection}>
-        <Text style={styles.panelTitle}>שליחת קישור הזמנה</Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isGeneratingLink || !customerId}
-          onPress={() => {
-            void generateAndShareLink(customerId ?? undefined)
-          }}
-          style={({ pressed }) => [styles.primaryButton, (pressed || isGeneratingLink || !customerId) && styles.primaryButtonDisabled]}
-        >
-          {isGeneratingLink ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>יצירה ושליחה בוואטסאפ</Text>}
-        </Pressable>
+        <Text style={styles.panelTitle}>פעולות</Text>
+        <View style={styles.customerActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isGeneratingLink || !customerId}
+            onPress={() => {
+              void generateAndShareLink(customerId ?? undefined)
+            }}
+            style={({ pressed }) => [styles.primaryButtonSmall, (pressed || isGeneratingLink || !customerId) && styles.primaryButtonDisabled]}
+          >
+            {isGeneratingLink ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>שליחת קישור</Text>}
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!customerId}
+            onPress={() => {
+              if (!customerId) {
+                return
+              }
+              openCustomerOrders(customerId)
+            }}
+            style={({ pressed }) => [styles.secondaryButtonSmall, (pressed || !customerId) && styles.primaryButtonDisabled]}
+          >
+            <Text style={styles.secondaryButtonText}>הזמנות לקוח</Text>
+          </Pressable>
+        </View>
         {magicLinkError ? <Text style={styles.errorText}>{magicLinkError}</Text> : null}
         {magicLinkInfo ? <Text style={styles.noticeText}>{magicLinkInfo}</Text> : null}
         {pendingCopyLink ? (
@@ -681,48 +1125,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           </Pressable>
         ) : null}
         {latestMagicLink && latestMagicLinkCustomerId === customerId ? (
-          <Text style={styles.customerMeta}>
-            לקוח {latestMagicLinkCustomerId} · פג תוקף {formatMagicLinkExpiry(latestMagicLink.expiresAt)} · {magicLinkLifecycleLabel(latestMagicLink.lifecycle)}
-          </Text>
+          <View style={styles.linkMetaCard}>
+            <Text style={styles.linkMetaTitle}>קישור הזמנה מוכן</Text>
+            <Text style={styles.linkMetaValue}>פג תוקף: {formatMagicLinkExpiry(latestMagicLink.expiresAt)}</Text>
+            <Text style={styles.linkMetaHint}>תוקף הקישור נקבע ל־24 שעות.</Text>
+          </View>
         ) : null}
-      </View>
-    )
-  }
-
-  const renderCustomerInlineActions = (customerId: string, includeDetailAction = true): React.JSX.Element => {
-    return (
-      <View style={styles.customerActionStack}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            void generateAndShareLink(customerId)
-          }}
-          style={({ pressed }) => [styles.primaryButtonSmallWide, pressed && styles.primaryButtonDisabled]}
-        >
-          <Text style={styles.primaryButtonText}>שלח לינק קסם</Text>
-        </Pressable>
-        <View style={styles.customerActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              openCustomerOrders(customerId)
-            }}
-            style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-          >
-            <Text style={styles.secondaryButtonText}>הזמנות</Text>
-          </Pressable>
-          {includeDetailAction ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                openCustomerDetail(customerId)
-              }}
-              style={({ pressed }) => [styles.outlineButtonSmall, pressed && styles.primaryButtonDisabled]}
-            >
-              <Text style={styles.outlineButtonText}>פרטים</Text>
-            </Pressable>
-          ) : null}
-        </View>
       </View>
     )
   }
@@ -783,89 +1191,32 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         <View style={styles.customerGrid}>
           {filteredCustomers.map((customer) => {
             const status = getCustomerStatus(customer)
-            const isExpanded = expandedCustomerIds.includes(customer.customerId)
-            const hasRecentMagicLink = latestMagicLinkCustomerId === customer.customerId && latestMagicLink
 
             return (
-              <View
+              <Pressable
+                accessibilityRole="button"
                 key={customer.customerId}
-                style={[
+                onPress={() => {
+                  openCustomerDetail(customer.customerId)
+                }}
+                style={({ pressed }) => [
                   styles.customerCard,
                   isCompact && styles.customerCardCompact,
                   status.tone === 'success' ? styles.customerCardPrimaryBorder : styles.customerCardSecondaryBorder,
+                  pressed && styles.customerCardPressed,
                 ]}
+                testID="customer-list-card"
               >
                 <View style={styles.customerCardHeader}>
                   <View style={styles.statusRow}>
                     <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
                     <Text style={styles.statusText}>{status.label}</Text>
                   </View>
-                  <Text style={styles.customerCode}>כרטיס לקוח</Text>
+                  <Text style={styles.customerCode}>לקוח פעיל</Text>
                 </View>
-
-                <View style={styles.customerNameRow}>
-                  <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
-                  <Text style={styles.customerBadge}>{customerBadgeLabel(customer.customerId, customer.approvedItemsCount)}</Text>
-                </View>
-                <Text style={styles.customerMeta}>חשבון עסקי פעיל</Text>
-                <Text style={styles.customerMeta}>{customerCityLabel(customer.customerId)}</Text>
-                <Text style={styles.customerMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-                <Text style={styles.customerMeta}>פריטים מאושרים: {customer.approvedItemsCount}</Text>
-
-                {isCompact ? (
-                  <View style={styles.customerActionRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => {
-                        void generateAndShareLink(customer.customerId)
-                      }}
-                      style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-                    >
-                      <Text style={styles.primaryButtonText}>שליחת קישור</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => {
-                        openCustomerDetail(customer.customerId)
-                      }}
-                      style={({ pressed }) => [styles.secondaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-                    >
-                      <Text style={styles.secondaryButtonText}>פרטי לקוח</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => {
-                        toggleCustomerExpanded(customer.customerId)
-                      }}
-                      style={({ pressed }) => [styles.customerToggle, pressed && styles.linkButtonDisabled]}
-                    >
-                      <Text style={styles.customerToggleText}>{isExpanded ? 'הסתר פרטים' : 'הצג פרטים נוספים'}</Text>
-                      <MaterialIcons color={palette.secondary} name={isExpanded ? 'expand-less' : 'expand-more'} size={18} />
-                    </Pressable>
-
-                    {isExpanded ? (
-                      <View style={styles.customerExpandedSection}>
-                        <View style={styles.customerDetailGrid}>
-                          <View style={styles.customerDetailCell}>
-                            <Text style={styles.customerDetailLabel}>שם לקוח</Text>
-                            <Text style={styles.customerDetailValue}>{humanizeCustomerName(customer.customerId)}</Text>
-                          </View>
-                          <View style={styles.customerDetailCell}>
-                            <Text style={styles.customerDetailLabel}>סטטוס קישור</Text>
-                            <Text style={styles.customerDetailValue}>
-                              {hasRecentMagicLink ? `נשלח לאחרונה • ${formatMagicLinkExpiry(latestMagicLink.expiresAt)}` : 'ממתין לשליחה'}
-                            </Text>
-                          </View>
-                        </View>
-                        {renderCustomerInlineActions(customer.customerId)}
-                      </View>
-                    ) : null}
-                  </>
-                )}
-              </View>
+                <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
+                <Text style={styles.customerMeta}>הזמנה אחרונה: {formatRelativeLastOrder(customer.lastOrderAt)}</Text>
+              </Pressable>
             )
           })}
         </View>
@@ -873,17 +1224,95 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     )
   }
 
+  const renderOrderPreviewCard = (
+    order: AgentOrderCard,
+    options: { timeOnly: boolean; onPress?: () => void } = { timeOnly: false },
+  ): React.JSX.Element => {
+    const submittedLabel = options.timeOnly ? `שעה ${formatOrderTime(order.submittedAt)}` : formatOrderDateTime(order.submittedAt)
+    const statusLabel =
+      order.status === 'submitted' ? 'נשלח' : order.status === 'pending_retry' ? 'ממתין לאישור' : 'נכשל'
+
+    return (
+      <Pressable
+        accessibilityRole="button"
+        key={order.orderId}
+        onPress={() => {
+          options.onPress?.()
+        }}
+        style={({ pressed }) => [styles.orderCard, pressed && styles.customerCardPressed]}
+      >
+        <View style={styles.orderHeader}>
+          <Text numberOfLines={1} style={styles.orderTitle}>
+            {order.customerName}
+          </Text>
+          <Text numberOfLines={1} style={styles.orderTotal}>
+            סיכום ביניים: {formatCurrency(order.estimatedTotal, order.currency)}
+          </Text>
+        </View>
+
+        <View style={styles.orderSummaryMetaRow}>
+          <Text style={styles.orderMetaStrong}>{submittedLabel}</Text>
+          <Text style={styles.orderMeta}>{statusLabel}</Text>
+        </View>
+
+        <View style={styles.orderPreviewItems}>
+          {order.items.slice(0, 3).map((line, index) => {
+            const unitPrice = line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal
+            const localizedName = resolveOrderItemDisplayName(line.itemId, line.itemName)
+            return (
+              <View
+                key={`${order.orderId}-${line.itemId}-${index}`}
+                style={styles.orderPreviewItemCard}
+              >
+                <View style={styles.orderPreviewItemImageWrap}>
+                  <ImageBackground
+                    accessibilityIgnoresInvertColors
+                    onError={() => {
+                      markItemImageUnavailable(line.itemId)
+                    }}
+                    source={{ uri: resolveItemImageUri(line.itemId, 84, 84) }}
+                    style={[styles.orderPreviewItemImage, { backgroundColor: placeholderColor(line.itemId) }]}
+                    imageStyle={styles.orderPreviewItemImageAsset}
+                  />
+                  <View style={styles.orderThumbBadge}>
+                    <Text style={styles.orderThumbBadgeText}>{line.quantity}</Text>
+                  </View>
+                  {renderSpeciesBadge(line.itemId, 'small')}
+                </View>
+                <View style={styles.orderPreviewItemContent}>
+                  <Text numberOfLines={2} style={styles.orderPreviewItemName}>
+                    {localizedName}
+                  </Text>
+                  <Text style={styles.orderPreviewItemQuantity}>כמות: {line.quantity}</Text>
+                  <View style={styles.orderPreviewMetricsRow}>
+                    <View style={styles.orderPreviewMetric}>
+                      <Text style={styles.orderPreviewMetricLabel}>סך הכל:</Text>
+                      <Text style={styles.orderPreviewMetricValue}>{formatCurrency(line.lineTotal, order.currency)}</Text>
+                    </View>
+                    <View style={styles.orderPreviewMetric}>
+                      <Text style={styles.orderPreviewMetricLabel}>מחיר יחידה:</Text>
+                      <Text style={styles.orderPreviewMetricValue}>{formatCurrency(unitPrice, order.currency)}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )
+          })}
+        </View>
+      </Pressable>
+    )
+  }
+
   const renderDashboardTab = (): React.JSX.Element => (
     <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.dashboard}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>ביצועים היום</Text>
-        <Text style={styles.sectionMeta}>עדכני ל-{getCurrentTimeLabel()}</Text>
       </View>
       <View style={styles.dashboardHeroCard}>
-        <Text style={styles.dashboardHeroLabel}>{dashboardKpis[0]?.label ?? 'מכירות יומיות'}</Text>
-        <Text style={styles.dashboardHeroValue}>{dashboardKpis[0]?.value ?? '₪0'}</Text>
+        <Text style={styles.dashboardHeroLabel}>{dashboardKpis[0]?.label ?? 'מכירות היום'}</Text>
+        <Text style={styles.dashboardHeroValue}>{dashboardKpis[0]?.value ?? '₪0.00'}</Text>
         <View style={styles.dashboardHeroMetaRow}>
-          <Text style={styles.dashboardHeroMeta}>{dashboardKpis[0]?.meta ?? ''}</Text>
+          <Text style={styles.dashboardHeroMeta}>{dashboardKpis[0]?.meta ?? '0 הזמנות'}</Text>
           <MaterialIcons color="#fecaca" name="payments" size={24} />
         </View>
       </View>
@@ -895,87 +1324,42 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <MaterialIcons color={palette.secondary} name={kpi.icon} size={18} />
             </View>
             <Text style={styles.kpiValue}>{kpi.value}</Text>
+            <Text style={styles.kpiMeta}>{kpi.meta}</Text>
           </View>
         ))}
       </View>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>משימות דחופות</Text>
-        <Text style={styles.sectionMeta}>{priorityQueueCustomers.length} משימות פתוחות</Text>
-      </View>
-      {priorityQueueCustomers.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>אין לקוחות בתור כרגע. אפשר לרענן או לבדוק חיפוש.</Text>
-        </View>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.queueScrollerContent}
-          style={styles.queueScroller}
-        >
-          {priorityQueueCustomers.map((customer) => (
-            <View key={`queue-${customer.customerId}`} style={styles.queueCard}>
-              <View style={styles.urgentIconChip}>
-                <MaterialIcons color={palette.warning} name="priority-high" size={16} />
-              </View>
-              <Text style={styles.queueCardTitle}>{humanizeCustomerName(customer.customerId)}</Text>
-              <Text style={styles.queueCardMeta}>{customerCityLabel(customer.customerId)}</Text>
-              <Text style={styles.queueCardMeta}>{formatLastOrderLabel(customer.lastOrderAt)}</Text>
-              <Text style={styles.queueCardMeta}>מאושרים: {customer.approvedItemsCount}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  void generateAndShareLink(customer.customerId)
-                }}
-                style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
-              >
-                <Text style={styles.primaryButtonText}>שלח קישור להזמנה</Text>
-              </Pressable>
-            </View>
-          ))}
-        </ScrollView>
-      )}
 
       <View style={styles.panelSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
-          <MaterialIcons color={palette.secondary} name="history" size={18} />
+          <Text style={styles.sectionTitle}>הזמנות היום</Text>
+          <Text style={styles.sectionMeta}>{homeOrdersToday.length} הזמנות</Text>
         </View>
-
-        {recentTransactions.length === 0 ? (
+        {renderBanner(getResilienceHint(false, homeOrdersError), Boolean(homeOrdersError))}
+        {isHomeOrdersLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator />
+            <Text style={styles.mutedText}>טוענים הזמנות להיום…</Text>
+          </View>
+        ) : homeOrdersToday.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.mutedText}>אין עדיין תנועות אחרונות להצגה. ברגע שתשלחו קישורים או תעדכנו לקוחות הפעילות תופיע כאן.</Text>
+            <Text style={styles.mutedText}>אין הזמנות שבוצעו היום.</Text>
           </View>
         ) : (
-          <View style={styles.activityList}>
-            {recentTransactions.map((transaction) => (
-              <View key={transaction.id} style={styles.activityRow}>
-                <View style={[styles.activityDot, { backgroundColor: getTransactionDotColor(transaction.kind) }]} />
-                <View style={styles.activityTextGroup}>
-                  <Text style={styles.activityTitle}>{transaction.title}</Text>
-                  <Text style={styles.activityMeta}>{transaction.detail}</Text>
-                </View>
-                <Text style={styles.activityRef}>{transaction.reference}</Text>
+          <View style={styles.homeOrdersList}>
+            {homeOrdersToday.map((order) => (
+              <View key={order.orderId}>
+                {renderOrderPreviewCard(order, {
+                  timeOnly: true,
+                  onPress: () => {
+                    setSelectedOrderId(order.orderId)
+                    setActiveTab('orders')
+                  },
+                })}
               </View>
             ))}
           </View>
         )}
       </View>
-
-      <ImageBackground
-        accessibilityIgnoresInvertColors
-        source={{ uri: placeholderImageUri('premium-collection', 960, 360) }}
-        style={styles.premiumBanner}
-        imageStyle={styles.premiumBannerImage}
-      >
-        <View style={styles.premiumBannerOverlay}>
-          <Text style={styles.premiumEyebrow}>קולקציית Meatland</Text>
-          <Text style={styles.premiumTitle}>מבצעי השבוע</Text>
-          <Text style={styles.premiumLink}>לצפייה בקטלוג</Text>
-        </View>
-      </ImageBackground>
-
-      {renderCustomersList(true)}
     </View>
   )
 
@@ -989,47 +1373,51 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     const status = getCustomerStatus(selectedCustomer)
+    const customerAddress = customerCityLabel(selectedCustomer.customerId)
 
     return (
       <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.customerDetail}>
-        <View style={styles.customerDetailHero}>
-          <Text style={styles.customerDetailBadge}>מועדון Meatland</Text>
-          <Text style={styles.detailTitle}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
-          <Text style={styles.customerMeta}>חשבון עסקי פעיל</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setIsCustomerDetailOpen(false)
+          }}
+          style={({ pressed }) => [styles.detailBackButton, pressed && styles.primaryButtonDisabled]}
+        >
+          <MaterialIcons color={palette.secondary} name="arrow-forward" size={16} />
+          <Text style={styles.detailBackButtonText}>חזרה לרשימת הלקוחות</Text>
+        </Pressable>
+
+        <View style={styles.customerNameCard}>
+          <Text style={styles.customerNameCardTitle}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
+          <Text style={styles.customerNameCardSubtitle}>{status.label}</Text>
         </View>
 
         <View style={styles.detailInfoGrid}>
           <View style={styles.detailInfoCard}>
             <Text style={styles.customerDetailLabel}>טלפון ליצירת קשר</Text>
-            <Text style={styles.customerDetailValue}>054-000-0000</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void openCustomerCall(DEFAULT_CUSTOMER_PHONE)
+              }}
+              style={({ pressed }) => [styles.detailInfoAction, pressed && styles.linkButtonDisabled]}
+            >
+              <Text style={styles.customerDetailValueLink}>{DEFAULT_CUSTOMER_PHONE}</Text>
+            </Pressable>
           </View>
           <View style={styles.detailInfoCard}>
             <Text style={styles.customerDetailLabel}>כתובת העסק</Text>
-            <Text style={styles.customerDetailValue}>{customerCityLabel(selectedCustomer.customerId)}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void openCustomerAddressInWaze(customerAddress)
+              }}
+              style={({ pressed }) => [styles.detailInfoAction, pressed && styles.linkButtonDisabled]}
+            >
+              <Text style={styles.customerDetailValueLink}>{customerAddress}</Text>
+            </Pressable>
           </View>
-        </View>
-
-        <View style={styles.detailCard}>
-          <View style={styles.customerCardHeader}>
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
-              <Text style={styles.statusText}>{status.label}</Text>
-            </View>
-            <Text style={styles.customerCode}>פרופיל לקוח פעיל</Text>
-          </View>
-          <Text style={styles.panelTitle}>סיכום הזמנה אחרונה</Text>
-          <Text style={styles.customerMeta}>{humanizeCustomerName(selectedCustomer.customerId)}</Text>
-          <Text style={styles.customerMeta}>{formatLastOrderLabel(selectedCustomer.lastOrderAt)}</Text>
-          <Text style={styles.customerMeta}>סה״כ פריטים מאושרים: {selectedCustomer.approvedItemsCount}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              openCustomerOrders(selectedCustomer.customerId)
-            }}
-            style={({ pressed }) => [styles.secondaryButtonLarge, pressed && styles.primaryButtonDisabled]}
-          >
-            <Text style={styles.secondaryButtonText}>מעבר ללשונית הזמנות</Text>
-          </Pressable>
         </View>
 
         {renderMagicLinkActions(selectedCustomer.customerId)}
@@ -1047,27 +1435,91 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור הלקוח הזה.</Text>
             </View>
           ) : (
-              <View style={styles.approvedList}>
-                {approvedItems.slice(0, 8).map((item) => (
-                  <View key={`${item.hashItemId}-${item.createdAt}`} style={styles.approvedRowCard}>
-                    <ImageBackground
-                      accessibilityIgnoresInvertColors
-                      source={{ uri: placeholderImageUri(item.hashItemId, 224, 224) }}
-                      style={[styles.approvedImagePlaceholder, { backgroundColor: placeholderColor(item.hashItemId) }]}
-                      imageStyle={styles.approvedImageAsset}
+            <>
+              {(() => {
+                const approvedGalleryItems = approvedItems.slice(0, 24).map((item) => ({
+                  ...item,
+                  unitPrice: estimateCatalogUnitPrice(item.hashItemId),
+                }))
+                const approvedColumnCount = resolveCatalogGridColumnCount(catalogGridWidth)
+                const approvedCellDimension = resolveCatalogGridCellDimension(catalogGridWidth, approvedColumnCount)
+                const approvedImageDimension = Math.max(56, approvedCellDimension - spacing.sm)
+                const approvedPageSize = Math.max(approvedColumnCount * CATALOG_GRID_ROWS_PER_PAGE, 1)
+                const approvedTotalPages = Math.max(1, Math.ceil(approvedGalleryItems.length / approvedPageSize))
+                const approvedActivePage = Math.min(catalogPage, approvedTotalPages)
+                const approvedPageStart = (approvedActivePage - 1) * approvedPageSize
+                const approvedPageItems = approvedGalleryItems.slice(approvedPageStart, approvedPageStart + approvedPageSize)
+
+                return (
+                  <>
+                    <View
+                      onLayout={(event) => {
+                        const width = Math.floor(event.nativeEvent.layout.width)
+                        setCatalogGridWidth((current) => (current === width ? current : width))
+                      }}
+                      style={styles.catalogCardList}
                     >
-                      <View style={styles.approvedImageScrim}>
-                        <MaterialIcons color="#fff" name="restaurant" size={18} />
-                      </View>
-                    </ImageBackground>
-                    <View style={styles.approvedRowContent}>
-                      <Text style={styles.approvedTitle}>{humanizeItemName(item.hashItemId)}</Text>
-                      <Text style={styles.approvedMeta}>קוד פריט: {item.hashItemId}</Text>
-                      <Text style={styles.approvedMeta}>{formatApprovedItemTimestamp(item.createdAt)}</Text>
+                      {approvedPageItems.map((item) => (
+                        <View key={`${item.hashItemId}-${item.createdAt}`} style={[styles.catalogItemCard, { width: approvedCellDimension }]}>
+                          <ImageBackground
+                            accessibilityIgnoresInvertColors
+                            onError={() => {
+                              markItemImageUnavailable(item.hashItemId)
+                            }}
+                            resizeMode="contain"
+                            source={{ uri: resolveItemImageUri(item.hashItemId, 640, 640) }}
+                            style={[
+                              styles.catalogItemImagePlaceholder,
+                              { backgroundColor: placeholderColor(item.hashItemId), height: approvedImageDimension },
+                            ]}
+                            imageStyle={styles.catalogItemImageAsset}
+                          >
+                            {renderSpeciesBadge(item.hashItemId)}
+                          </ImageBackground>
+                          <View style={styles.catalogItemHeader}>
+                            <Text numberOfLines={2} style={styles.catalogItemTitleEnhanced}>
+                              {humanizeItemName(item.hashItemId)}
+                            </Text>
+                          </View>
+                          <Text numberOfLines={1} style={styles.catalogItemMetaEnhanced}>
+                            {formatCurrency(item.unitPrice, 'ILS')} / יח׳
+                          </Text>
+                        </View>
+                      ))}
                     </View>
-                  </View>
-                ))}
-              </View>
+                    {approvedTotalPages > 1 ? (
+                      <View style={styles.catalogPaginationRow}>
+                        <Pressable
+                          accessibilityRole="button"
+                          disabled={approvedActivePage <= 1}
+                          onPress={() => {
+                            setCatalogPage((current) => Math.max(1, current - 1))
+                          }}
+                          style={({ pressed }) =>
+                            [styles.outlineButtonSmall, (approvedActivePage <= 1 || pressed) && styles.primaryButtonDisabled]
+                          }
+                        >
+                          <Text style={styles.outlineButtonText}>הקודם</Text>
+                        </Pressable>
+                        <Text style={styles.catalogPaginationLabel}>עמוד {approvedActivePage} מתוך {approvedTotalPages}</Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          disabled={approvedActivePage >= approvedTotalPages}
+                          onPress={() => {
+                            setCatalogPage((current) => Math.min(approvedTotalPages, current + 1))
+                          }}
+                          style={({ pressed }) =>
+                            [styles.outlineButtonSmall, (approvedActivePage >= approvedTotalPages || pressed) && styles.primaryButtonDisabled]
+                          }
+                        >
+                          <Text style={styles.outlineButtonText}>הבא</Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                  </>
+                )
+              })()}
+            </>
           )}
         </View>
       </View>
@@ -1079,245 +1531,197 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       style={styles.tabSection}
       testID={isCustomerDetailOpen ? AGENT_SCREEN_TEST_IDS.customerDetail : AGENT_SCREEN_TEST_IDS.customersList}
     >
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>לקוחות</Text>
-        <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
-      </View>
+      {!isCustomerDetailOpen ? (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>לקוחות</Text>
+          <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
+        </View>
+      ) : null}
       {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
       {isCustomerDetailOpen ? renderCustomerDetail() : renderCustomersList()}
     </View>
   )
 
-  const renderApprovedCatalogTab = (): React.JSX.Element => {
-    const catalogRows = approvedItems.slice(0, 10).map((item) => {
-      const unitPrice = estimateCatalogUnitPrice(item.hashItemId)
-      return {
-        ...item,
-        unitPrice,
-        quantity: 1,
-        lineTotal: unitPrice,
-      }
-    })
-    const estimatedTotal = catalogRows.reduce((accumulator, item) => accumulator + item.lineTotal, 0)
+  const renderOrdersTab = (): React.JSX.Element => {
+    if (selectedOrder) {
+      return (
+        <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.orderDetail}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setSelectedOrderId(null)
+            }}
+            style={({ pressed }) => [styles.detailBackButton, pressed && styles.primaryButtonDisabled]}
+          >
+            <MaterialIcons color={palette.secondary} name="arrow-forward" size={16} />
+            <Text style={styles.detailBackButtonText}>חזרה לרשימת ההזמנות</Text>
+          </Pressable>
+
+          <View style={styles.orderDetailHeroCard}>
+            <Text style={styles.orderDetailRestaurant}>{selectedOrder.customerName}</Text>
+            <Text style={styles.orderDetailDate}>{formatOrderDateTime(selectedOrder.submittedAt)}</Text>
+            <Text style={styles.orderDetailTotal}>{formatCurrency(selectedOrder.estimatedTotal, selectedOrder.currency)}</Text>
+            <View style={styles.orderDetailStatusPill}>
+              <Text style={styles.orderDetailStatusText}>
+                {selectedOrder.status === 'submitted' ? 'סטטוס: נשלח' : selectedOrder.status === 'pending_retry' ? 'סטטוס: ממתין לאישור' : 'סטטוס: נכשל'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.panelSection}>
+            <Text style={styles.panelTitle}>פרטי ההזמנה</Text>
+            <View style={styles.orderDetailListCard}>
+              {selectedOrder.items.map((line, index) => (
+                <View
+                  key={`${selectedOrder.orderId}-${line.itemId}-${index}`}
+                  style={[styles.orderDetailListRow, index < selectedOrder.items.length - 1 && styles.orderDetailListRowDivider]}
+                >
+                  <View style={styles.orderDetailItemImageWrap}>
+                    <ImageBackground
+                      accessibilityIgnoresInvertColors
+                      onError={() => {
+                        markItemImageUnavailable(line.itemId)
+                      }}
+                      resizeMode="contain"
+                      source={{ uri: resolveItemImageUri(line.itemId, 96, 96) }}
+                      style={[styles.orderDetailItemImage, { backgroundColor: placeholderColor(line.itemId) }]}
+                      imageStyle={styles.orderDetailItemImageAsset}
+                    >
+                      {renderSpeciesBadge(line.itemId)}
+                    </ImageBackground>
+                  </View>
+                  <View style={styles.orderDetailListInfo}>
+                    <Text style={styles.orderDetailItemTitle}>{resolveOrderItemDisplayName(line.itemId, line.itemName)}</Text>
+                    <Text style={styles.orderDetailItemSubtitle}>
+                      כמות: {line.quantity} {formatOrderUnitLabel(line.unit)}
+                    </Text>
+                  </View>
+                  <View style={styles.orderDetailListPricing}>
+                    <Text style={styles.orderDetailListLineTotal}>{formatCurrency(line.lineTotal, selectedOrder.currency)}</Text>
+                    <Text style={styles.orderDetailListUnitPrice}>
+                      {formatCurrency(line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal, selectedOrder.currency)} ליח׳
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={!selectedOrder.canCancel || cancelingOrderId === selectedOrder.orderId}
+            onPress={() => {
+              void cancelOrder(selectedOrder.orderId)
+            }}
+            style={({ pressed }) => [
+              styles.dangerButton,
+              (!selectedOrder.canCancel || cancelingOrderId === selectedOrder.orderId || pressed) && styles.primaryButtonDisabled,
+            ]}
+          >
+            {cancelingOrderId === selectedOrder.orderId ? (
+              <ActivityIndicator color={palette.danger} />
+            ) : (
+              <Text style={styles.dangerButtonText}>ביטול הזמנה</Text>
+            )}
+          </Pressable>
+          {selectedOrder.orderRef ? <Text style={styles.orderDetailOrderRef}>מספר הזמנה: {selectedOrder.orderRef}</Text> : null}
+        </View>
+      )
+    }
 
     return (
-      <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.approvedCatalog}>
+      <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.ordersList}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>ניהול קטלוג מאושר</Text>
-          <Text style={styles.sectionMeta}>{selectedCustomer ? humanizeCustomerName(selectedCustomer.customerId) : 'בחרו לקוח'}</Text>
+          <Text style={styles.sectionTitle}>הזמנות קודמות</Text>
+          <Text style={styles.sectionMeta}>{ordersTotal} הזמנות</Text>
         </View>
 
-        <View style={styles.catalogWarningBanner}>
-          <MaterialIcons color={palette.warning} name="warning" size={18} />
-          <View style={styles.catalogWarningContent}>
-            <Text style={styles.catalogWarningTitle}>חריגה במלאי זמין</Text>
-            <Text style={styles.catalogWarningText}>שים לב: 3 פריטים בקטלוג אינם זמינים כרגע במחסן המרכזי. יש לעדכן כמויות.</Text>
-          </View>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.customerFilterScroller}
+          contentContainerStyle={styles.customerFilterContent}
+        >
+          {ORDER_DATE_FILTERS.map((filter) => {
+            const isSelected = filter.id === activeOrderDateFilter
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={filter.id}
+                onPress={() => {
+                  setActiveOrderDateFilter(filter.id)
+                }}
+                style={({ pressed }) => [
+                  styles.filterChip,
+                  isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                  pressed && styles.tabButtonPressed,
+                ]}
+              >
+                <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                  {filter.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
 
-        <View style={styles.catalogMetricGrid}>
-          <View style={styles.catalogMetricCard}>
-            <Text style={styles.catalogMetricLabel}>פריטים מאושרים</Text>
-            <Text style={styles.catalogMetricValue}>{approvedItems.length}</Text>
-          </View>
-          <View style={styles.catalogMetricCard}>
-            <Text style={styles.catalogMetricLabel}>סה״כ הזמנה</Text>
-            <Text style={styles.catalogMetricValue}>{formatCurrency(estimatedTotal, 'ILS')}</Text>
-          </View>
-        </View>
+        {renderBanner(getResilienceHint(isOrdersSlow, ordersError), Boolean(ordersError))}
 
-        {isApprovedItemsLoading ? (
+        {isOrdersLoading ? (
           <View style={styles.loadingState}>
             <ActivityIndicator />
-            <Text style={styles.mutedText}>טוענים פריטי קטלוג…</Text>
+            <Text style={styles.mutedText}>טוענים הזמנות…</Text>
           </View>
-        ) : catalogRows.length === 0 ? (
+        ) : orders.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.mutedText}>עדיין אין פריטים בקטלוג המאושר עבור הלקוח הנבחר.</Text>
+            <Text style={styles.mutedText}>לא נמצאו הזמנות שמתאימות לפילטרים שנבחרו.</Text>
           </View>
         ) : (
-          <View style={styles.catalogCardList}>
-            {catalogRows.map((item, index) => (
-              <View
-                key={`${item.hashItemId}-${item.createdAt}`}
-                style={[styles.catalogItemCard, index === 2 && styles.catalogItemCardUnavailable]}
-              >
-                <ImageBackground
-                  accessibilityIgnoresInvertColors
-                  source={{ uri: placeholderImageUri(item.hashItemId, 640, 280) }}
-                  style={[styles.catalogItemImagePlaceholder, { backgroundColor: placeholderColor(item.hashItemId) }]}
-                  imageStyle={styles.catalogItemImageAsset}
-                >
-                  <View style={styles.catalogItemImageScrim}>
-                    <MaterialIcons color="#fff" name="menu-book" size={18} />
-                  </View>
-                </ImageBackground>
-                <View style={styles.catalogItemHeader}>
-                  <Text style={styles.catalogSku}>קוד פריט: {item.hashItemId}</Text>
-                  <Text style={styles.catalogItemTitle}>{humanizeItemName(item.hashItemId)}</Text>
-                </View>
-                <Text style={styles.catalogItemMeta}>מחיר ליחידה: {formatCurrency(item.unitPrice, 'ILS')}</Text>
-                <Text style={styles.catalogItemMeta}>עודכן: {formatApprovedItemTimestamp(item.createdAt)}</Text>
-                {index === 2 ? (
-                  <View style={styles.catalogUnavailableBadge}>
-                    <Text style={styles.catalogUnavailableBadgeText}>לא זמין</Text>
-                  </View>
-                ) : null}
+          <View style={styles.ordersList}>
+            {orders.map((order) => (
+              <View key={order.orderId}>
+                {renderOrderPreviewCard(order, {
+                  timeOnly: false,
+                  onPress: () => {
+                    setSelectedOrderId(order.orderId)
+                  },
+                })}
               </View>
             ))}
           </View>
         )}
 
-        <View style={styles.panelSection}>
-          <Text style={styles.panelTitle}>הוספת פריט חדש לקטלוג</Text>
-          <View style={styles.catalogAddRow}>
-            <TextInput
-              accessibilityLabel="הוספת פריט מאושר לקטלוג"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setNewItemId}
-              placeholder="הכנס שם פריט או קוד פריט"
-              style={styles.input}
-              value={newItemId}
-            />
-            <Pressable
-              accessibilityRole="button"
-              disabled={isAddingItem}
-              onPress={() => {
-                void submitApprovedItem()
-              }}
-              style={({ pressed }) => [styles.catalogAddButton, (pressed || isAddingItem) && styles.primaryButtonDisabled]}
-            >
-              {isAddingItem ? <ActivityIndicator color="#fff" /> : <MaterialIcons color="#fff" name="add" size={18} />}
-            </Pressable>
-          </View>
-          {renderBanner(addError, true)}
-          {renderBanner(addInfoMessage)}
+        <View style={styles.paginationRow}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={ordersPage <= 1}
+            onPress={() => {
+              setOrdersPage((current) => Math.max(1, current - 1))
+            }}
+            style={({ pressed }) => [styles.outlineButtonSmall, (ordersPage <= 1 || pressed) && styles.primaryButtonDisabled]}
+          >
+            <Text style={styles.outlineButtonText}>עמוד קודם</Text>
+          </Pressable>
+          <Text style={styles.paginationText}>
+            עמוד {ordersPage} מתוך {ordersTotalPages}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={ordersPage >= ordersTotalPages}
+            onPress={() => {
+              setOrdersPage((current) => Math.min(ordersTotalPages, current + 1))
+            }}
+            style={({ pressed }) => [
+              styles.outlineButtonSmall,
+              (ordersPage >= ordersTotalPages || pressed) && styles.primaryButtonDisabled,
+            ]}
+          >
+            <Text style={styles.outlineButtonText}>עמוד הבא</Text>
+          </Pressable>
         </View>
       </View>
     )
   }
-
-  const renderOrdersTab = (): React.JSX.Element => (
-    <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.ordersList}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>הזמנות קודמות</Text>
-        <Text style={styles.sectionMeta}>{ordersTotal} הזמנות</Text>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.customerFilterScroller}
-        contentContainerStyle={styles.customerFilterContent}
-      >
-        {ORDER_DATE_FILTERS.map((filter) => {
-          const isSelected = filter.id === activeOrderDateFilter
-          return (
-            <Pressable
-              accessibilityRole="button"
-              key={filter.id}
-              onPress={() => {
-                setActiveOrderDateFilter(filter.id)
-              }}
-              style={({ pressed }) => [
-                styles.filterChip,
-                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
-                pressed && styles.tabButtonPressed,
-              ]}
-            >
-              <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
-                {filter.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </ScrollView>
-
-      {renderBanner(getResilienceHint(isOrdersSlow, ordersError), Boolean(ordersError))}
-
-      {isOrdersLoading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator />
-          <Text style={styles.mutedText}>טוענים הזמנות…</Text>
-        </View>
-      ) : orders.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.mutedText}>לא נמצאו הזמנות שמתאימות לפילטרים שנבחרו.</Text>
-        </View>
-      ) : (
-        <View style={styles.ordersList}>
-          {orders.map((order) => (
-            <View key={order.orderId} style={styles.orderCard}>
-              <View style={styles.orderHeader}>
-                <View>
-                  <Text style={styles.orderTitle}>{order.customerName}</Text>
-                  <Text style={styles.orderMeta}>אסמכתה: {order.orderRef ?? order.orderId}</Text>
-                  {!order.orderRef ? <Text style={styles.orderMeta}>קוד הזמנה פנימי: {order.orderId}</Text> : null}
-                </View>
-                <Text style={styles.orderTotal}>{formatCurrency(order.estimatedTotal, order.currency)}</Text>
-              </View>
-              <Text style={styles.orderMeta}>{new Date(order.submittedAt).toLocaleString('he-IL')}</Text>
-              <Text style={styles.orderMeta}>סטטוס: {order.status === 'submitted' ? 'נשלח' : order.status === 'pending_retry' ? 'ממתין לאישור' : 'נכשל'}</Text>
-              <View style={styles.orderItemsList}>
-                {order.items.slice(0, 4).map((line, index) => (
-                  <Text key={`${order.orderId}-${line.itemId}-${index}`} style={styles.orderItemLine}>
-                    {line.itemName} · {line.quantity} {line.unit}
-                  </Text>
-                ))}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                disabled={!order.canCancel || cancelingOrderId === order.orderId}
-                onPress={() => {
-                  void cancelOrder(order.orderId)
-                }}
-                style={({ pressed }) => [
-                  styles.dangerButton,
-                  (!order.canCancel || cancelingOrderId === order.orderId || pressed) && styles.primaryButtonDisabled,
-                ]}
-              >
-                {cancelingOrderId === order.orderId ? (
-                  <ActivityIndicator color={palette.danger} />
-                ) : (
-                  <Text style={styles.dangerButtonText}>ביטול הזמנה</Text>
-                )}
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.paginationRow}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={ordersPage <= 1}
-          onPress={() => {
-            setOrdersPage((current) => Math.max(1, current - 1))
-          }}
-          style={({ pressed }) => [styles.outlineButtonSmall, (ordersPage <= 1 || pressed) && styles.primaryButtonDisabled]}
-        >
-          <Text style={styles.outlineButtonText}>עמוד קודם</Text>
-        </Pressable>
-        <Text style={styles.paginationText}>
-          עמוד {ordersPage} מתוך {ordersTotalPages}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={ordersPage >= ordersTotalPages}
-          onPress={() => {
-            setOrdersPage((current) => Math.min(ordersTotalPages, current + 1))
-          }}
-          style={({ pressed }) => [
-            styles.outlineButtonSmall,
-            (ordersPage >= ordersTotalPages || pressed) && styles.primaryButtonDisabled,
-          ]}
-        >
-          <Text style={styles.outlineButtonText}>עמוד הבא</Text>
-        </Pressable>
-      </View>
-    </View>
-  )
 
   const renderSettingsTab = (): React.JSX.Element => (
     <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.settingsSync}>
@@ -1347,6 +1751,29 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           <Text style={styles.catalogMetricLabel}>סנכרון ERP</Text>
           <Text style={styles.catalogMetricValue}>94%</Text>
         </View>
+      </View>
+
+      <View style={styles.panelSection}>
+        <Text style={styles.panelTitle}>יעד מכירות חודשי</Text>
+        <View style={styles.settingsGoalRow}>
+          <TextInput
+            accessibilityLabel="יעד מכירות חודשי"
+            keyboardType="numeric"
+            onChangeText={setMonthlyGoalDraft}
+            placeholder="הזינו יעד בחודש"
+            style={[styles.input, styles.settingsGoalInput]}
+            value={monthlyGoalDraft}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={applyMonthlyGoal}
+            style={({ pressed }) => [styles.primaryButtonSmall, pressed && styles.primaryButtonDisabled]}
+          >
+            <Text style={styles.primaryButtonText}>שמירה</Text>
+          </Pressable>
+        </View>
+        {monthlyGoalError ? <Text style={styles.errorText}>{monthlyGoalError}</Text> : null}
+        <Text style={styles.noticeText}>יעד נוכחי: {formatCurrency(monthlyGoalAmount, 'ILS')}</Text>
       </View>
 
       <View style={styles.panelSection}>
@@ -1424,108 +1851,88 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
-  const connectionWarning = customersError ?? approvedItemsError ?? ordersError
+  const connectionWarning = customersError ?? approvedItemsError ?? ordersError ?? homeOrdersError
   const profileDisplayName = profile?.name ?? 'אבי כהן'
-  const profileInitials = initialsFromLabel(profileDisplayName)
 
   const refreshActiveTab = useCallback(() => {
     if (activeTab === 'orders') {
       void loadOrders()
       return
     }
+    if (activeTab === 'home') {
+      void loadHomeOrdersSnapshot()
+      return
+    }
     void loadCustomers()
-  }, [activeTab, loadCustomers, loadOrders])
+  }, [activeTab, loadCustomers, loadHomeOrdersSnapshot, loadOrders])
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
-      {connectionWarning ? (
-        <View style={styles.warningStrip}>
-          <MaterialIcons color="#b91c1c" name="error-outline" size={16} />
-          <Text style={styles.warningStripText}>שגיאה בחיבור לשרת. הנתונים המוצגים עשויים להיות לא מעודכנים.</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              refreshActiveTab()
-            }}
-          >
-            <Text style={styles.warningStripAction}>נסה שוב</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      <Animated.View style={[styles.topBar, { transform: [{ translateY: headerTranslateY }] }]}>
-        <View style={styles.topBarIdentity}>
-          <Text style={styles.brandEyebrow}>אפליקציית סוכנים</Text>
-          <Text style={styles.title}>
-            {activeTab === 'customers'
-              ? isCustomerDetailOpen
-                ? 'פרטי לקוח'
-                : 'לקוחות'
-              : activeTab === 'catalog'
-                ? 'ניהול קטלוג מאושר'
-                : activeTab === 'orders'
-                  ? 'הזמנות'
-                  : activeTab === 'settings'
-                    ? 'הגדרות וסנכרון'
-                     : 'MEATLAND'}
-          </Text>
-          <Text style={styles.subtitle}>{profileDisplayName}</Text>
-          <Text style={styles.subtitleSecondary}>{activeTab === 'home' ? 'סוכן שטח מרכז' : 'ממשק מותאם למובייל'}</Text>
-        </View>
-        <View style={styles.topBarActions}>
-          <ImageBackground
-            accessibilityIgnoresInvertColors
-            source={{ uri: placeholderImageUri(profile?.id ?? profileDisplayName, 160, 160) }}
-            style={styles.profileAvatar}
-            imageStyle={styles.profileAvatarImage}
-          >
-            <View style={styles.profileAvatarScrim}>
-              <Text style={styles.profileAvatarText}>{profileInitials}</Text>
-            </View>
-          </ImageBackground>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              refreshActiveTab()
-            }}
-            style={({ pressed }) => [styles.refreshButton, (pressed || isCustomersLoading) && styles.linkButtonDisabled]}
-          >
-            <MaterialIcons color={palette.primaryContainer} name="sync" size={18} />
-          </Pressable>
-        </View>
-      </Animated.View>
-
-      {activeTab === 'customers' || activeTab === 'orders' ? (
-        <View style={styles.searchBlock}>
-          <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
-          <TextInput
-            accessibilityLabel="חיפוש לקוחות"
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, קוד פריט או שם פריט...' : 'חיפוש לקוח...'}
-            value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
-            onChangeText={(value) => {
-              if (activeTab === 'orders') {
-                setOrdersSearchQuery(value)
-                return
-              }
-              setCustomerSearchQuery(value)
-            }}
-            style={styles.searchInput}
-          />
-        </View>
-      ) : null}
-
       <Animated.View style={[styles.contentLayer, { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }]}>
-        <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentScrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.contentScroll}
+          contentContainerStyle={[
+            styles.contentScrollContainer,
+            {
+              paddingTop: Math.max(insets.top, spacing.sm),
+              paddingBottom: 112 + Math.max(insets.bottom, spacing.sm),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.brandOnlyBar, { marginTop: 0 }]}>
+            <Text style={styles.brandOnlyText}>MEATLAND</Text>
+          </View>
+          {connectionWarning ? (
+            <View style={styles.warningStrip}>
+              <MaterialIcons color="#b91c1c" name="error-outline" size={16} />
+              <Text style={styles.warningStripText}>שגיאה בחיבור לשרת. הנתונים המוצגים עשויים להיות לא מעודכנים.</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  refreshActiveTab()
+                }}
+              >
+                <Text style={styles.warningStripAction}>נסה שוב</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {(activeTab === 'customers' && !isCustomerDetailOpen) || (activeTab === 'orders' && !selectedOrder) ? (
+            <View style={styles.searchBlock}>
+              <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
+              <TextInput
+                accessibilityLabel="חיפוש לקוחות"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, קוד פריט או שם פריט...' : 'חיפוש לקוח...'}
+                value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
+                onChangeText={(value) => {
+                  if (activeTab === 'orders') {
+                    setOrdersSearchQuery(value)
+                    return
+                  }
+                  setCustomerSearchQuery(value)
+                }}
+                style={styles.searchInput}
+              />
+            </View>
+          ) : null}
           {activeTab === 'home' ? renderDashboardTab() : null}
           {activeTab === 'customers' ? renderCustomersTab() : null}
-          {activeTab === 'catalog' ? renderApprovedCatalogTab() : null}
           {activeTab === 'orders' ? renderOrdersTab() : null}
           {activeTab === 'settings' ? renderSettingsTab() : null}
         </ScrollView>
       </Animated.View>
 
-      <Animated.View style={[styles.bottomTabs, { transform: [{ translateY: headerTranslateY }] }]}>
+      <Animated.View
+        style={[
+          styles.bottomTabs,
+          {
+            paddingBottom: spacing.md + Math.max(insets.bottom - spacing.xs, 0),
+            transform: [{ translateY: headerTranslateY }],
+          },
+        ]}
+      >
         {TAB_ITEMS.map((tab) => {
           const isActive = tab.id === activeTab
 
@@ -1534,10 +1941,17 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               accessibilityRole="button"
               key={tab.id}
               onPress={() => {
+                setIsCustomerDetailOpen(false)
+                setSelectedOrderId(null)
+                setCustomerSearchQuery('')
+                setActiveCustomerFilter('all')
+                setOrdersSearchQuery('')
+                setActiveOrderDateFilter('all')
+                setOrdersPage(1)
+                setCatalogPage(1)
+                setMonthlyGoalDraft(String(monthlyGoalAmount))
+                setMonthlyGoalError(null)
                 setActiveTab(tab.id)
-                if (tab.id !== 'customers') {
-                  setIsCustomerDetailOpen(false)
-                }
               }}
               style={({ pressed }) => [styles.tabButton, isActive && styles.tabButtonActive, pressed && styles.tabButtonPressed]}
             >
@@ -1569,22 +1983,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
     borderWidth: 1,
     borderColor: '#fecaca',
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  warningStripIcon: {
-    color: '#b91c1c',
-    fontSize: 14,
-    fontWeight: '700',
   },
   warningStripText: {
     flex: 1,
     color: '#7f1d1d',
     fontSize: 11,
     fontWeight: '700',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   warningStripAction: {
     color: '#7f1d1d',
@@ -1592,92 +2001,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textDecorationLine: 'underline',
   },
-  topBar: {
-    marginTop: spacing.sm,
-    marginHorizontal: spacing.md,
+  brandOnlyBar: {
+    marginHorizontal: 0,
     marginBottom: spacing.sm,
+    marginTop: 0,
+    paddingTop: 0,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    minHeight: 56,
     borderRadius: radius.lg,
-    backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.outline,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    backgroundColor: palette.surface,
+    justifyContent: 'center',
   },
-  topBarIdentity: {
-    flex: 1,
-  },
-  topBarActions: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  brandEyebrow: {
-    color: palette.secondary,
-    fontSize: 10,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-    fontWeight: '700',
-    alignSelf: 'flex-start',
-  },
-  title: {
-    fontSize: 22,
+  brandOnlyText: {
     color: palette.primaryContainer,
-    fontWeight: '800',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  subtitle: {
-    marginTop: 2,
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  subtitleSecondary: {
-    marginTop: 1,
-    color: palette.textMuted,
-    fontSize: 11,
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  refreshButton: {
-    minHeight: touchTarget.min,
-    minWidth: touchTarget.min,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.outline,
-  },
-  profileAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: palette.outline,
-  },
-  profileAvatarImage: {
-    borderRadius: radius.pill,
-  },
-  profileAvatarScrim: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(28, 25, 23, 0.34)',
-  },
-  profileAvatarText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontSize: scaledFont(22),
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   searchBlock: {
     marginHorizontal: spacing.md,
@@ -1686,7 +2028,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.outline,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     minHeight: touchTarget.comfortable,
@@ -1696,21 +2038,13 @@ const styles = StyleSheet.create({
     color: palette.secondary,
     fontSize: 17,
   },
-  iconPrimary: {
-    color: palette.primaryContainer,
-    fontSize: 18,
-  },
-  iconSecondary: {
-    color: palette.secondary,
-    fontSize: 18,
-  },
   searchInput: {
     flex: 1,
     color: palette.text,
     fontSize: 15,
     paddingVertical: 10,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   contentScroll: {
     flex: 1,
@@ -1724,22 +2058,22 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: scaledFont(20),
     color: palette.primary,
     fontWeight: '800',
   },
   sectionMeta: {
     color: palette.secondary,
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: scaledFont(12),
   },
   kpiGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     gap: spacing.sm,
   },
   dashboardHeroCard: {
@@ -1759,11 +2093,11 @@ const styles = StyleSheet.create({
   },
   dashboardHeroValue: {
     color: '#fff',
-    fontSize: 34,
+    fontSize: scaledFont(28),
     fontWeight: '900',
   },
   dashboardHeroMetaRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -1782,7 +2116,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   kpiHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xs,
@@ -1794,7 +2128,7 @@ const styles = StyleSheet.create({
   },
   kpiValue: {
     color: palette.primaryContainer,
-    fontSize: 20,
+    fontSize: scaledFont(18),
     fontWeight: '800',
   },
   kpiMeta: {
@@ -1802,39 +2136,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  queueScroller: {
-    maxHeight: 220,
-  },
-  queueScrollerContent: {
-    gap: spacing.md,
-    paddingHorizontal: 2,
-  },
-  queueCard: {
-    width: 290,
-    borderRadius: radius.lg,
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    padding: spacing.lg,
+  homeOrdersList: {
     gap: spacing.sm,
   },
-  urgentIconChip: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    backgroundColor: '#fff7ed',
+  homeOrderRow: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surfaceLow,
+    padding: spacing.md,
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  queueCardTitle: {
+  homeOrderTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  homeOrderTitle: {
     color: palette.primary,
-    fontWeight: '700',
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: '800',
   },
-  queueCardMeta: {
-    color: palette.textMuted,
-    fontSize: 13,
+  homeOrderAmount: {
+    color: palette.primaryContainer,
+    fontSize: 16,
+    fontWeight: '800',
   },
   panelSection: {
     backgroundColor: palette.surface,
@@ -1847,80 +2175,7 @@ const styles = StyleSheet.create({
   panelTitle: {
     color: palette.primary,
     fontWeight: '700',
-    fontSize: 17,
-  },
-  premiumBanner: {
-    minHeight: 128,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-  },
-  premiumBannerImage: {
-    borderRadius: radius.xl,
-  },
-  premiumBannerOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-    backgroundColor: 'rgba(69, 10, 10, 0.7)',
-    padding: spacing.lg,
-    gap: 4,
-  },
-  premiumEyebrow: {
-    color: '#fecaca',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  premiumTitle: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  premiumLink: {
-    color: '#fdba74',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  catalogWarningBanner: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#f5d18f',
-    backgroundColor: '#fff4dc',
-    padding: spacing.md,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  catalogWarningContent: {
-    flex: 1,
-    gap: 4,
-  },
-  catalogWarningTitle: {
-    color: palette.warning,
-    fontSize: 13,
-    fontWeight: '800',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  catalogWarningText: {
-    color: palette.warning,
-    fontSize: 11,
-    fontWeight: '600',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-  },
-  catalogMetricGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    gap: spacing.sm,
-  },
-  catalogMetricCard: {
-    flex: 1,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    backgroundColor: palette.surface,
-    padding: spacing.md,
-    gap: spacing.xs,
+    fontSize: scaledFont(15),
   },
   catalogMetricLabel: {
     color: palette.textMuted,
@@ -1933,6 +2188,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   catalogCardList: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
     gap: spacing.sm,
   },
   catalogItemCard: {
@@ -1940,111 +2198,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.outline,
     backgroundColor: palette.surface,
-    padding: spacing.md,
+    overflow: 'hidden',
+    padding: spacing.xs,
     gap: spacing.xs,
   },
-  catalogItemCardUnavailable: {
-    opacity: 0.75,
-    borderColor: '#fecaca',
-  },
   catalogItemHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
+    minHeight: 30,
   },
   catalogItemImagePlaceholder: {
     width: '100%',
-    height: 96,
-    borderRadius: radius.md,
-    marginBottom: spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    aspectRatio: 1,
+    position: 'relative',
+    borderRadius: radius.sm,
+    marginBottom: spacing.xs,
   },
   catalogItemImageAsset: {
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
   },
-  catalogItemImageScrim: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(28, 25, 23, 0.24)',
-    borderRadius: radius.md,
-  },
-  catalogSku: {
-    color: palette.textMuted,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  catalogItemTitle: {
+  catalogItemTitleEnhanced: {
     color: palette.primary,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: scaledFont(11),
+    fontWeight: '800',
+    lineHeight: scaledFont(14),
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
-  catalogItemMeta: {
-    color: palette.textMuted,
-    fontSize: 12,
+  catalogItemMetaEnhanced: {
+    color: palette.secondary,
+    fontSize: scaledFont(9),
+    fontWeight: '600',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
-  catalogUnavailableBadge: {
-    alignSelf: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-    backgroundColor: '#e7e5e4',
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-  },
-  catalogUnavailableBadgeText: {
-    color: '#78716c',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  catalogAddRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+  catalogPaginationRow: {
+    marginTop: spacing.sm,
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  catalogAddButton: {
-    borderRadius: radius.md,
-    minHeight: touchTarget.comfortable,
-    minWidth: touchTarget.comfortable,
-    backgroundColor: palette.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityList: {
-    gap: spacing.sm,
-  },
-  activityRow: {
-    backgroundColor: palette.surfaceLow,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-  },
-  activityTextGroup: {
+  catalogPaginationLabel: {
     flex: 1,
-    gap: 2,
-  },
-  activityTitle: {
-    color: palette.primary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  activityMeta: {
     color: palette.textMuted,
     fontSize: 12,
-  },
-  activityRef: {
-    color: palette.primaryContainer,
+    textAlign: 'center',
     fontWeight: '700',
-    fontSize: 12,
   },
   customerListSection: {
     gap: spacing.sm,
@@ -2053,7 +2251,7 @@ const styles = StyleSheet.create({
     maxHeight: 44,
   },
   customerFilterContent: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: 2,
@@ -2089,8 +2287,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.outline,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
+    padding: spacing.xl,
+    gap: spacing.sm,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
   },
   customerCardPrimaryBorder: {
     borderRightWidth: 4,
@@ -2103,18 +2305,24 @@ const styles = StyleSheet.create({
   customerCardCompact: {
     padding: spacing.md,
   },
+  customerCardTapArea: {
+    gap: spacing.sm,
+  },
+  customerCardPressed: {
+    opacity: 0.88,
+  },
   customerCardHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   customerCode: {
     color: palette.secondary,
-    fontWeight: '600',
-    fontSize: 11,
+    fontWeight: '700',
+    fontSize: 12,
   },
   statusRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: 6,
   },
@@ -2131,37 +2339,22 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: palette.textMuted,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
   customerId: {
     color: palette.primary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  customerNameRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  customerBadge: {
-    borderRadius: radius.pill,
-    backgroundColor: palette.secondaryFixed,
-    color: palette.secondary,
-    fontSize: 10,
+    fontSize: scaledFont(20),
     fontWeight: '800',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    overflow: 'hidden',
+    lineHeight: 30,
   },
   customerMeta: {
     color: palette.textMuted,
-    fontSize: 13,
+    fontSize: 14,
   },
   customerActionRow: {
     marginTop: spacing.sm,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     gap: spacing.sm,
   },
   customerActionStack: {
@@ -2171,14 +2364,14 @@ const styles = StyleSheet.create({
   customerToggle: {
     marginTop: spacing.sm,
     paddingVertical: spacing.xs,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   customerToggleText: {
     color: palette.secondary,
-    fontWeight: '700',
-    fontSize: 13,
+    fontWeight: '800',
+    fontSize: 14,
   },
   customerExpandedSection: {
     marginTop: spacing.xs,
@@ -2188,7 +2381,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   customerDetailGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
@@ -2204,35 +2397,50 @@ const styles = StyleSheet.create({
   },
   customerDetailValue: {
     color: palette.primary,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
-  detailCard: {
+  detailBackButton: {
+    alignSelf: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+    minHeight: touchTarget.min,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  detailBackButtonText: {
+    color: palette.secondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  customerNameCard: {
     borderRadius: radius.lg,
-    padding: spacing.lg,
     backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.outline,
-    gap: spacing.xs,
-  },
-  customerDetailHero: {
-    borderRadius: radius.lg,
-    backgroundColor: palette.primary,
-    padding: spacing.lg,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
     gap: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 140,
   },
-  customerDetailBadge: {
-    alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end',
-    borderRadius: radius.pill,
-    backgroundColor: palette.warning,
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+  customerNameCardTitle: {
+    color: palette.primary,
+    fontSize: scaledFont(28),
+    fontWeight: '900',
+    textAlign: 'center',
+    lineHeight: 42,
+  },
+  customerNameCardSubtitle: {
+    color: palette.secondary,
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   detailInfoGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     gap: spacing.sm,
   },
   detailInfoCard: {
@@ -2242,64 +2450,309 @@ const styles = StyleSheet.create({
     borderColor: palette.outline,
     backgroundColor: palette.surface,
     padding: spacing.md,
-    gap: 4,
+    gap: spacing.xs,
+  },
+  detailInfoAction: {
+    alignSelf: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+  },
+  customerDetailValueLink: {
+    color: palette.primaryContainer,
+    fontSize: 17,
+    fontWeight: '800',
+    textDecorationLine: 'underline',
   },
   detailTitle: {
     color: palette.primary,
     fontSize: 24,
     fontWeight: '800',
   },
-  detailActionRow: {
-    marginTop: spacing.sm,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    gap: spacing.sm,
-  },
-  approvedList: {
-    gap: spacing.sm,
-  },
   ordersList: {
     gap: spacing.sm,
   },
   orderCard: {
     borderRadius: radius.md,
-    backgroundColor: palette.surface,
+    backgroundColor: '#f1f2f4',
     borderWidth: 1,
     borderColor: palette.outline,
-    padding: spacing.md,
-    gap: spacing.xs,
+    padding: spacing.sm,
+    gap: spacing.sm,
+    alignItems: 'stretch',
   },
   orderHeader: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'flex-start',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: '#8d1b2c',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   orderTitle: {
-    color: palette.primary,
-    fontWeight: '700',
-    fontSize: 15,
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: scaledFont(14),
+    lineHeight: scaledFont(18),
+    flex: 1,
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   orderTotal: {
-    color: palette.primaryContainer,
+    color: '#f4d9dd',
     fontWeight: '800',
-    fontSize: 15,
+    fontSize: scaledFont(11),
+    lineHeight: scaledFont(14),
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  orderSummaryMetaRow: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
   },
   orderMeta: {
-    color: palette.textMuted,
-    fontSize: 12,
+    color: palette.secondary,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
-  orderItemsList: {
-    borderTopWidth: 1,
-    borderTopColor: palette.outline,
-    paddingTop: spacing.xs,
-    gap: 2,
+  orderMetaStrong: {
+    color: '#0f766e',
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
-  orderItemLine: {
+  orderPreviewItems: {
+    gap: spacing.sm,
+  },
+  orderPreviewItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#dde0e4',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  orderPreviewItemImageWrap: {
+    position: 'relative',
+    width: 84,
+    height: 84,
+  },
+  orderPreviewItemImage: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  orderPreviewItemImageAsset: {
+    borderRadius: radius.md,
+  },
+  orderPreviewItemContent: {
+    flex: 1,
+    gap: 4,
+    alignItems: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+  },
+  orderPreviewItemName: {
     color: palette.primary,
+    fontSize: scaledFont(13),
+    fontWeight: '800',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  orderPreviewItemQuantity: {
+    color: palette.primaryContainer,
+    fontSize: scaledFont(12),
+    fontWeight: '800',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  orderPreviewMetricsRow: {
+    width: '100%',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  orderPreviewMetric: {
+    gap: 2,
+    alignItems: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+  },
+  orderPreviewMetricLabel: {
+    color: palette.textMuted,
+    fontSize: scaledFont(11),
+    fontWeight: '700',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+  },
+  orderPreviewMetricValue: {
+    color: palette.primary,
+    fontSize: scaledFont(16),
+    fontWeight: '900',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+  },
+  orderThumbBadge: {
+    position: 'absolute',
+    top: -4,
+    right: IS_RTL_LAYOUT ? undefined : -4,
+    left: IS_RTL_LAYOUT ? -4 : undefined,
+    minWidth: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    backgroundColor: palette.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  orderThumbBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  orderDetailHeroCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surface,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  orderDetailRestaurant: {
+    color: palette.primary,
+    fontSize: scaledFont(22),
+    fontWeight: '900',
+  },
+  orderDetailDate: {
+    color: palette.secondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  orderDetailTotal: {
+    color: palette.primaryContainer,
+    fontSize: scaledFont(20),
+    fontWeight: '900',
+  },
+  orderDetailStatusPill: {
+    alignSelf: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+    borderRadius: radius.pill,
+    backgroundColor: palette.surfaceLow,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  orderDetailStatusText: {
+    color: palette.primaryContainer,
     fontSize: 12,
+    fontWeight: '800',
+  },
+  orderDetailListCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: '#f3f4f6',
+    overflow: 'hidden',
+  },
+  orderDetailListRow: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  orderDetailListRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: palette.outline,
+  },
+  orderDetailItemImageWrap: {
+    position: 'relative',
+    width: 96,
+    height: 96,
+  },
+  orderDetailItemImage: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  orderDetailItemImageAsset: {
+    borderRadius: radius.md,
+  },
+  orderDetailListInfo: {
+    flex: 1,
+    gap: 4,
+    alignItems: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
+  },
+  orderDetailListPricing: {
+    minWidth: 92,
+    gap: 4,
+    alignItems: IS_RTL_LAYOUT ? 'flex-start' : 'flex-end',
+  },
+  orderDetailItemTitle: {
+    color: palette.primary,
+    fontSize: scaledFont(14),
+    fontWeight: '900',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  orderDetailItemSubtitle: {
+    color: '#8f8b87',
+    fontSize: scaledFont(11),
+    fontWeight: '700',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  orderDetailListLineTotal: {
+    color: palette.primaryContainer,
+    fontSize: scaledFont(18),
+    fontWeight: '900',
+    textAlign: IS_RTL_LAYOUT ? 'left' : 'right',
+  },
+  orderDetailListUnitPrice: {
+    color: '#9a9896',
+    fontSize: scaledFont(12),
+    fontWeight: '700',
+    textAlign: IS_RTL_LAYOUT ? 'left' : 'right',
+  },
+  orderDetailOrderRef: {
+    textAlign: 'center',
+    color: palette.textMuted,
+    fontSize: scaledFont(11),
+    fontWeight: '600',
+    marginTop: spacing.xs,
+  },
+  speciesBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  speciesBadgeSmall: {
+    width: 20,
+    height: 20,
+  },
+  speciesBadgeBeef: {
+    backgroundColor: '#8b1f34',
+  },
+  speciesBadgeChicken: {
+    backgroundColor: '#b45309',
+  },
+  speciesBadgeLamb: {
+    backgroundColor: '#6d28d9',
   },
   paginationRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
@@ -2308,53 +2761,6 @@ const styles = StyleSheet.create({
     color: palette.secondary,
     fontSize: 12,
     fontWeight: '600',
-  },
-  approvedRow: {
-    borderRadius: radius.md,
-    backgroundColor: palette.surfaceLow,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    padding: spacing.md,
-    gap: 2,
-  },
-  approvedRowCard: {
-    borderRadius: radius.md,
-    backgroundColor: palette.surfaceLow,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    padding: spacing.sm,
-    gap: spacing.sm,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-  },
-  approvedImagePlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  approvedImageAsset: {
-    borderRadius: radius.md,
-  },
-  approvedImageScrim: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(28, 25, 23, 0.24)',
-    borderRadius: radius.md,
-  },
-  approvedRowContent: {
-    flex: 1,
-    gap: 2,
-  },
-  approvedTitle: {
-    color: palette.primary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  approvedMeta: {
-    color: palette.textMuted,
-    fontSize: 12,
   },
   input: {
     borderRadius: radius.md,
@@ -2365,11 +2771,11 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.comfortable,
     backgroundColor: palette.surface,
     color: palette.text,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   settingsRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 2,
@@ -2384,8 +2790,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   settingsActionRow: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     gap: spacing.sm,
+  },
+  settingsGoalRow: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  settingsGoalInput: {
+    flex: 1,
   },
   settingsProfileCard: {
     borderRadius: radius.lg,
@@ -2393,7 +2807,7 @@ const styles = StyleSheet.create({
     borderColor: palette.outline,
     backgroundColor: palette.surface,
     padding: spacing.lg,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
@@ -2426,7 +2840,7 @@ const styles = StyleSheet.create({
   },
   settingsProfileName: {
     color: palette.primary,
-    fontSize: 20,
+    fontSize: scaledFont(18),
     fontWeight: '800',
   },
   settingsProfileSub: {
@@ -2434,7 +2848,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   settingsMetricsGrid: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     gap: spacing.sm,
   },
   settingsMetricCard: {
@@ -2450,20 +2864,20 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderBottomWidth: 1,
     borderBottomColor: palette.outline,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
   settingsMenuRowLast: {
     minHeight: 46,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
   settingsMenuLeading: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -2473,7 +2887,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   settingsMenuTrailing: {
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
@@ -2500,8 +2914,8 @@ const styles = StyleSheet.create({
   },
   mutedText: {
     color: palette.textMuted,
-    textAlign: I18nManager.isRTL ? 'right' : 'left',
-    writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   primaryButton: {
     borderRadius: radius.md,
@@ -2536,6 +2950,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     flex: 1,
+    borderColor: palette.outline,
+    borderWidth: 1,
   },
   outlineButtonSmall: {
     borderRadius: radius.md,
@@ -2591,20 +3007,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
   },
-  backButton: {
-    minHeight: touchTarget.min,
-    borderRadius: radius.md,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
   linkButtonInline: {
     minHeight: touchTarget.min,
     borderRadius: radius.md,
     paddingHorizontal: spacing.sm,
     justifyContent: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
   },
   linkButtonDisabled: {
     opacity: 0.65,
@@ -2636,6 +3044,29 @@ const styles = StyleSheet.create({
     color: palette.warning,
     fontSize: 13,
   },
+  linkMetaCard: {
+    marginTop: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surfaceLow,
+    padding: spacing.md,
+    gap: 2,
+  },
+  linkMetaTitle: {
+    color: palette.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  linkMetaValue: {
+    color: palette.secondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  linkMetaHint: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
   bottomTabs: {
     position: 'absolute',
     bottom: 0,
@@ -2649,7 +3080,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     borderTopWidth: 1,
     borderColor: palette.outline,
-    flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: spacing.xs,
@@ -2677,9 +3108,6 @@ const styles = StyleSheet.create({
     color: palette.secondary,
     fontSize: 18,
     lineHeight: 18,
-  },
-  tabIconActive: {
-    color: '#fff',
   },
   tabLabelActive: {
     color: '#fff',

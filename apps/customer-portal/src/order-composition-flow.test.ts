@@ -175,7 +175,7 @@ describe('order composition interactions and UX states', () => {
       sections: {
         approved: {
           items: [
-            { itemId: 'itm-frozen-burger', name: 'Frozen Burger' },
+            { itemId: 'itm-frozen-burger', name: 'קפוא המבורגר' },
             { itemId: 'item-45', name: 'מוצר 45' },
             { itemId: 'item-', name: 'מוצר' },
           ],

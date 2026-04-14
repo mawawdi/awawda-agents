@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&family=Sora:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --meatland-primary: #7f1d1d;
@@ -38,8 +38,10 @@ body {
     radial-gradient(circle at 8% 94%, rgba(13, 148, 136, 0.1), transparent 40%),
     var(--meatland-bg);
   color: var(--meatland-text);
-  font-family: Rubik, Heebo, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   line-height: 1.5;
+  direction: rtl;
+  text-align: right;
 }
 
 h1,
@@ -95,7 +97,7 @@ input {
   justify-content: center;
   border-radius: 999px;
   padding: 6px 12px;
-  font-family: Sora, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -243,7 +245,7 @@ input {
 .status-kicker {
   margin: 0;
   color: var(--meatland-accent);
-  font-family: Sora, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -303,7 +305,7 @@ input {
   font-size: 0.73rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-family: Sora, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 700;
 }
 
@@ -379,14 +381,16 @@ input {
 .item-title {
   margin: 0;
   color: var(--meatland-text);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .item-pricing {
   margin: 0;
   color: var(--meatland-text-muted);
-  font-size: 0.86rem;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .qty-row {
@@ -404,6 +408,8 @@ input {
   min-height: 48px;
   text-align: center;
   padding: 6px 8px;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .summary-card {
@@ -622,8 +628,7 @@ input {
 .status-visual-copy {
   position: absolute;
   bottom: 32px;
-  right: 32px;
-  left: 32px;
+  inset-inline: 32px;
   color: #fff;
   z-index: 1;
 }
@@ -665,7 +670,7 @@ input {
 
 .status-support-pane {
   border-radius: 14px;
-  border-right: 4px solid var(--meatland-secondary);
+  border-inline-start: 4px solid var(--meatland-secondary);
   padding: 12px;
   background: color-mix(in srgb, var(--meatland-secondary) 9%, white);
 }
@@ -845,29 +850,69 @@ input {
 }
 
 .items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
   gap: 14px;
 }
 
 .item-card {
-  border-radius: 20px;
-  border-right: 4px solid var(--meatland-primary);
+  border-radius: 18px;
+  border: 1px solid var(--meatland-border);
+  overflow: hidden;
+  box-shadow: 0 8px 18px -14px rgb(0 0 0 / 0.35);
+  min-width: 0;
   display: grid;
-  grid-template-columns: 122px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
+  grid-template-rows: auto 1fr;
   background: var(--meatland-surface-muted);
 }
 
 .item-image-wrap {
+  position: relative;
   width: 100%;
-  height: 100%;
+  min-height: 0;
+  border-bottom: 1px solid var(--meatland-border);
+  overflow: hidden;
+}
+
+.species-badge {
+  position: absolute;
+  inset-inline-end: 8px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 8px 14px -10px rgb(0 0 0 / 0.65);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.species-badge svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.species-badge--beef {
+  background: #8b1f34;
+}
+
+.species-badge--chicken {
+  background: #b45309;
+}
+
+.species-badge--lamb {
+  background: #6d28d9;
 }
 
 .item-image-placeholder {
   width: 100%;
   height: 100%;
-  min-height: 118px;
-  border-radius: 14px;
+  min-height: 0;
   display: grid;
   place-items: center;
   color: #fff;
@@ -876,9 +921,29 @@ input {
   letter-spacing: 0.06em;
 }
 
+.item-image-asset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .item-content {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  padding: 14px;
+}
+
+.catalog-pagination {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--meatland-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .summary-rail {
@@ -892,13 +957,12 @@ input {
 }
 
 .success-panel {
-  border-right: 4px solid #16a34a;
+  border-inline-start: 4px solid #16a34a;
 }
 
 .sticky-submit {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   width: min(1520px, calc(100% - 32px));
   margin: 0 auto 14px;
@@ -940,10 +1004,6 @@ input {
     position: static;
     max-height: none;
     overflow: visible;
-  }
-
-  .item-card {
-    grid-template-columns: 1fr;
   }
 
   .sticky-submit {

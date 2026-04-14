@@ -36,3 +36,18 @@ Minimum reviewer checklist:
 - Run Playwright flow(s) for impacted user journeys.
 - Record pass/fail evidence in PR review.
 - Reject PR if behavior diverges from acceptance criteria.
+
+## Mobile store release gates (Agent app)
+
+For App Store / Google Play release candidates, the following gates must be green in addition to CI:
+
+1. `apps/agent-mobile` lint/test/build pass.
+2. EAS preview builds pass on both platforms:
+   - `pnpm --filter @meatland/agent-mobile eas:build:preview:ios`
+   - `pnpm --filter @meatland/agent-mobile eas:build:preview:android`
+3. EAS production builds pass on both platforms:
+   - `pnpm --filter @meatland/agent-mobile eas:build:production:ios`
+   - `pnpm --filter @meatland/agent-mobile eas:build:production:android`
+4. Store metadata and legal links are present (privacy policy, support URL, screenshots).
+5. Final bundle identifiers / package names are validated against organization-owned store apps.
+6. Release sign-off includes a documented go/no-go on `docs/mobile-store-release-readiness.md`.

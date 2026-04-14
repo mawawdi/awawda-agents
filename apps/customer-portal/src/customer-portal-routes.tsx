@@ -51,6 +51,14 @@ const SESSION_STORAGE_KEY = 'customer-portal-session';
 const WEAK_NETWORK_THRESHOLD_MS = 2_500;
 let memoryPortalSession: StoredPortalSession | null = null;
 const DEFAULT_MEDIA_ALT = 'תמונת מוצר אינה זמינה כרגע';
+const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v2';
+const TESTING_CUT_MIN_DIMENSION_PX = 512;
+const PORTAL_CATALOG_GRID_GAP_PX = 14;
+const PORTAL_CATALOG_SECTION_INSET_PX = 36;
+const PORTAL_CATALOG_ROWS_PER_PAGE = 2;
+const PORTAL_API_BASE_URL = resolvePortalApiBaseUrl();
+
+type ItemSpecies = 'beef' | 'chicken' | 'lamb';
 
 type RouteConfig = {
   weakNetworkThresholdMs: number;
@@ -236,8 +244,61 @@ function OrderRoute({
   const [state, setState] = useState<OrderPageState>(createOrderLoadingState());
   const [submitState, setSubmitState] = useState<OrderSubmitState>(createIdleState());
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [hiddenItemImageIds, setHiddenItemImageIds] = useState<Record<string, true>>({});
+  const [catalogViewportWidth, setCatalogViewportWidth] = useState(0);
+  const [recentCatalogPage, setRecentCatalogPage] = useState(1);
+  const [approvedCatalogPage, setApprovedCatalogPage] = useState(1);
   const session = useMemo(() => readPortalSession(), []);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
+  const catalogMeasureRef = useRef<HTMLDivElement | null>(null);
+
+  const markItemImageUnavailable = useCallback((itemId: string): void => {
+    setHiddenItemImageIds((current) => {
+      if (current[itemId]) {
+        return current;
+      }
+      return {
+        ...current,
+        [itemId]: true,
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    setHiddenItemImageIds({});
+    setRecentCatalogPage(1);
+    setApprovedCatalogPage(1);
+  }, [session?.customerId]);
+
+  useEffect(() => {
+    const element = catalogMeasureRef.current;
+    if (!element) {
+      return;
+    }
+
+    const updateWidth = (nextRawWidth: number): void => {
+      const normalized = Math.max(0, Math.floor(nextRawWidth) - PORTAL_CATALOG_SECTION_INSET_PX);
+      setCatalogViewportWidth((current) => (current === normalized ? current : normalized));
+    };
+
+    updateWidth(element.clientWidth);
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        const nextWidth = entries[0]?.contentRect.width ?? element.clientWidth;
+        updateWidth(nextWidth);
+      });
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+
+    const handleWindowResize = (): void => {
+      updateWidth(element.clientWidth);
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    return () => window.removeEventListener('resize', handleWindowResize);
+  }, [state.status]);
 
   const resetSubmitDraft = useCallback(() => {
     if (submitState.status === 'success') {
@@ -464,58 +525,101 @@ function OrderRoute({
     );
   }
 
-  const renderItem = (item: OrderSectionItem): ReactElement => (
-    <li className="item-card" key={item.itemId}>
-      <div className="item-image-wrap">
-        <DeterministicPlaceholder className="item-image-placeholder" label={item.name} seed={item.itemId} />
-      </div>
-      <div className="item-content">
-        <h3 className="item-title">{item.name}</h3>
-        <p className="item-pricing">
-          {item.unitPrice === null
-            ? 'המחיר לא זמין'
-            : (
-              <>
-                <bdi dir="ltr">{formatCurrency(item.currency, item.unitPrice)}</bdi> / יחידה
-              </>
-            )}
-        </p>
-        <div className="qty-row">
-          <Button
-            aria-label={`הקטנת כמות ${item.name}`}
-            className="qty-btn"
-            disabled={state.isSubmitting || submitState.status === 'success'}
-            onClick={() => adjustQuantity(item.itemId, 'decrement')}
-            size="icon"
-            type="button"
-            variant="secondary"
-          >
-            −
-          </Button>
-          <Input
-            aria-label={`כמות ${item.name}`}
-            className="qty-input"
-            disabled={state.isSubmitting || submitState.status === 'success'}
-            inputMode="numeric"
-            onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
-            type="number"
-            value={item.quantity}
-          />
-          <Button
-            aria-label={`הגדלת כמות ${item.name}`}
-            className="qty-btn"
-            disabled={state.isSubmitting || submitState.status === 'success'}
-            onClick={() => adjustQuantity(item.itemId, 'increment')}
-            size="icon"
-            type="button"
-            variant="secondary"
-          >
-            +
-          </Button>
-        </div>
-      </div>
-    </li>
+  const catalogColumnCount = resolveCatalogGridColumnCount(catalogViewportWidth, TESTING_CUT_MIN_DIMENSION_PX, PORTAL_CATALOG_GRID_GAP_PX);
+  const catalogImageDimension = resolveCatalogGridCellDimension(
+    catalogViewportWidth,
+    catalogColumnCount,
+    TESTING_CUT_MIN_DIMENSION_PX,
+    PORTAL_CATALOG_GRID_GAP_PX,
   );
+  const catalogPageSize = Math.max(catalogColumnCount * PORTAL_CATALOG_ROWS_PER_PAGE, 1);
+  const recentTotalPages = Math.max(1, Math.ceil(state.sections.recent.items.length / catalogPageSize));
+  const approvedTotalPages = Math.max(1, Math.ceil(state.sections.approved.items.length / catalogPageSize));
+  const activeRecentPage = Math.min(recentCatalogPage, recentTotalPages);
+  const activeApprovedPage = Math.min(approvedCatalogPage, approvedTotalPages);
+  const pagedRecentItems = state.sections.recent.items.slice(
+    (activeRecentPage - 1) * catalogPageSize,
+    activeRecentPage * catalogPageSize,
+  );
+  const pagedApprovedItems = state.sections.approved.items.slice(
+    (activeApprovedPage - 1) * catalogPageSize,
+    activeApprovedPage * catalogPageSize,
+  );
+  const catalogGridStyle = { gridTemplateColumns: `repeat(${catalogColumnCount}, minmax(0, 1fr))` };
+  const catalogImageStyle = { height: `${catalogImageDimension}px` };
+
+  const renderItem = (item: OrderSectionItem): ReactElement => {
+    const imageUrl = hiddenItemImageIds[item.itemId] ? null : buildTestingItemImageUrl(item.itemId);
+    const species = inferItemSpecies(item.itemId);
+
+    return (
+      <li className="item-card" key={item.itemId}>
+        <div className="item-image-wrap" style={catalogImageStyle}>
+          <DeterministicPlaceholder className="item-image-placeholder" label={item.name} seed={item.itemId} />
+          {imageUrl ? (
+            <img
+              alt={item.name}
+              className="item-image-asset"
+              decoding="async"
+              loading="lazy"
+              onError={() => markItemImageUnavailable(item.itemId)}
+              src={imageUrl}
+            />
+          ) : null}
+          {species ? (
+            <span className={`species-badge species-badge--${species}`} aria-hidden="true">
+              <SpeciesIcon species={species} />
+            </span>
+          ) : null}
+        </div>
+        <div className="item-content">
+          <h3 className="item-title">{item.name}</h3>
+          <p className="item-pricing">
+            {item.unitPrice === null
+              ? 'המחיר לא זמין'
+              : (
+                <>
+                  <bdi dir="ltr">{formatCurrency(item.currency, item.unitPrice)}</bdi> / יחידה
+                </>
+              )}
+          </p>
+          <div className="qty-row">
+            <Button
+              aria-label={`הקטנת כמות ${item.name}`}
+              className="qty-btn"
+              disabled={state.isSubmitting || submitState.status === 'success'}
+              onClick={() => adjustQuantity(item.itemId, 'decrement')}
+              size="icon"
+              type="button"
+              variant="secondary"
+            >
+              −
+            </Button>
+            <Input
+              aria-label={`כמות ${item.name}`}
+              className="qty-input"
+              disabled={state.isSubmitting || submitState.status === 'success'}
+              inputMode="numeric"
+              onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
+              type="number"
+              value={item.quantity}
+            />
+            <Button
+              aria-label={`הגדלת כמות ${item.name}`}
+              className="qty-btn"
+              disabled={state.isSubmitting || submitState.status === 'success'}
+              onClick={() => adjustQuantity(item.itemId, 'increment')}
+              size="icon"
+              type="button"
+              variant="secondary"
+            >
+              +
+            </Button>
+          </div>
+        </div>
+      </li>
+    );
+  };
 
   const itemNameById = new Map(state.cart.lines.map((line) => [line.itemId, line.name]));
   const customerLabel = humanizeIdentifier(session?.customerId ?? 'unknown-customer', 'cust-');
@@ -558,7 +662,7 @@ function OrderRoute({
             <p>לקוח פעיל: {customerLabel}</p>
           </div>
         </aside>
-        <div className="portal-main-content">
+        <div className="portal-main-content" ref={catalogMeasureRef}>
           <section className="hero-banner">
             <DeterministicPlaceholder className="hero-media" label="השקת העונה" seed="seasonal-release" />
             <div className="hero-overlay">
@@ -575,7 +679,32 @@ function OrderRoute({
             {state.sections.recent.items.length === 0 ? (
               <p>{state.sections.recent.emptyMessage}</p>
             ) : (
-              <ul className="items-list">{state.sections.recent.items.map(renderItem)}</ul>
+              <>
+                <ul className="items-list" style={catalogGridStyle}>{pagedRecentItems.map(renderItem)}</ul>
+                {recentTotalPages > 1 ? (
+                  <div className="catalog-pagination">
+                    <Button
+                      disabled={activeRecentPage <= 1}
+                      onClick={() => setRecentCatalogPage((current) => Math.max(1, current - 1))}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      הקודם
+                    </Button>
+                    <span>עמוד {activeRecentPage} מתוך {recentTotalPages}</span>
+                    <Button
+                      disabled={activeRecentPage >= recentTotalPages}
+                      onClick={() => setRecentCatalogPage((current) => Math.min(recentTotalPages, current + 1))}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      הבא
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
           </section>
           <section className="catalog-section">
@@ -586,7 +715,32 @@ function OrderRoute({
             {state.sections.approved.items.length === 0 ? (
               <p>{state.sections.approved.emptyMessage}</p>
             ) : (
-              <ul className="items-list">{state.sections.approved.items.map(renderItem)}</ul>
+              <>
+                <ul className="items-list" style={catalogGridStyle}>{pagedApprovedItems.map(renderItem)}</ul>
+                {approvedTotalPages > 1 ? (
+                  <div className="catalog-pagination">
+                    <Button
+                      disabled={activeApprovedPage <= 1}
+                      onClick={() => setApprovedCatalogPage((current) => Math.max(1, current - 1))}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      הקודם
+                    </Button>
+                    <span>עמוד {activeApprovedPage} מתוך {approvedTotalPages}</span>
+                    <Button
+                      disabled={activeApprovedPage >= approvedTotalPages}
+                      onClick={() => setApprovedCatalogPage((current) => Math.min(approvedTotalPages, current + 1))}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      הבא
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
           </section>
         </div>
@@ -789,6 +943,52 @@ function humanizeIdentifier(value: string, prefix: string): string {
     .join(' ');
 }
 
+function buildTestingItemImageUrl(itemId: string): string | null {
+  const normalized = itemId.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return `${PORTAL_API_BASE_URL}/testing-assets/items/${encodeURIComponent(normalized)}/image?v=${TESTING_CUT_IMAGE_CACHE_BUSTER}`;
+}
+
+function inferItemSpecies(itemId: string): ItemSpecies | null {
+  const normalized = itemId.trim().toLowerCase();
+  if (normalized.includes('beef')) {
+    return 'beef';
+  }
+  if (normalized.includes('chicken')) {
+    return 'chicken';
+  }
+  if (normalized.includes('lamb')) {
+    return 'lamb';
+  }
+  return null;
+}
+
+function resolveCatalogGridColumnCount(containerWidth: number, minDimension: number, gap: number): number {
+  if (!Number.isFinite(containerWidth) || containerWidth <= 0) {
+    return 1;
+  }
+
+  return Math.max(1, Math.ceil((containerWidth + gap) / (minDimension + gap)));
+}
+
+function resolveCatalogGridCellDimension(containerWidth: number, columns: number, minDimension: number, gap: number): number {
+  if (!Number.isFinite(containerWidth) || containerWidth <= 0 || columns <= 0) {
+    return minDimension;
+  }
+
+  const totalGap = gap * Math.max(0, columns - 1);
+  const cellDimension = Math.floor((containerWidth - totalGap) / columns);
+  return Math.max(1, Math.min(minDimension, cellDimension));
+}
+
+function resolvePortalApiBaseUrl(): string {
+  const baseUrl = (globalThis as { __CUSTOMER_PORTAL_API_BASE_URL__?: string }).__CUSTOMER_PORTAL_API_BASE_URL__ ?? '/v1';
+  return baseUrl.trim().replace(/\/+$/g, '');
+}
+
 function DeterministicPlaceholder({
   className,
   label,
@@ -827,6 +1027,39 @@ function DeterministicPlaceholder({
     >
       <span>{initials || 'ML'}</span>
     </div>
+  );
+}
+
+function SpeciesIcon({ species }: { species: ItemSpecies }): ReactElement {
+  if (species === 'beef') {
+    return (
+      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M7 8L4 5l1.2-2L8.5 5h7L18.8 3 20 5l-3 3v6.2A2.8 2.8 0 0 1 14.2 17H9.8A2.8 2.8 0 0 1 7 14.2V8Zm2.3 2.7a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Zm5.4 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM9.4 14.4h5.2a1 1 0 0 1 0 2H9.4a1 1 0 1 1 0-2Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (species === 'lamb') {
+    return (
+      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M8.7 16.5A4.7 4.7 0 1 1 9 7h.3A4.2 4.2 0 0 1 17 8.7a3.8 3.8 0 1 1 .5 7.5h-8.8Zm2.4-1.6h1.8a2.5 2.5 0 0 0 0-5h-1.8a2.5 2.5 0 0 0 0 5Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M6.8 15.5a4.8 4.8 0 0 1 5.5-7.4c1.2.3 2.3.9 3 1.8l2.3-.7c.8-.2 1.4.6 1 1.3l-1.2 2.2c.2.5.3 1 .3 1.5A4.8 4.8 0 0 1 13 19h-1.8a4.4 4.4 0 0 1-4.4-3.5Zm5.7-9.3 1-2.2 1.6 1.4-.8 1.7h-1.8Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 

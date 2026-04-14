@@ -1,6 +1,12 @@
 import type { AgentCatalogItem } from '@meatland/shared-types';
 
 import rawLocalizedCuts from './cuts.he.json';
+import { REQUIRED_CUT_NAMES_EN_BY_SPECIES, type SupportedCutSpecies } from './required-cuts';
+import {
+  getTestingCutAssetsVersion,
+  resolveTestingCutAssetByName,
+  type TestingCutSpecies,
+} from './testing-cut-assets';
 
 type LocalizedCatalogCut = {
   itemId: string;
@@ -44,22 +50,35 @@ export function getTestingLocalizedCutsCatalog(): LocalizedTestingCutsCatalog {
 }
 
 export function buildTestingCatalogItems(): AgentCatalogItem[] {
+  const imageVersion = getTestingCutAssetsVersion();
+
   return TESTING_LOCALIZED_CUTS_CATALOG.species.flatMap((species) =>
     species.primals.flatMap((primal) =>
       primal.groups.flatMap((group) =>
-        group.cuts.map((cut) => ({
-          itemId: cut.itemId,
-          sku: cut.sku,
-          name: cut.nameEn,
-          unit: cut.unit,
-          isActive: true,
-          category: cut.category,
-          isTestingOnly: true,
-        })),
+        group.cuts.map((cut) => {
+          const visual = resolveTestingCutAssetByName(species.id, cut.nameEn);
+          return {
+            itemId: cut.itemId,
+            sku: cut.sku,
+            name: cut.nameEn,
+            unit: cut.unit,
+            isActive: true,
+            category: cut.category,
+            iconEmoji: visual ? SPECIES_ICON_BY_ID[species.id] : undefined,
+            imageUrl: visual ? `/v1/testing-assets/cuts/${visual.relativePath}?v=${imageVersion}` : undefined,
+            isTestingOnly: true,
+          } satisfies AgentCatalogItem;
+        }),
       ),
     ),
   );
 }
+
+const SPECIES_ICON_BY_ID: Record<TestingCutSpecies, string> = {
+  beef: '🐄',
+  chicken: '🐔',
+  lamb: '🐑',
+};
 
 function validateLocalizedTestingCutsCatalog(rawCatalog: unknown): LocalizedTestingCutsCatalog {
   if (!isObject(rawCatalog)) {
@@ -141,8 +160,43 @@ function validateLocalizedTestingCutsCatalog(rawCatalog: unknown): LocalizedTest
 
   return {
     version,
-    species,
+    species: validateRequiredCoverage(species),
   };
+}
+
+function validateRequiredCoverage(species: LocalizedCatalogSpecies[]): LocalizedCatalogSpecies[] {
+  const namesBySpecies = new Map<SupportedCutSpecies, Set<string>>();
+  for (const key of Object.keys(REQUIRED_CUT_NAMES_EN_BY_SPECIES) as SupportedCutSpecies[]) {
+    namesBySpecies.set(key, new Set<string>());
+  }
+
+  for (const speciesEntry of species) {
+    const bucket = namesBySpecies.get(speciesEntry.id);
+    if (!bucket) {
+      continue;
+    }
+
+    for (const primal of speciesEntry.primals) {
+      for (const group of primal.groups) {
+        for (const cut of group.cuts) {
+          bucket.add(cut.nameEn);
+        }
+      }
+    }
+  }
+
+  for (const requiredSpecies of Object.keys(REQUIRED_CUT_NAMES_EN_BY_SPECIES) as SupportedCutSpecies[]) {
+    const actualNames = namesBySpecies.get(requiredSpecies) ?? new Set<string>();
+    const missing = REQUIRED_CUT_NAMES_EN_BY_SPECIES[requiredSpecies].filter((name) => !actualNames.has(name));
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Localized cuts catalog is missing required ${requiredSpecies} cuts: ${missing.join(', ')}`,
+      );
+    }
+  }
+
+  return species;
 }
 
 function isCatalogCategory(rawValue: string): rawValue is NonNullable<AgentCatalogItem['category']> {

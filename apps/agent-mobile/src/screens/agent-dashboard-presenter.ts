@@ -5,19 +5,7 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@meatland/shared-types'
 
-export type AgentDashboardTabId = 'home' | 'customers' | 'catalog' | 'orders' | 'settings'
-
-export type AgentRecentTransactionKind = 'magic_link' | 'order' | 'approved_item'
-
-export interface AgentRecentTransaction {
-  id: string
-  customerId: string
-  kind: AgentRecentTransactionKind
-  title: string
-  detail: string
-  reference: string
-  sortTimestamp: number
-}
+export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'settings'
 
 function toTitleCase(value: string): string {
   return value
@@ -144,30 +132,6 @@ export function shouldUseCopyLinkFallback(canOpenWhatsApp: boolean, dispatchErro
   return !canOpenWhatsApp || dispatchError instanceof Error
 }
 
-function parseTimestamp(value: string | null): number | null {
-  if (!value) {
-    return null
-  }
-
-  const parsed = Date.parse(value)
-  return Number.isNaN(parsed) ? null : parsed
-}
-
-function formatRelativeTimestampHebrew(timestampMs: number, nowMs: number): string {
-  const elapsedMinutes = Math.max(1, Math.floor((nowMs - timestampMs) / 60000))
-
-  if (elapsedMinutes < 60) {
-    return `לפני ${elapsedMinutes} דקות`
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60)
-  if (elapsedHours < 24) {
-    return `לפני ${elapsedHours} שעות`
-  }
-
-  return new Date(timestampMs).toLocaleDateString('he-IL')
-}
-
 export function magicLinkLifecycleLabel(lifecycle: string): string {
   if (lifecycle === 'issued') {
     return 'קישור פעיל'
@@ -179,83 +143,4 @@ export function magicLinkLifecycleLabel(lifecycle: string): string {
     return 'פג תוקף'
   }
   return 'עדכון קישור'
-}
-
-export function buildRecentTransactions(input: {
-  customers: AgentAssignedCustomer[]
-  approvedItems: AgentApprovedItem[]
-  selectedCustomerId: string | null
-  latestMagicLink: AgentMagicLinkIssueResponse | null
-  latestMagicLinkCustomerId: string | null
-  latestMagicLinkIssuedAt: string | null
-  nowMs?: number
-  limit?: number
-}): AgentRecentTransaction[] {
-  const {
-    customers,
-    approvedItems,
-    selectedCustomerId,
-    latestMagicLink,
-    latestMagicLinkCustomerId,
-    latestMagicLinkIssuedAt,
-    nowMs = Date.now(),
-    limit = 6,
-  } = input
-
-  const timeline: AgentRecentTransaction[] = []
-
-  const magicLinkTimestamp = parseTimestamp(latestMagicLinkIssuedAt)
-  if (latestMagicLink && latestMagicLinkCustomerId && magicLinkTimestamp) {
-    const customerLabel = humanizeIdentifier(latestMagicLinkCustomerId, ['cust-'])
-    timeline.push({
-      id: `magic-link-${latestMagicLinkCustomerId}-${magicLinkTimestamp}`,
-      customerId: latestMagicLinkCustomerId,
-      kind: 'magic_link',
-      title: `קישור נשלח • ${customerLabel}`,
-      detail: `${formatRelativeTimestampHebrew(magicLinkTimestamp, nowMs)} • תוקף ${latestMagicLink.expiresInSeconds} שנ׳`,
-      reference: magicLinkLifecycleLabel(latestMagicLink.lifecycle),
-      sortTimestamp: magicLinkTimestamp,
-    })
-  }
-
-  for (const customer of customers) {
-    const orderTimestamp = parseTimestamp(customer.lastOrderAt)
-    if (!orderTimestamp) {
-      continue
-    }
-
-    const customerLabel = humanizeIdentifier(customer.customerId, ['cust-'])
-    timeline.push({
-      id: `order-${customer.customerId}-${orderTimestamp}`,
-      customerId: customer.customerId,
-      kind: 'order',
-      title: `הזמנה עודכנה • ${customerLabel}`,
-      detail: `${formatRelativeTimestampHebrew(orderTimestamp, nowMs)} • פריטים מאושרים ${customer.approvedItemsCount}`,
-      reference: 'הזמנה פעילה',
-      sortTimestamp: orderTimestamp,
-    })
-  }
-
-  if (selectedCustomerId) {
-    const customerLabel = humanizeIdentifier(selectedCustomerId, ['cust-'])
-    for (const item of approvedItems) {
-      const createdAtTimestamp = parseTimestamp(item.createdAt)
-      if (!createdAtTimestamp) {
-        continue
-      }
-
-      const itemLabel = humanizeIdentifier(item.hashItemId, ['itm-'])
-      timeline.push({
-        id: `approved-${selectedCustomerId}-${item.hashItemId}-${createdAtTimestamp}`,
-        customerId: selectedCustomerId,
-        kind: 'approved_item',
-        title: `פריט מאושר • ${itemLabel}`,
-        detail: `${formatRelativeTimestampHebrew(createdAtTimestamp, nowMs)} • ${customerLabel}`,
-        reference: 'עדכון קטלוג',
-        sortTimestamp: createdAtTimestamp,
-      })
-    }
-  }
-
-  return timeline.sort((left, right) => right.sortTimestamp - left.sortTimestamp).slice(0, limit)
 }

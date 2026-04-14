@@ -31,6 +31,7 @@ COPY --from=builder /workspace/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /workspace/apps/api/dist ./apps/api/dist
 COPY --from=builder /workspace/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /workspace/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /workspace/apps/api/public ./apps/api/public
 COPY --from=builder /workspace/packages/shared-types ./packages/shared-types
 
 EXPOSE 3000

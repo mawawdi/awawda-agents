@@ -88,8 +88,45 @@ type CatalogLine = {
   currency: string | null;
 };
 
+const ITEM_TOKEN_LABEL_HEBREW: Record<string, string> = {
+  frozen: 'קפוא',
+  burger: 'המבורגר',
+  beef: 'בקר',
+  chicken: 'עוף',
+  lamb: 'טלה',
+  ribeye: 'ריבאיי',
+  steak: 'סטייק',
+  brisket: 'בריסקט',
+  tenderloin: 'פילה',
+  striploin: 'סינטה',
+  short: 'קצר',
+  ribs: 'צלעות',
+  rib: 'צלע',
+  osso: 'אוסו',
+  buco: 'בוקה',
+  picanha: 'פיקניה',
+  chops: 'צלעות',
+  chop: 'צלע',
+  shoulder: 'כתף',
+  shank: 'שוק',
+  breast: 'חזה',
+  thigh: 'ירך',
+  drumstick: 'שוק',
+  wing: 'כנף',
+  whole: 'שלם',
+  mince: 'טחון',
+  ground: 'טחון',
+  bones: 'עצמות',
+  schnitzel: 'שניצל',
+};
+
 function deriveItemDisplayName(itemId: string): string {
-  const normalized = itemId.replace(/^itm-/, '').replace(/^item-/, '').replaceAll('-', ' ').trim();
+  const normalized = itemId
+    .replace(/^itm-/, '')
+    .replace(/^item-/, '')
+    .replaceAll('-', ' ')
+    .replaceAll('_', ' ')
+    .trim();
 
   if (!normalized) {
     return 'מוצר';
@@ -99,11 +136,23 @@ function deriveItemDisplayName(itemId: string): string {
     return `מוצר ${normalized}`;
   }
 
-  return normalized
+  const tokens = normalized
+    .toLowerCase()
     .split(' ')
     .filter((part) => part.length > 0)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+    .filter((part) => !['itm', 'item'].includes(part));
+
+  if (tokens.length === 0) {
+    return 'מוצר';
+  }
+
+  const translated = tokens.map((token) => ITEM_TOKEN_LABEL_HEBREW[token] ?? token);
+  const hasHebrewTranslation = tokens.some((token) => ITEM_TOKEN_LABEL_HEBREW[token] !== undefined);
+  if (hasHebrewTranslation) {
+    return translated.join(' ');
+  }
+
+  return tokens.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 }
 
 export function createOrderLoadingState(): OrderPageState {

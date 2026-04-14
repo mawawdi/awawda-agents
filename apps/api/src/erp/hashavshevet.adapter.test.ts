@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { listTestingCutAssetItemIds } from '../catalog/data/testing-cut-assets';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
 
@@ -37,6 +38,23 @@ const HASH_ENV_KEYS = [
   'HASH_HCONNECT_REPORT_RECENT_ITEMS_PARAMS_JSON',
   'HASH_HCONNECT_REPORT_PRICING_PARAMS_JSON',
 ] as const;
+
+const [FALLBACK_PRIMARY_ITEM_ID, FALLBACK_SECONDARY_ITEM_ID] = (() => {
+  const [first, second] = listTestingCutAssetItemIds();
+  const primary = first ?? 'beef_ribeye_steak_boneless';
+  const secondary = second ?? primary;
+  return [primary, secondary];
+})();
+
+function fallbackNameFromItemId(itemId: string): string {
+  return itemId
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 type HConnectPluginFamily = 'heshin' | 'kupain' | 'bankin' | 'itemin' | 'movein' | 'stockheaderin';
 type CapabilityInvoker = {
@@ -90,9 +108,9 @@ describe.sequential('HashavshevetAdapter', () => {
       source: 'hashavshevet',
       syncedAt: '2026-05-01T10:00:00.000Z',
       items: expect.arrayContaining([
-        expect.objectContaining({ itemId: 'itm-beef-entrecote' }),
-        expect.objectContaining({ itemId: 'itm-beef-mince' }),
-        expect.objectContaining({ itemId: 'itm-lamb-ribs' }),
+        expect.objectContaining({ itemId: 'itm-beef-001' }),
+        expect.objectContaining({ itemId: 'itm-beef-064' }),
+        expect.objectContaining({ itemId: 'itm-lamb-009' }),
       ]),
     });
     await expect(adapter.getCustomerRecentItems('cust-42')).resolves.toEqual({
@@ -100,13 +118,13 @@ describe.sequential('HashavshevetAdapter', () => {
       syncedAt: '2026-05-01T10:00:00.000Z',
       items: [
         {
-          itemId: 'recent-cust-42-1',
-          name: 'Ribeye Steak',
+          itemId: FALLBACK_PRIMARY_ITEM_ID,
+          name: fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID),
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
         {
-          itemId: 'recent-cust-42-2',
-          name: 'Ground Beef Premium',
+          itemId: FALLBACK_SECONDARY_ITEM_ID,
+          name: fallbackNameFromItemId(FALLBACK_SECONDARY_ITEM_ID),
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
       ],
@@ -116,8 +134,8 @@ describe.sequential('HashavshevetAdapter', () => {
       syncedAt: '2026-05-01T10:00:00.000Z',
       version: 'price-list-cust-42',
       lines: [
-        { itemId: 'itm-beef-entrecote', unitPrice: 109.9, currency: 'ILS' },
-        { itemId: 'itm-lamb-ribs', unitPrice: 84.5, currency: 'ILS' },
+        { itemId: FALLBACK_PRIMARY_ITEM_ID, unitPrice: 109.9, currency: 'ILS' },
+        { itemId: FALLBACK_SECONDARY_ITEM_ID, unitPrice: 84.5, currency: 'ILS' },
       ],
     });
 
@@ -626,7 +644,7 @@ describe.sequential('HashavshevetAdapter', () => {
       source: 'hashavshevet',
       syncedAt: '2026-05-01T10:00:00.000Z',
       items: expect.arrayContaining([
-        expect.objectContaining({ itemId: 'itm-beef-entrecote' }),
+        expect.objectContaining({ itemId: 'itm-beef-001' }),
       ]),
     });
 
@@ -636,13 +654,13 @@ describe.sequential('HashavshevetAdapter', () => {
       syncedAt: '2026-05-01T10:00:00.000Z',
       items: [
         {
-          itemId: 'recent-cust-snap-1',
-          name: 'Ribeye Steak',
+          itemId: FALLBACK_PRIMARY_ITEM_ID,
+          name: fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID),
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
         {
-          itemId: 'recent-cust-snap-2',
-          name: 'Ground Beef Premium',
+          itemId: FALLBACK_SECONDARY_ITEM_ID,
+          name: fallbackNameFromItemId(FALLBACK_SECONDARY_ITEM_ID),
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
       ],
@@ -654,8 +672,8 @@ describe.sequential('HashavshevetAdapter', () => {
       syncedAt: '2026-05-01T10:00:00.000Z',
       version: 'price-list-cust-snap',
       lines: [
-        { itemId: 'itm-beef-entrecote', unitPrice: 109.9, currency: 'ILS' },
-        { itemId: 'itm-lamb-ribs', unitPrice: 84.5, currency: 'ILS' },
+        { itemId: FALLBACK_PRIMARY_ITEM_ID, unitPrice: 109.9, currency: 'ILS' },
+        { itemId: FALLBACK_SECONDARY_ITEM_ID, unitPrice: 84.5, currency: 'ILS' },
       ],
     });
 

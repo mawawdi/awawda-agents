@@ -21,3 +21,5 @@ test-results/
 
 # Ignore Python cache in prompt scripts
 .github/prompts/ui-ux-pro-max/scripts/__pycache__/
+
+.venv/

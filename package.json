@@ -1,31 +1,32 @@
 {
-  "name": "meatland-agents",
-  "private": true,
-  "version": "0.1.0",
-  "packageManager": "pnpm@9.12.0",
-  "scripts": {
-    "build": "pnpm -r --if-present build",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
-    "test:portal-e2e": "playwright test tests/playwright/portal-critical-paths.spec.ts",
-    "api:dev:test": "HASH_ENV=testing pnpm --filter @meatland/api dev",
-    "api:dev:prod": "HASH_ENV=production pnpm --filter @meatland/api dev",
-    "infra:local:up": "docker compose -f infra/compose/local.yml up -d",
-    "infra:local:ps": "docker compose -f infra/compose/local.yml ps",
-    "infra:local:down": "docker compose -f infra/compose/local.yml down --remove-orphans",
-    "infra:local:reset": "docker compose -f infra/compose/local.yml down --volumes --remove-orphans",
-    "deploy:up": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml up -d --build",
-    "deploy:up:test": "HASH_ENV=testing pnpm deploy:up",
-    "deploy:up:prod": "HASH_ENV=production pnpm deploy:up",
-    "deploy:ps": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml ps",
-    "deploy:logs": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml logs --tail=200",
-    "deploy:down": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans",
-    "test:portal-visual": "playwright test tests/playwright/portal-visual-regression.spec.ts",
-    "test:portal-visual:update": "playwright test tests/playwright/portal-visual-regression.spec.ts --update-snapshots",
-    "test:agent-mobile-visual": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts",
-    "test:agent-mobile-visual:update": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts --update-snapshots"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.54.2"
-  }
+	"name": "meatland-agents",
+	"private": true,
+	"version": "0.1.0",
+	"packageManager": "pnpm@9.12.0",
+	"scripts": {
+		"build": "pnpm -r --if-present build",
+		"lint": "pnpm -r --if-present lint",
+		"test": "pnpm -r --if-present test",
+		"test:portal-e2e": "playwright test tests/playwright/portal-critical-paths.spec.ts",
+		"api:dev:test": "HASH_ENV=testing pnpm --filter @meatland/api dev",
+		"api:dev:prod": "HASH_ENV=production pnpm --filter @meatland/api dev",
+		"infra:local:up": "docker compose -f infra/compose/local.yml up -d",
+		"infra:local:ps": "docker compose -f infra/compose/local.yml ps",
+		"infra:local:down": "docker compose -f infra/compose/local.yml down --remove-orphans",
+		"infra:local:reset": "docker compose -f infra/compose/local.yml down --volumes --remove-orphans",
+		"deploy:up": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml up -d --build",
+		"deploy:up:test": "HASH_ENV=testing pnpm deploy:up",
+		"deploy:up:prod": "HASH_ENV=production pnpm deploy:up",
+		"deploy:ps": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml ps",
+		"deploy:logs": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml logs --tail=200",
+		"deploy:down": "docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml down --remove-orphans",
+		"deploy:test": "cp infra/compose/deploy.env.example infra/compose/deploy.env && pnpm deploy:up && pnpm --filter @meatland/agent-mobile start --clear",
+		"test:portal-visual": "playwright test tests/playwright/portal-visual-regression.spec.ts",
+		"test:portal-visual:update": "playwright test tests/playwright/portal-visual-regression.spec.ts --update-snapshots",
+		"test:agent-mobile-visual": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts",
+		"test:agent-mobile-visual:update": "playwright test tests/playwright/agent-mobile-visual-regression.spec.ts --update-snapshots"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.54.2"
+	}
 }

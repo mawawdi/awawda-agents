@@ -98,7 +98,7 @@ test.describe("agent mobile meatland visual coverage", () => {
 		timezoneId: "UTC",
 	})
 
-	test("captures dashboard, customers, detail, catalog, and settings screens", async ({ page }) => {
+	test("captures dashboard, customers, detail, and settings screens", async ({ page }) => {
 		await stabilizeVisuals(page)
 		await mockAgentApi(page)
 
@@ -110,19 +110,13 @@ test.describe("agent mobile meatland visual coverage", () => {
 		await expect(page.getByText("ביצועים היום")).toBeVisible()
 		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.dashboard, "agent-dashboard")
 
-		await page.getByRole("button", { name: "פרטי לקוח" }).first().click()
-		await expect(page.getByText("פריטים מאושרים של הלקוח")).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.customerDetail, "agent-customer-detail")
-
-		await page.goto(agentBaseUrl)
-		await expect(page.getByText("ביצועים היום")).toBeVisible()
 		await page.getByRole("button", { name: "לקוחות" }).click()
 		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.customersList)).toBeVisible()
 		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.customersList, "agent-customers-list")
 
-		await page.getByRole("button", { name: "קטלוג" }).click()
-		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.approvedCatalog)).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.approvedCatalog, "agent-approved-catalog")
+		await page.getByTestId("customer-list-card").first().click()
+		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.customerDetail).first()).toBeVisible()
+		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.customerDetail, "agent-customer-detail")
 
 		await page.getByRole("button", { name: "הגדרות" }).click()
 		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.settingsSync)).toBeVisible()

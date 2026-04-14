@@ -4,6 +4,6 @@ export const AGENT_SCREEN_TEST_IDS = {
   customerDetail: 'screen-agent-customer-detail',
   approvedCatalog: 'screen-agent-approved-catalog',
   ordersList: 'screen-agent-orders-list',
+  orderDetail: 'screen-agent-order-detail',
   settingsSync: 'screen-agent-settings-sync',
 } as const
-

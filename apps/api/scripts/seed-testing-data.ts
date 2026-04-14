@@ -1,6 +1,8 @@
 import argon2 from 'argon2'
 import { PrismaClient } from '@prisma/client'
 
+import { listTestingCutAssetItemIds } from '../src/catalog/data/testing-cut-assets'
+
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/meatland?schema=public'
 }
@@ -19,64 +21,43 @@ const TEST_AGENTS: Array<{
 ]
 
 const TEST_CUSTOMERS: string[] = [
-  'cust-tlv-atlizh-achim-cohen',
-  'cust-tlv-meatland-vip-eitan',
-  'cust-rg-gourmet-deli-guri',
-  'cust-jerusalem-chef-table-oren',
-  'cust-haifa-smokehouse-north',
-  'cust-hz-burger-lab',
-  'cust-petah-tikva-coldcut-hub',
-  'cust-rishon-central-market-meat',
-  'cust-netanya-kosher-select',
-  'cust-ashdod-port-grill',
-  'cust-beersheva-desert-smoke',
-  'cust-modiin-family-butcher',
-  'cust-rehovot-science-park-cafe',
-  'cust-raanana-premium-kitchen',
-  'cust-kfar-saba-city-deli',
-  'cust-holon-factory-canteen',
-  'cust-bat-yam-bistro-meat',
-  'cust-herzliya-marina-steak',
-  'cust-zichron-butchers-club',
-  'cust-ramat-hasharon-village-deli',
-  'cust-hadera-farm-to-grill',
-  'cust-afula-valley-protein',
-  'cust-ramla-night-market',
-  'cust-lod-chef-studio',
-  'cust-eilat-resort-kitchen',
-  'cust-nehariya-seaside-meat',
-  'cust-kiryat-gat-industrial-kitchen',
-  'cust-kiryat-shmona-north-warehouse',
-  'cust-nazareth-galilee-meat',
-  'cust-tiberias-lake-grill',
+  'cust-אטליז-האחים-כהן-תל-אביב',
+  'cust-מיטלנד-פרימיום-איתן',
+  'cust-מעדניית-הבשרים-גבעתיים',
+  'cust-שולחן-השף-ירושלים',
+  'cust-מעשנת-הכרמל-חיפה',
+  'cust-מעבדת-ההמבורגר-הרצליה',
+  'cust-האב-נקניקים-פתח-תקווה',
+  'cust-שוק-הבשר-המרכזי-ראשון',
+  'cust-בחירת-הכשר-נתניה',
+  'cust-גריל-הנמל-אשדוד',
+  'cust-מעשנת-המדבר-באר-שבע',
+  'cust-הקצבייה-המשפחתית-מודיעין',
+  'cust-קפה-פארק-המדע-רחובות',
+  'cust-מטבח-פרימיום-רעננה',
+  'cust-מעדניית-העיר-כפר-סבא',
+  'cust-קפטריית-המפעל-חולון',
+  'cust-ביסטרו-הבשר-בת-ים',
+  'cust-סטייק-מרינה-הרצליה',
+  'cust-מועדון-הקצבים-זכרון',
+  'cust-מעדניית-הכפר-רמת-השרון',
+  'cust-חווה-לגריל-חדרה',
+  'cust-חלבון-העמק-עפולה',
+  'cust-שוק-לילה-רמלה',
+  'cust-סטודיו-שף-לוד',
+  'cust-מטבח-ריזורט-אילת',
+  'cust-בשר-על-הים-נהריה',
+  'cust-מטבח-תעשייה-קריית-גת',
+  'cust-מחסן-הצפון-קריית-שמונה',
+  'cust-בשר-הגליל-נצרת',
+  'cust-גריל-הכנרת-טבריה',
 ]
 
-const TEST_CATALOG_ITEM_IDS: string[] = [
-  'itm-beef-entrecote',
-  'itm-beef-mince',
-  'itm-lamb-ribs',
-  'itm-beef-ribeye',
-  'itm-beef-brisket',
-  'itm-beef-tenderloin',
-  'itm-beef-striploin',
-  'itm-beef-short-ribs',
-  'itm-beef-osso-buco',
-  'itm-beef-picanha',
-  'itm-lamb-chops',
-  'itm-lamb-shoulder',
-  'itm-lamb-shank',
-  'itm-chicken-breast',
-  'itm-chicken-thigh',
-  'itm-chicken-drumstick',
-  'itm-chicken-wing',
-  'itm-chicken-whole',
-  'itm-chicken-bones',
-  'itm-chicken-schnitzel',
-  'itm-lamb-mince',
-  'itm-beef-bones',
-  'itm-beef-burger-patty',
-  'itm-beef-smoked-brisket',
-]
+const TEST_CATALOG_ITEM_IDS: string[] = listTestingCutAssetItemIds()
+
+if (TEST_CATALOG_ITEM_IDS.length === 0) {
+  throw new Error('No testing cut images were found. Expected files under apps/api/public/testing-cuts-images.')
+}
 
 async function main(): Promise<void> {
   const agentByEmail = new Map<string, { id: string; name: string; email: string; phone: string }>()
