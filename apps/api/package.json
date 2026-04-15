@@ -6,7 +6,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/main.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
     "test": "vitest run",
     "prisma:generate": "prisma generate",
     "seed:testing": "tsx scripts/seed-testing-data.ts",

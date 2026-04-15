@@ -57,8 +57,9 @@ Introduce a new role: `SUPERVISOR`.
 Scope:
 
 - Oversees all agents.
+- Creates agent accounts. Sets email, phone number, password, names etc...
 - Assigns/reassigns customers to agents.
-- Updates customer profile/operational metadata.
+- Updates customer profile/operational metadata (Not-Hashavshevet-pulled data).
 - Monitors ordering activity and operational health.
 
 ### 2.2 Required capabilities (MVP)
@@ -101,7 +102,6 @@ Scope:
 
 ### 3.1 Supervisor account (control plane)
 
-- Load-balancing suggestions (recommend customer reassignments by current workload).
 - Territory map view (customer geography + agent coverage).
 - SLA board (unhandled customers, stale sessions, failed handoffs).
 - Controlled impersonation mode (view-as-agent with explicit banner + audit entry).

@@ -35,4 +35,4 @@ COPY --from=builder /workspace/apps/api/public ./apps/api/public
 COPY --from=builder /workspace/packages/shared-types ./packages/shared-types
 
 EXPOSE 3000
-CMD ["sh", "-c", "apps/api/node_modules/.bin/prisma migrate deploy --schema=apps/api/prisma/schema.prisma && node apps/api/dist/main.js"]
+CMD ["sh", "-c", "apps/api/node_modules/.bin/prisma migrate deploy --schema=apps/api/prisma/schema.prisma && node apps/api/dist/src/main.js"]

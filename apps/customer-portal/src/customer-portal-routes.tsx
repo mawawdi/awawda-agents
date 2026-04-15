@@ -277,6 +277,7 @@ function OrderRoute({
   const [recentOrdersPage, setRecentOrdersPage] = useState(1);
   const [approvedCatalogPage, setApprovedCatalogPage] = useState(1);
   const [successCapturedAt, setSuccessCapturedAt] = useState<string | null>(null);
+  const [recentlyCopiedOrderRef, setRecentlyCopiedOrderRef] = useState<string | null>(null);
   const session = useMemo(() => readPortalSession(), []);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
   const catalogMeasureRef = useRef<HTMLDivElement | null>(null);
@@ -299,6 +300,7 @@ function OrderRoute({
     setRecentOrdersPage(1);
     setApprovedCatalogPage(1);
     setSuccessCapturedAt(null);
+    setRecentlyCopiedOrderRef(null);
   }, [session?.customerId]);
 
   useEffect(() => {
@@ -334,7 +336,24 @@ function OrderRoute({
   const resetSubmitDraft = useCallback(() => {
     submitIdempotencyKeyRef.current = null;
     setSuccessCapturedAt(null);
+    setRecentlyCopiedOrderRef(null);
     setSubmitState(createIdleState());
+  }, []);
+
+  const copyOrderReference = useCallback(async (orderRef: string): Promise<void> => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(orderRef);
+      setRecentlyCopiedOrderRef(orderRef);
+      window.setTimeout(() => {
+        setRecentlyCopiedOrderRef((current) => (current === orderRef ? null : current));
+      }, 1_500);
+    } catch {
+      setRecentlyCopiedOrderRef(null);
+    }
   }, []);
 
   const loadRecentOrderIntoCart = useCallback(
@@ -568,7 +587,11 @@ function OrderRoute({
 
   const catalogColumnCount = resolveCatalogGridColumnCount(catalogViewportWidth);
   const catalogCellDimension = resolveCatalogGridCellDimension(catalogViewportWidth, catalogColumnCount);
-  const catalogImageDimension = Math.max(96, Math.floor(catalogCellDimension * (catalogColumnCount >= 4 ? 0.72 : 0.8)));
+  const catalogImageMinDimension = state.layout === 'mobile' ? 72 : 96;
+  const catalogImageDimension = Math.max(
+    catalogImageMinDimension,
+    Math.floor(catalogCellDimension * (catalogColumnCount >= 4 ? 0.72 : 0.74)),
+  );
   const catalogMetaFontSize = resolveCatalogMetaFontSize(catalogCellDimension);
   const catalogMetaLineHeight = Math.round(catalogMetaFontSize * 1.25);
   const catalogPageSize = Math.max(catalogColumnCount * PORTAL_CATALOG_ROWS_PER_PAGE, 1);
@@ -693,14 +716,36 @@ function OrderRoute({
           <p className="recent-order-card-meta">בוצעה {entry.orderCount} פעמים</p>
           {renderedLines.length > 0 ? (
             <ul className="recent-order-lines">
-              {renderedLines.map((line, lineIndex) => (
-                <li className="recent-order-line" key={`${entry.compositionSignature}-${line.itemId}-${lineIndex}`}>
-                  <span>{resolvePortalItemDisplayName(line.itemId, line.itemName)}</span>
-                  <span>
-                    <bdi dir="ltr">{line.quantity}</bdi> {line.unit === 'kg' ? 'ק״ג' : 'יח׳'}
-                  </span>
-                </li>
-              ))}
+              {renderedLines.map((line, lineIndex) => {
+                const lineDisplayName = resolvePortalItemDisplayName(line.itemId, line.itemName);
+                const lineImageUrl = hiddenItemImageIds[line.itemId] ? null : buildTestingItemImageUrl(line.itemId);
+
+                return (
+                  <li className="recent-order-line" key={`${entry.compositionSignature}-${line.itemId}-${lineIndex}`}>
+                    <span className="recent-order-line-item">
+                      <span className="recent-order-line-image-wrap" aria-hidden="true">
+                        <span className="recent-order-line-image-fallback">
+                          {lineDisplayName.trim().charAt(0) || '•'}
+                        </span>
+                        {lineImageUrl ? (
+                          <img
+                            alt=""
+                            className="recent-order-line-image"
+                            decoding="async"
+                            loading="lazy"
+                            onError={() => markItemImageUnavailable(line.itemId)}
+                            src={lineImageUrl}
+                          />
+                        ) : null}
+                      </span>
+                      <span className="recent-order-line-name">{lineDisplayName}</span>
+                    </span>
+                    <span>
+                      <bdi dir="ltr">{line.quantity}</bdi> {line.unit === 'kg' ? 'ק״ג' : 'יח׳'}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="recent-order-card-fallback">פרטי ההרכב עדיין לא זמינים להזמנה.</p>
@@ -912,12 +957,24 @@ function OrderRoute({
         >
           <Card className="portal-confirmation-card">
             <h2>ההזמנה נקלטה בהצלחה!</h2>
-            <p className="portal-confirmation-meta">
-              אסמכתא: <bdi dir="ltr">{submitState.orderRef}</bdi> · {successCapturedAt ?? formatPortalDateTime()}
+            <p className="portal-confirmation-meta portal-confirmation-meta--reference">
+              <span>אסמכתא:</span>
+              <bdi className="portal-confirmation-reference-value" dir="ltr">
+                {submitState.orderRef}
+              </bdi>
+              <Button
+                aria-label={recentlyCopiedOrderRef === submitState.orderRef ? 'האסמכתא הועתקה' : 'העתקת אסמכתא'}
+                className="portal-confirmation-copy-button"
+                onClick={() => void copyOrderReference(submitState.orderRef)}
+                size="icon"
+                title="העתקת אסמכתא"
+                type="button"
+                variant="ghost"
+              >
+                <CopyReferenceIcon copied={recentlyCopiedOrderRef === submitState.orderRef} />
+              </Button>
             </p>
-            <p className="portal-confirmation-total">
-              סה״כ לתשלום: <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
-            </p>
+            <p className="portal-confirmation-meta portal-confirmation-date">{successCapturedAt ?? formatPortalDateTime()}</p>
             {state.cart.lines.length > 0 ? (
               <ul className="portal-confirmation-list">
                 {state.cart.lines.map((line) => {
@@ -961,10 +1018,15 @@ function OrderRoute({
                 })}
               </ul>
             ) : null}
-            <div className="portal-confirmation-actions">
-              <Button onClick={resetSubmitDraft} type="button">
-                הזמנה נוספת
-              </Button>
+            <div className="portal-confirmation-footer">
+              <p className="portal-confirmation-total">
+                סה״כ לתשלום: <bdi dir="ltr">{formatCurrency(state.cart.currency, state.cart.estimatedTotal)}</bdi>
+              </p>
+              <div className="portal-confirmation-actions">
+                <Button className="portal-confirmation-repeat-order-button" onClick={resetSubmitDraft} type="button">
+                  הזמנה נוספת
+                </Button>
+              </div>
             </div>
           </Card>
         </section>
@@ -1225,7 +1287,15 @@ function resolveCatalogTitleFontSize(cellDimension: number): number {
     return 16;
   }
 
-  const proportionalSize = Math.round(cellDimension * 0.065);
+  const proportionalSize = Math.round(cellDimension * 0.06);
+  if (cellDimension < 130) {
+    return Math.max(11, Math.min(14, proportionalSize));
+  }
+
+  if (cellDimension < 170) {
+    return Math.max(12, Math.min(17, proportionalSize));
+  }
+
   return Math.max(14, Math.min(20, proportionalSize));
 }
 
@@ -1235,6 +1305,14 @@ function resolveCatalogMetaFontSize(cellDimension: number): number {
   }
 
   const proportionalSize = Math.round(cellDimension * 0.048);
+  if (cellDimension < 130) {
+    return Math.max(10, Math.min(12, proportionalSize));
+  }
+
+  if (cellDimension < 170) {
+    return Math.max(11, Math.min(14, proportionalSize));
+  }
+
   return Math.max(12, Math.min(16, proportionalSize));
 }
 
@@ -1253,10 +1331,10 @@ function resolveCatalogTitleLayout(cellDimension: number, itemName: string): Cat
   let maxLines = 2;
 
   if (normalizedLength >= 26) {
-    fontSize = Math.max(12, baseFontSize - 2);
+    fontSize = Math.max(cellDimension < 130 ? 10 : 12, baseFontSize - 2);
     maxLines = 3;
   } else if (normalizedLength >= 20) {
-    fontSize = Math.max(13, baseFontSize - 1);
+    fontSize = Math.max(cellDimension < 130 ? 10 : 13, baseFontSize - 1);
   }
 
   const lineHeight = Math.round(fontSize * 1.24);
@@ -1318,6 +1396,28 @@ function SpeciesIcon({ species }: { species: ItemSpecies }): ReactElement {
   return (
     <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
       <path d={SPECIES_ICON_PATH_BY_SPECIES[species]} />
+    </svg>
+  );
+}
+
+function CopyReferenceIcon({ copied }: { copied: boolean }): ReactElement {
+  if (copied) {
+    return (
+      <svg aria-hidden="true" className="portal-confirmation-copy-icon" viewBox="0 0 24 24">
+        <path
+          d="M20.3 5.7a1 1 0 0 1 0 1.4l-9 9a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4l3.3 3.3 8.3-8.3a1 1 0 0 1 1.4 0Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="portal-confirmation-copy-icon" viewBox="0 0 24 24">
+      <path
+        d="M15 3a3 3 0 0 1 3 3v1h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3v-1H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h8Zm0 2H7a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1v-5a3 3 0 0 1 3-3h5V6a1 1 0 0 0-1-1Zm4 4h-8a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1Z"
+        fill="currentColor"
+      />
     </svg>
   );
 }

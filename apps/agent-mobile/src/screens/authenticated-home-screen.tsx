@@ -574,21 +574,23 @@ function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; to
     return {}
   }
 
-  const toDate = new Date()
-  const fromDate = new Date(toDate)
-  fromDate.setDate(toDate.getDate() - days)
+  const today = new Date()
+  const fromDate = toLocalDayStart(today)
+  fromDate.setDate(fromDate.getDate() - days)
+  const toDate = toLocalDayEnd(today)
 
   return {
-    fromDate: fromDate.toISOString().slice(0, 10),
-    toDate: toDate.toISOString().slice(0, 10),
+    fromDate: fromDate.toISOString(),
+    toDate: toDate.toISOString(),
   }
 }
 
-function toApiDateInput(date: Date): string {
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
+function toLocalDayStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
+}
+
+function toLocalDayEnd(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
 }
 
 function sumOrdersEstimatedTotal(orders: AgentOrderCard[]): number {
@@ -940,16 +942,17 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     const today = new Date()
-    const todayDate = toApiDateInput(today)
-    const monthStartDate = toApiDateInput(new Date(today.getFullYear(), today.getMonth(), 1))
+    const todayStartIso = toLocalDayStart(today).toISOString()
+    const todayEndIso = toLocalDayEnd(today).toISOString()
+    const monthStartIso = toLocalDayStart(new Date(today.getFullYear(), today.getMonth(), 1)).toISOString()
 
     setIsHomeOrdersLoading(true)
     setHomeOrdersError(null)
 
     try {
       const [todayOrders, monthOrders] = await Promise.all([
-        loadOrdersInRange(todayDate, todayDate),
-        loadOrdersInRange(monthStartDate, todayDate),
+        loadOrdersInRange(todayStartIso, todayEndIso),
+        loadOrdersInRange(monthStartIso, todayEndIso),
       ])
 
       setHomeOrdersToday(
