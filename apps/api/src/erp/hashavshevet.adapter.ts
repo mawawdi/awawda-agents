@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
-import type { AgentCatalogItem } from '@meatland/shared-types';
+import type { AgentCatalogItem } from '@awawda/shared-types';
 
 import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';

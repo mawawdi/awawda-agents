@@ -48,7 +48,7 @@ let portalDevServer: ChildProcessWithoutNullStreams
 test.beforeAll(async () => {
 portalDevServer = spawn(
 "pnpm",
-["--filter", "@meatland/customer-portal", "dev", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
+["--filter", "@awawda/customer-portal", "dev", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
 {
 cwd: process.cwd(),
 stdio: "pipe",
@@ -135,17 +135,17 @@ await expect(page).toHaveURL(portalBaseUrl + "/order")
 await assertComposerParity(page)
 
 await page.getByRole("button", { name: "הגדלת כמות אנטריקוט פרימיום" }).click()
- await captureMobileMeatlandScenario(page, PORTAL_SCREEN_TEST_IDS.orderComposer, "portal-order-composer-mobile.png")
+ await captureMobileAwawdaScenario(page, PORTAL_SCREEN_TEST_IDS.orderComposer, "portal-order-composer-mobile.png")
 
 await page.getByRole("button", { name: "שליחת הזמנה למפעל (1 יחידות)" }).click()
  await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderMismatch)).toBeVisible()
 await assertMismatchParity(page)
- await captureMobileMeatlandScenario(page, PORTAL_SCREEN_TEST_IDS.orderMismatch, "portal-order-mismatch-mobile.png")
+ await captureMobileAwawdaScenario(page, PORTAL_SCREEN_TEST_IDS.orderMismatch, "portal-order-mismatch-mobile.png")
 
 await page.getByRole("button", { name: "אשר ושדר הזמנה" }).click()
  await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderSuccess)).toBeVisible()
 await assertSuccessParity(page)
- await captureMobileMeatlandScenario(page, PORTAL_SCREEN_TEST_IDS.orderSuccess, "portal-order-success-mobile.png")
+ await captureMobileAwawdaScenario(page, PORTAL_SCREEN_TEST_IDS.orderSuccess, "portal-order-success-mobile.png")
 })
 
 test("captures activation session error state", async ({ page }) => {
@@ -161,7 +161,7 @@ body: JSON.stringify({ code: "CUSTOMER_SESSION_INVALID_TOKEN" }),
 await page.goto(portalBaseUrl + "/m/invalid-mobile-token")
  await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.sessionError)).toBeVisible()
 await assertSessionErrorParity(page)
- await captureMobileMeatlandScenario(page, PORTAL_SCREEN_TEST_IDS.sessionError, "portal-session-error-mobile.png")
+ await captureMobileAwawdaScenario(page, PORTAL_SCREEN_TEST_IDS.sessionError, "portal-session-error-mobile.png")
 })
 })
 
@@ -247,7 +247,7 @@ caret: "hide",
 })
 }
 
-async function captureMobileMeatlandScenario(page: Page, screenTestId: string, fileName: string): Promise<void> {
+async function captureMobileAwawdaScenario(page: Page, screenTestId: string, fileName: string): Promise<void> {
  const screen = page.getByTestId(screenTestId)
  const screenshotOptions = {
  animations: "disabled" as const,
@@ -271,7 +271,7 @@ async function captureMobileMeatlandScenario(page: Page, screenTestId: string, f
 }
 
 async function assertComposerParity(page: Page): Promise<void> {
-await expect(page.getByTestId("portal-heading")).toContainText("Meatland")
+await expect(page.getByTestId("portal-heading")).toContainText("עואודה לשיווק בע״מ")
  await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderComposer)).toHaveAttribute("dir", "rtl")
  await expect(page.getByRole("heading", { name: "סיכום הזמנה" })).toBeVisible()
 }
@@ -285,7 +285,7 @@ await expect(page.getByRole("button", { name: "אשר ושדר הזמנה" })).t
 async function assertSuccessParity(page: Page): Promise<void> {
  await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderSuccess)).toContainText("ההזמנה נקלטה בהצלחה!")
   await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderSuccess)).toContainText("ההזמנה ננעלה לאחר אישור כדי למנוע שליחה כפולה")
- await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderSuccess)).toContainText("תודה שבחרת ב-Meatland")
+ await expect(page.getByTestId(PORTAL_SCREEN_TEST_IDS.orderSuccess)).toContainText("תודה שבחרת בעואודה לשיווק בע״מ")
 }
 
 async function assertSessionErrorParity(page: Page): Promise<void> {

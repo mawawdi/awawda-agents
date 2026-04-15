@@ -3,7 +3,7 @@ import type {
   AgentApprovedItemMutationResponse,
   AgentApprovedItemsResponse,
   AgentCustomersResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { AddApprovedItemRequestDto } from './dto/add-approved-item-request.dto';

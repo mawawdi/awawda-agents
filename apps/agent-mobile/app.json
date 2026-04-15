@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Meatland Agent",
-    "slug": "meatland-agent-mobile",
+    "name": "Awawda Agents",
+    "slug": "awawda-agents-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
-    "scheme": "meatland-agent",
+    "scheme": "awawda-agents",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -14,14 +14,14 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "co.meatland.agent",
+      "bundleIdentifier": "co.awawda.agent",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "co.meatland.agent",
+      "package": "co.awawda.agent",
       "versionCode": 1
     }
   }

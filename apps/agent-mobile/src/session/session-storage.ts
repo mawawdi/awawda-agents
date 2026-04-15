@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
-const SESSION_TOKEN_KEY = 'meatland.agent.access-token'
+const SESSION_TOKEN_KEY = 'awawda.agent.access-token'
 const IS_WEB = Platform.OS === 'web'
 
 function getWebStorage(): Storage | null {

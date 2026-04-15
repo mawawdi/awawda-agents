@@ -3,7 +3,7 @@ import type {
   AgentApprovedItemMutationResponse,
   AgentAssignedCustomer,
   AgentMagicLinkIssueResponse,
-} from '@meatland/shared-types'
+} from '@awawda/shared-types'
 
 export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'settings'
 

@@ -31,6 +31,6 @@
 
 ## Issue Source
 
-- **Repository:** devCana/meatland-agents
+- **Repository:** devCana/awawda-agents
 - **Connected:** 2026-04-06T14:46:25.147Z
 - **State:** Connected (open issues available via GitHub CLI)

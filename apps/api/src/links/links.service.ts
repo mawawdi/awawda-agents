@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { AgentMagicLinkIssueResponse } from '@meatland/shared-types';
+import type { AgentMagicLinkIssueResponse } from '@awawda/shared-types';
 
 import { LINKS_CONFIG, MAGIC_LINKS_REPOSITORY, MAGIC_LINK_TOKEN_GENERATOR } from './links.constants';
 import { AgentCustomerAccessDeniedError } from './links.errors';

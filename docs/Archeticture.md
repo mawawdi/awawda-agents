@@ -115,7 +115,7 @@ Reasoning:
 ## 4. Proposed Monorepo Structure
 
 ```text
-meatland-agents/
+awawda-agents/
   apps/
     agent-mobile/           # React Native Expo app
     customer-portal/        # Next.js app

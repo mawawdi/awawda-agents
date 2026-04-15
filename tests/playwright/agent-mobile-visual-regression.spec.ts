@@ -3,7 +3,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
 import { AGENT_SCREEN_TEST_IDS } from "../../apps/agent-mobile/src/screens/agent-screen-ids"
 
 const agentBaseUrl = "http://127.0.0.1:19007"
-const stablePlaceholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7f1d1d"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><text x="320" y="190" font-family="Arial, sans-serif" font-size="38" text-anchor="middle" fill="#ffffff" opacity="0.88">MEATLAND</text></svg>`
+const stablePlaceholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7f1d1d"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><text x="320" y="190" font-family="Arial, sans-serif" font-size="38" text-anchor="middle" fill="#ffffff" opacity="0.88">AWAWDA</text></svg>`
 
 const loginResponse = {
 	accessToken: "agent-visual-token",
@@ -65,7 +65,7 @@ let agentWebServer: ChildProcessWithoutNullStreams
 test.beforeAll(async () => {
 	agentWebServer = spawn(
 		"pnpm",
-		["--filter", "@meatland/agent-mobile", "start", "--web", "--non-interactive", "--port", "19007"],
+		["--filter", "@awawda/agent-mobile", "start", "--web", "--non-interactive", "--port", "19007"],
 		{
 			cwd: process.cwd(),
 			stdio: "pipe",
@@ -87,7 +87,7 @@ test.afterAll(async () => {
 	})
 })
 
-test.describe("agent mobile meatland visual coverage", () => {
+test.describe("agent mobile awawda visual coverage", () => {
 	test.setTimeout(90_000)
 
 	test.use({
@@ -108,19 +108,19 @@ test.describe("agent mobile meatland visual coverage", () => {
 		await page.getByRole("button", { name: "התחברות למערכת" }).click()
 
 		await expect(page.getByText("ביצועים היום")).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.dashboard, "agent-dashboard")
+		await assertMobileAwawdaScreenshot(page, AGENT_SCREEN_TEST_IDS.dashboard, "agent-dashboard")
 
 		await page.getByRole("button", { name: "לקוחות" }).click()
 		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.customersList)).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.customersList, "agent-customers-list")
+		await assertMobileAwawdaScreenshot(page, AGENT_SCREEN_TEST_IDS.customersList, "agent-customers-list")
 
 		await page.getByTestId("customer-list-card").first().click()
 		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.customerDetail).first()).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.customerDetail, "agent-customer-detail")
+		await assertMobileAwawdaScreenshot(page, AGENT_SCREEN_TEST_IDS.customerDetail, "agent-customer-detail")
 
 		await page.getByRole("button", { name: "הגדרות" }).click()
 		await expect(page.getByTestId(AGENT_SCREEN_TEST_IDS.settingsSync)).toBeVisible()
-		await assertMobileMeatlandScreenshot(page, AGENT_SCREEN_TEST_IDS.settingsSync, "agent-settings-sync")
+		await assertMobileAwawdaScreenshot(page, AGENT_SCREEN_TEST_IDS.settingsSync, "agent-settings-sync")
 	})
 })
 
@@ -135,7 +135,7 @@ async function stabilizeVisuals(page: Page): Promise<void> {
 	})
 }
 
-async function assertMobileMeatlandScreenshot(page: Page, screenTestId: string, snapshotBase: string): Promise<void> {
+async function assertMobileAwawdaScreenshot(page: Page, screenTestId: string, snapshotBase: string): Promise<void> {
 	const screen = page.getByTestId(screenTestId).first()
 	const screenshotOptions = { animations: "disabled" as const, caret: "hide" as const, scale: "css" as const }
 

@@ -10,8 +10,8 @@ Implement customer portal flow as deterministic state modules in `apps/customer-
 - cart summary estimation and sticky bottom submit-bar metadata tuned for mobile viewport behavior
 
 ## Validation
-- `pnpm --filter @meatland/customer-portal lint` ✅
-- `pnpm --filter @meatland/customer-portal test` ✅
+- `pnpm --filter @awawda/customer-portal lint` ✅
+- `pnpm --filter @awawda/customer-portal test` ✅
 - `pnpm test:portal-e2e` ✅
 
 ## Consequences

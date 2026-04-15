@@ -11,7 +11,7 @@ describe('validateLoginInput', () => {
   })
 
   it('returns no errors for valid values', () => {
-    const result = validateLoginInput({ phoneOrEmail: 'agent@meatland.test', password: 'strongpass123' })
+    const result = validateLoginInput({ phoneOrEmail: 'agent@awawda.test', password: 'strongpass123' })
 
     expect(result).toEqual({})
   })

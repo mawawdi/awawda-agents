@@ -7,14 +7,14 @@ describe('JwtShiftTokenSigner', () => {
   it('signs tokens with configured issuer and ttl', () => {
     const signer = new JwtShiftTokenSigner({
       jwtSecret: 'test-secret',
-      jwtIssuer: 'meatland-tests',
+      jwtIssuer: 'awawda-tests',
       shiftTokenTtlSeconds: 3600,
     });
 
     const token = signer.sign({ sub: 'agent-1', phone: '+972500000000', type: 'agent_shift' }, 120);
 
     const decoded = jwt.verify(token, 'test-secret', {
-      issuer: 'meatland-tests',
+      issuer: 'awawda-tests',
     }) as jwt.JwtPayload;
 
     expect(decoded.sub).toBe('agent-1');

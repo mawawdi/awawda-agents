@@ -1,4 +1,4 @@
-import type { AgentCatalogItem } from '@meatland/shared-types';
+import type { AgentCatalogItem } from '@awawda/shared-types';
 
 import rawLocalizedCuts from './cuts.he.json';
 import { REQUIRED_CUT_NAMES_EN_BY_SPECIES, type SupportedCutSpecies } from './required-cuts';

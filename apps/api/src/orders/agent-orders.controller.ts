@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
-import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@meatland/shared-types';
+import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@awawda/shared-types';
 
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { AgentOrderCancelDto } from './dto/agent-order-cancel.dto';

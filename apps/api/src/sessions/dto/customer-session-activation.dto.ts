@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString } from 'class-validator';
-import type { CustomerSessionActivateRequest } from '@meatland/shared-types';
+import type { CustomerSessionActivateRequest } from '@awawda/shared-types';
 
 export class CustomerSessionActivationDto implements CustomerSessionActivateRequest {
   @IsString()

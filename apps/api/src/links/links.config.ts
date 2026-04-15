@@ -1,7 +1,7 @@
 import type { LinksConfig } from './links.types';
 
 const DEFAULT_MAGIC_LINK_TTL_SECONDS = 24 * 60 * 60;
-const DEFAULT_MAGIC_LINK_BASE_URL = 'https://portal.meatland.local/activate';
+const DEFAULT_MAGIC_LINK_BASE_URL = 'https://portal.awawda.local/activate';
 
 function normalizeMagicLinkBaseUrl(rawBaseUrl: string): string {
   const parsed = new URL(rawBaseUrl);

@@ -48,7 +48,7 @@ test.describe("customer portal browser critical paths", () => {
 	test.beforeAll(async () => {
 		portalDevServer = spawn(
 			"pnpm",
-			["--filter", "@meatland/customer-portal", "dev", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
+			["--filter", "@awawda/customer-portal", "dev", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
 			{
 				cwd: process.cwd(),
 				stdio: "pipe",
@@ -145,7 +145,7 @@ test.describe("customer portal browser critical paths", () => {
 		expect(activationRequestToken).toBe("token-abc")
 		expect(activationCallCount).toBe(1)
 		expect(portalDataCallCount).toBeGreaterThan(0)
-		await expect(page.getByTestId("portal-heading")).toContainText("Meatland")
+		await expect(page.getByTestId("portal-heading")).toContainText("עואודה לשיווק בע״מ")
 		await expect(page.getByTestId("screen-portal-order-composer")).toHaveAttribute("dir", "rtl")
 		await expect(page.getByTestId("screen-portal-order-composer")).toHaveAttribute("lang", "he")
 		await expect(page.getByTestId("screen-portal-order-composer")).toContainText("חשבון מאומת")
@@ -220,7 +220,7 @@ test.describe("customer portal browser critical paths", () => {
 
 		await page.goto(`${portalBaseUrl}/m/token-erp-outage`)
 		await expect(page).toHaveURL(`${portalBaseUrl}/order`)
-		await expect(page.getByTestId("portal-heading")).toContainText("Meatland")
+		await expect(page.getByTestId("portal-heading")).toContainText("עואודה לשיווק בע״מ")
 
 		await page.getByRole("button", { name: "הגדלת כמות אנטריקוט פרימיום" }).click()
 		await page.getByRole("button", { name: "שליחת הזמנה למפעל (1 יחידות)" }).click()
@@ -261,7 +261,7 @@ test.describe("customer portal browser critical paths", () => {
 		await page.goto(`${portalBaseUrl}/m?token=query-token-123`)
 
 		await expect(page).toHaveURL(`${portalBaseUrl}/order`)
-		await expect(page.getByTestId("portal-heading")).toContainText("Meatland")
+		await expect(page.getByTestId("portal-heading")).toContainText("עואודה לשיווק בע״מ")
 		expect(activationRequestToken).toBe("query-token-123")
 	})
 
@@ -328,7 +328,7 @@ test.describe("customer portal browser critical paths", () => {
 		await stabilizeVisuals(page)
 		await page.goto(`${portalBaseUrl}/order`)
 
-		await expect(page.getByTestId("portal-heading")).toContainText("Meatland")
+		await expect(page.getByTestId("portal-heading")).toContainText("עואודה לשיווק בע״מ")
 		await page.getByRole("button", { name: "התנתקות" }).click()
 
 		await expect(page).toHaveURL(`${portalBaseUrl}/m`)

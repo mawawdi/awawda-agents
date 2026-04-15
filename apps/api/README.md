@@ -1,6 +1,6 @@
 # api
 
-NestJS + Fastify backend entrypoint for the Meatland Agent platform.
+NestJS + Fastify backend entrypoint for the Awawda Agents platform.
 
 ## Environment
 
@@ -8,11 +8,11 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 
 ## Scripts
 
-- `pnpm --filter @meatland/api dev` — run API locally (default `0.0.0.0:3000`)
-- `pnpm --filter @meatland/api test` — run API tests
-- `pnpm --filter @meatland/api build` — compile TypeScript to `dist/`
-- `pnpm --filter @meatland/api prisma:migrate:deploy` — run migrations in deploy environments
-- `pnpm --filter @meatland/api seed:testing` — seed realistic **testing-only** agents/customers/approved-items data
+- `pnpm --filter @awawda/api dev` — run API locally (default `0.0.0.0:3000`)
+- `pnpm --filter @awawda/api test` — run API tests
+- `pnpm --filter @awawda/api build` — compile TypeScript to `dist/`
+- `pnpm --filter @awawda/api prisma:migrate:deploy` — run migrations in deploy environments
+- `pnpm --filter @awawda/api seed:testing` — seed realistic **testing-only** agents/customers/approved-items data
 
 ## Operational routes
 
@@ -31,7 +31,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 
 - `JWT_SECRET` (required): signing key for agent JWT access tokens
 - `JWT_SHIFT_TOKEN_TTL` (optional): shift token TTL (`8h` default, supports `s|m|h|d`)
-- `JWT_ISSUER` (optional): JWT issuer claim (`meatland-api` default)
+- `JWT_ISSUER` (optional): JWT issuer claim (`awawda-api` default)
 - `CORS_ALLOWED_ORIGINS` (optional): comma-separated allowed origins for browser clients (defaults include `localhost:8080` and `localhost:8081`)
 - `API_BODY_LIMIT_BYTES` (optional): request body limit in bytes (`1048576` default)
 
@@ -91,7 +91,7 @@ pnpm deploy:up:prod
 
 ## Magic link environment variables
 
-- `MAGIC_LINK_BASE_URL` (optional): absolute customer portal activation URL (`https://portal.meatland.local/activate` default)
+- `MAGIC_LINK_BASE_URL` (optional): absolute customer portal activation URL (`https://portal.awawda.local/activate` default)
 - `MAGIC_LINK_TTL_SECONDS` (optional): issued magic-link TTL in seconds (`86400` default)
 
 ## Module boundaries
@@ -129,13 +129,13 @@ Run from repository root:
 
 ```bash
 docker compose -f infra/compose/local.yml up -d postgres
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/meatland?schema=public pnpm --filter @meatland/api prisma:migrate:deploy
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/awawda?schema=public pnpm --filter @awawda/api prisma:migrate:deploy
 ```
 
 If Docker is unavailable, reviewers can still reproduce schema parity from an empty DB model with:
 
 ```bash
-pnpm --filter @meatland/api exec prisma migrate diff --from-empty --to-schema-datamodel apps/api/prisma/schema.prisma --script
+pnpm --filter @awawda/api exec prisma migrate diff --from-empty --to-schema-datamodel apps/api/prisma/schema.prisma --script
 ```
 
 Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT EXISTS "pgcrypto"` remains manual in migration SQL.
@@ -151,7 +151,7 @@ Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT
 For local QA/demo environments, run:
 
 ```bash
-pnpm --filter @meatland/api seed:testing
+pnpm --filter @awawda/api seed:testing
 ```
 
 This seeds:

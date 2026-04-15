@@ -1,4 +1,4 @@
-import type { CustomerApprovedItem } from '@meatland/shared-types';
+import type { CustomerApprovedItem, CustomerRecentOrdersFeed } from '@awawda/shared-types';
 
 export type SessionActivationResult =
   | {
@@ -50,6 +50,7 @@ export interface CustomerSessionsRepository {
   deactivateCustomerSession(sessionId: string, customerId: string, closedAt: Date): Promise<void>;
   recordActivationAttempt(input: RecordActivationAttemptInput): Promise<void>;
   listApprovedItems(customerId: string): Promise<CustomerApprovedItem[]>;
+  listRecentOrdersFeed(customerId: string, now: Date): Promise<CustomerRecentOrdersFeed>;
 }
 
 export interface CustomerSessionTokenSigner {

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@meatland/shared-types';
+import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@awawda/shared-types';
 
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { isErpGatewayError } from '../erp/erp.errors';

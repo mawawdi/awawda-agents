@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Req, UseGuards } from '@nestjs/common';
-import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@meatland/shared-types';
+import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@awawda/shared-types';
 
 import { CustomerSessionAuthGuard } from './customer-session-auth.guard';
 import { CustomerSessionActivationDto } from './dto/customer-session-activation.dto';

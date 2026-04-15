@@ -184,6 +184,26 @@ describe('order composition interactions and UX states', () => {
     });
   });
 
+  it('prefers localized cut names for canonical testing catalog IDs', () => {
+    const ready = createOrderReadyState({
+      recentItems: [{ itemId: 'itm-beef-001', name: '001', lastOrderedAt: '2026-04-08T09:00:00.000Z' }],
+      approvedItems: [{ hashItemId: 'itm-beef-015', createdAt: '2026-04-08T09:00:00.000Z' }],
+      pricing: [],
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      sections: {
+        recent: {
+          items: [{ itemId: 'itm-beef-001', name: "צלי צ'אק איי" }],
+        },
+        approved: {
+          items: [{ itemId: 'itm-beef-015', name: 'צלעות גב בקר' }],
+        },
+      },
+    });
+  });
+
   it('keeps unknown-price lines visible in summary when pricing is partially missing', () => {
     const ready = createOrderReadyState({
       viewportWidthPx: 1024,

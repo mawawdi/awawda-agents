@@ -25,6 +25,21 @@ describe('SessionsService', () => {
           createdAt: '2026-04-07T10:00:00.000Z',
         },
       ]),
+      listRecentOrdersFeed: vi.fn().mockResolvedValue({
+        entries: [
+          {
+            compositionSignature: 'item-1:2:kg',
+            lines: [{ itemId: 'item-1', itemName: 'Ribeye Steak', quantity: 2, unit: 'kg' }],
+            lastOrderedAt: '2026-04-06T08:00:00.000Z',
+            orderCount: 1,
+          },
+        ],
+        total: 1,
+        pageSize: 12,
+        sortBy: 'lastOrderedAt_desc_compositionSignature_asc',
+        generatedAt: '2026-04-07T11:00:00.000Z',
+        windowStartAt: '2025-04-07T11:00:00.000Z',
+      }),
     };
     const signer: CustomerSessionTokenSigner = {
       sign: vi.fn().mockReturnValue('signed-session-token'),
@@ -79,6 +94,14 @@ describe('SessionsService', () => {
           itemId: 'item-1',
         },
       ],
+      recentOrders: {
+        entries: [
+          {
+            compositionSignature: 'item-1:2:kg',
+          },
+        ],
+        total: 1,
+      },
       approvedItems: [
         {
           hashItemId: 'item-1',
@@ -118,6 +141,7 @@ describe('SessionsService', () => {
         deactivateCustomerSession: vi.fn(),
         recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
         listApprovedItems: vi.fn(),
+        listRecentOrdersFeed: vi.fn(),
       },
       { sign: vi.fn() },
       { customerSessionTtlSeconds: 7200, activationRateLimitBurst: 5, activationRateLimitWindowSeconds: 60 },
@@ -145,6 +169,7 @@ describe('SessionsService', () => {
         deactivateCustomerSession: vi.fn(),
         recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
         listApprovedItems: vi.fn(),
+        listRecentOrdersFeed: vi.fn(),
       },
       { sign: vi.fn() },
       { customerSessionTtlSeconds: 7200, activationRateLimitBurst: 5, activationRateLimitWindowSeconds: 60 },
@@ -171,6 +196,7 @@ describe('SessionsService', () => {
       deactivateCustomerSession: vi.fn(),
       recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
       listApprovedItems: vi.fn(),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const service = new SessionsService(
@@ -207,6 +233,7 @@ describe('SessionsService', () => {
       deactivateCustomerSession: vi.fn().mockResolvedValue(undefined),
       recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
       listApprovedItems: vi.fn(),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const service = new SessionsService(

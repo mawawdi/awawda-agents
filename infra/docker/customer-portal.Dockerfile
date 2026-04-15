@@ -14,8 +14,9 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/customer-portal apps/customer-portal
 COPY packages/shared-types packages/shared-types
+COPY apps/api/src/catalog/data/cuts.he.json apps/api/src/catalog/data/cuts.he.json
 
-RUN pnpm --filter @meatland/customer-portal build
+RUN pnpm --filter @awawda/customer-portal build
 
 FROM nginx:1.27-alpine
 COPY --from=builder /workspace/apps/customer-portal/dist /usr/share/nginx/html

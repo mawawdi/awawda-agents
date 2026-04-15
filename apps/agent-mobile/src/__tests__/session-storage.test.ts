@@ -39,9 +39,9 @@ describe('session storage', () => {
     await persistSessionToken('new-token')
     await clearSessionToken()
 
-    expect(webStorage.getItem).toHaveBeenCalledWith('meatland.agent.access-token')
-    expect(webStorage.setItem).toHaveBeenCalledWith('meatland.agent.access-token', 'new-token')
-    expect(webStorage.removeItem).toHaveBeenCalledWith('meatland.agent.access-token')
+    expect(webStorage.getItem).toHaveBeenCalledWith('awawda.agent.access-token')
+    expect(webStorage.setItem).toHaveBeenCalledWith('awawda.agent.access-token', 'new-token')
+    expect(webStorage.removeItem).toHaveBeenCalledWith('awawda.agent.access-token')
 
     expect(secureStoreMock.getItemAsync).not.toHaveBeenCalled()
     expect(secureStoreMock.setItemAsync).not.toHaveBeenCalled()
@@ -56,11 +56,11 @@ describe('session storage', () => {
     await persistSessionToken('native-next-token')
     await clearSessionToken()
 
-    expect(secureStoreMock.getItemAsync).toHaveBeenCalledWith('meatland.agent.access-token')
+    expect(secureStoreMock.getItemAsync).toHaveBeenCalledWith('awawda.agent.access-token')
     expect(secureStoreMock.setItemAsync).toHaveBeenCalledWith(
-      'meatland.agent.access-token',
+      'awawda.agent.access-token',
       'native-next-token',
     )
-    expect(secureStoreMock.deleteItemAsync).toHaveBeenCalledWith('meatland.agent.access-token')
+    expect(secureStoreMock.deleteItemAsync).toHaveBeenCalledWith('awawda.agent.access-token')
   })
 })

@@ -188,4 +188,114 @@ describe('PrismaCustomerSessionsRepository', () => {
       }),
     );
   });
+
+  it('builds one-year recent orders feed deduped by normalized composition', async () => {
+    const now = new Date('2026-04-10T10:00:00.000Z');
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        submittedAt: new Date('2026-04-09T08:00:00.000Z'),
+        orderLines: [
+          {
+            hashItemId: 'Item-1',
+            itemNameSnapshot: 'אנטריקוט',
+            quantity: { toString: () => '2.000' },
+            unit: 'kg',
+          },
+          {
+            hashItemId: 'item-2',
+            itemNameSnapshot: 'המבורגר',
+            quantity: { toString: () => '3.000' },
+            unit: 'unit',
+          },
+        ],
+      },
+      {
+        submittedAt: new Date('2026-04-08T08:00:00.000Z'),
+        orderLines: [
+          {
+            hashItemId: 'item-2',
+            itemNameSnapshot: 'Burger',
+            quantity: { toString: () => '3.000' },
+            unit: 'unit',
+          },
+          {
+            hashItemId: 'item-1',
+            itemNameSnapshot: 'Ribeye',
+            quantity: { toString: () => '1.250' },
+            unit: 'kg',
+          },
+          {
+            hashItemId: 'item-1',
+            itemNameSnapshot: 'Ribeye',
+            quantity: { toString: () => '0.750' },
+            unit: 'kg',
+          },
+        ],
+      },
+      {
+        submittedAt: new Date('2026-04-07T08:00:00.000Z'),
+        orderLines: [
+          {
+            hashItemId: 'item-1',
+            itemNameSnapshot: 'אנטריקוט',
+            quantity: { toString: () => '2.500' },
+            unit: 'kg',
+          },
+          {
+            hashItemId: 'item-2',
+            itemNameSnapshot: 'המבורגר',
+            quantity: { toString: () => '3.000' },
+            unit: 'unit',
+          },
+        ],
+      },
+    ]);
+
+    const repository = new PrismaCustomerSessionsRepository({
+      order: {
+        findMany,
+      },
+    } as never);
+
+    const result = await repository.listRecentOrdersFeed('cust-1', now);
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          hashCustomerId: 'cust-1',
+          submittedAt: {
+            gte: new Date('2025-04-10T10:00:00.000Z'),
+            lte: now,
+          },
+        },
+      }),
+    );
+    expect(result).toEqual({
+      entries: [
+        {
+          compositionSignature: 'item-1:2:kg|item-2:3:unit',
+          lines: [
+            { itemId: 'item-1', itemName: 'אנטריקוט', quantity: 2, unit: 'kg' },
+            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'unit' },
+          ],
+          lastOrderedAt: '2026-04-09T08:00:00.000Z',
+          orderCount: 2,
+        },
+        {
+          compositionSignature: 'item-1:2.5:kg|item-2:3:unit',
+          lines: [
+            { itemId: 'item-1', itemName: 'אנטריקוט', quantity: 2.5, unit: 'kg' },
+            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'unit' },
+          ],
+          lastOrderedAt: '2026-04-07T08:00:00.000Z',
+          orderCount: 1,
+        },
+      ],
+      total: 2,
+      pageSize: 12,
+      sortBy: 'lastOrderedAt_desc_compositionSignature_asc',
+      generatedAt: '2026-04-10T10:00:00.000Z',
+      windowStartAt: '2025-04-10T10:00:00.000Z',
+    });
+  });
 });

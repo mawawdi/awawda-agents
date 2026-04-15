@@ -3,7 +3,7 @@ import type {
   CustomerOrderMismatchResponse,
   CustomerOrderSubmitRequest,
   CustomerOrderSubmitResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 import { CustomerSessionAuthGuard } from '../sessions/customer-session-auth.guard';
 import { CustomerOrderSubmitDto } from './dto/customer-order-submit.dto';

@@ -6,7 +6,7 @@
       "designSystem": {
         "name": "assets/ac4946576ed145779d4626e4686f813f",
         "designSystem": {
-          "displayName": "Meatland Prime",
+          "displayName": "Awawda Prime",
           "theme": {
             "colorMode": "LIGHT",
             "font": "EPILOGUE",
@@ -170,7 +170,7 @@
             "designSystem": {
               "name": "assets/ac4946576ed145779d4626e4686f813f",
               "designSystem": {
-                "displayName": "Meatland Prime",
+                "displayName": "Awawda Prime",
                 "theme": {
                   "colorMode": "LIGHT",
                   "font": "EPILOGUE",
@@ -245,7 +245,7 @@
       }
     },
     {
-      "text": "I've designed the mobile Customer List screen for your sales agents. It strictly follows the \"Meatland Prime\" style DNA—using the deep red and steel teal palette, tactile rounded cards, and high-contrast editorial typography.\n\n**Key features include:**\n*   **Search & Status Filters:** Quick access via a pill-shaped search bar and category chips.\n*   **Detailed Customer Cards:** Each card displays the name, status, location, and the date of their last order.\n*   **Quick Actions:** Integrated call buttons on each card and a prominent \"Add New Customer\" primary action.\n*   **Full Localization:** Optimized for Hebrew RTL.\n\nDoes this version capture the operational clarity and premium feel you were looking for?"
+      "text": "I've designed the mobile Customer List screen for your sales agents. It strictly follows the \"Awawda Prime\" style DNA—using the deep red and steel teal palette, tactile rounded cards, and high-contrast editorial typography.\n\n**Key features include:**\n*   **Search & Status Filters:** Quick access via a pill-shaped search bar and category chips.\n*   **Detailed Customer Cards:** Each card displays the name, status, location, and the date of their last order.\n*   **Quick Actions:** Integrated call buttons on each card and a prominent \"Add New Customer\" primary action.\n*   **Full Localization:** Optimized for Hebrew RTL.\n\nDoes this version capture the operational clarity and premium feel you were looking for?"
     },
     {
       "suggestion": "Add a customer details view"

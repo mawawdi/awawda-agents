@@ -1,1 +1,1 @@
-CREATE DATABASE meatland_test;
+CREATE DATABASE awawda_test;

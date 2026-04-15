@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AgentCatalogResponse } from '@meatland/shared-types';
+import type { AgentCatalogResponse } from '@awawda/shared-types';
 
 import { ERP_GATEWAY, type ErpGateway, type ErpGatewayCatalogSnapshot } from '../erp/erp.gateway';
 import { CATALOG_CONFIG } from './catalog.constants';

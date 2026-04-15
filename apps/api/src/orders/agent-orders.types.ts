@@ -1,4 +1,4 @@
-import type { AgentOrderCard } from '@meatland/shared-types';
+import type { AgentOrderCard } from '@awawda/shared-types';
 
 export type AgentOrdersQuery = {
   agentId: string;

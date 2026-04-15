@@ -1,5 +1,5 @@
 import { Controller, Get, Inject, Res, UseGuards } from '@nestjs/common';
-import type { AgentCatalogResponse } from '@meatland/shared-types';
+import type { AgentCatalogResponse } from '@awawda/shared-types';
 import { createHash } from 'node:crypto';
 
 import { AgentAuthGuard } from '../auth/agent-auth.guard';

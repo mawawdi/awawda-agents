@@ -4,7 +4,7 @@ import type {
   CustomerOrderSubmitResponse,
   CustomerPortalDataResponse,
   CustomerSessionActivateResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 export type PortalRequestFailure =
   | 'invalid_token'

@@ -3,7 +3,7 @@ import type {
   AgentApprovedItemMutationResponse,
   AgentApprovedItemsResponse,
   AgentCustomersResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 import { isErpGatewayError } from '../erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';

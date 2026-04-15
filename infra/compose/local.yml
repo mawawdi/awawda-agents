@@ -1,4 +1,4 @@
-name: meatland-local-infra
+name: awawda-local-infra
 
 services:
   postgres:
@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: meatland
+      POSTGRES_DB: awawda
     ports:
       - '5432:5432'
     volumes:
@@ -20,7 +20,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - meatland-local
+      - awawda-local
 
   redis:
     image: redis:7.2.5-alpine
@@ -37,12 +37,12 @@ services:
       retries: 10
       start_period: 5s
     networks:
-      - meatland-local
+      - awawda-local
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  meatland-local:
+  awawda-local:
     driver: bridge

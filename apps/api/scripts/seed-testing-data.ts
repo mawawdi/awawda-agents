@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client'
 import { buildTestingCatalogItems } from '../src/catalog/data/testing-cuts-catalog'
 
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/meatland?schema=public'
+  process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/awawda?schema=public'
 }
 
 const prisma = new PrismaClient()
@@ -15,14 +15,14 @@ const TEST_AGENTS: Array<{
   email: string
   password: string
 }> = [
-  { name: 'Parpar', phone: '+972500000000', email: 'parpar@meatland.test', password: 'Password123' },
-  { name: 'Mohammed Jabarin', phone: '+972501100001', email: 'mohammed.jabarin@meatland.test', password: 'Password123' },
-  { name: 'Keneret', phone: '+972501100002', email: 'keneret@meatland.test', password: 'Password123' },
+  { name: 'Parpar', phone: '+972500000000', email: 'parpar@awawda.test', password: 'Password123' },
+  { name: 'Mohammed Jabarin', phone: '+972501100001', email: 'mohammed.jabarin@awawda.test', password: 'Password123' },
+  { name: 'Keneret', phone: '+972501100002', email: 'keneret@awawda.test', password: 'Password123' },
 ]
 
 const TEST_CUSTOMERS: string[] = [
   'cust-אטליז-האחים-כהן-תל-אביב',
-  'cust-מיטלנד-פרימיום-איתן',
+  'cust-עואודה-פרימיום-איתן',
   'cust-מעדניית-הבשרים-גבעתיים',
   'cust-שולחן-השף-ירושלים',
   'cust-מעשנת-הכרמל-חיפה',

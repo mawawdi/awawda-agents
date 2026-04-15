@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AgentLoginRequest, AgentLoginResponse } from '@meatland/shared-types';
+import type { AgentLoginRequest, AgentLoginResponse } from '@awawda/shared-types';
 
 import {
   AUTH_AGENT_REPOSITORY,

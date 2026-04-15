@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@meatland/shared-types';
+import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@awawda/shared-types';
 
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { ActivationRateLimiter } from './activation-rate-limiter';
@@ -121,10 +121,12 @@ export class SessionsService {
     customerId: string,
     sessionExpiresAt: string,
   ): Promise<CustomerPortalDataResponse> {
-    const [approvedItems, recentItemsSnapshot, pricingSnapshot] = await Promise.all([
+    const now = new Date();
+    const [approvedItems, recentItemsSnapshot, pricingSnapshot, recentOrders] = await Promise.all([
       this.customerSessionsRepository.listApprovedItems(customerId),
       this.erpGateway.getCustomerRecentItems(customerId),
       this.erpGateway.getCustomerPricing(customerId),
+      this.customerSessionsRepository.listRecentOrdersFeed(customerId, now),
     ]);
 
     return {
@@ -133,6 +135,7 @@ export class SessionsService {
       },
       approvedItems,
       recentItems: recentItemsSnapshot.items,
+      recentOrders,
       pricing: pricingSnapshot.lines,
       priceListVersion: pricingSnapshot.version,
       sessionExpiresAt,

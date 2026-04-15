@@ -1,4 +1,4 @@
-import type { CustomerOrderMismatchLine } from '@meatland/shared-types';
+import type { CustomerOrderMismatchLine } from '@awawda/shared-types';
 
 export type OrderMismatchLine = CustomerOrderMismatchLine;
 

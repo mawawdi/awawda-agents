@@ -15,8 +15,8 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api apps/api
 COPY packages/shared-types packages/shared-types
 
-RUN pnpm --filter @meatland/api prisma:generate
-RUN pnpm --filter @meatland/api build
+RUN pnpm --filter @awawda/api prisma:generate
+RUN pnpm --filter @awawda/api build
 
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app

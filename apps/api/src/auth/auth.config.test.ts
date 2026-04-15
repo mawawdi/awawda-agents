@@ -11,7 +11,7 @@ describe('loadAuthConfig', () => {
 
     expect(config).toEqual({
       jwtSecret: 'top-secret',
-      jwtIssuer: 'meatland-api',
+      jwtIssuer: 'awawda-api',
       shiftTokenTtlSeconds: 900,
     });
   });

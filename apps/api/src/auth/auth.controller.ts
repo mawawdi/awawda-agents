@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import type { AgentLoginResponse } from '@meatland/shared-types';
+import type { AgentLoginResponse } from '@awawda/shared-types';
 
 import { AgentLoginRequestDto } from './dto/agent-login-request.dto';
 import { AuthService } from './auth.service';

@@ -6,7 +6,7 @@ This document tracks how close `apps/agent-mobile` is to a production App Store 
 
 ### Already in place
 
-1. Expo app config includes iOS and Android package identity scaffolding (`co.meatland.agent`) and version fields.
+1. Expo app config includes iOS and Android package identity scaffolding (`co.awawda.agent`) and version fields.
 2. EAS build profiles are configured for `development`, `preview`, and `production`.
 3. EAS production Android output is configured as `app-bundle` (Play Store-ready artifact type).
 4. EAS submit profile is defined for Android internal track (draft release).
@@ -27,7 +27,7 @@ This document tracks how close `apps/agent-mobile` is to a production App Store 
 5. **Release execution evidence**
    - No production store submission artifacts (build IDs / submitted release records) are checked in yet.
 6. **Cross-workspace quality gate**
-   - `@meatland/customer-portal` currently has one failing test (`customer-portal-routes.test.tsx` image URL expectation) that should be fixed before final production cutover.
+   - `@awawda/customer-portal` currently has one failing test (`customer-portal-routes.test.tsx` image URL expectation) that should be fixed before final production cutover.
 
 ## Production readiness estimate
 
@@ -38,7 +38,7 @@ This document tracks how close `apps/agent-mobile` is to a production App Store 
 
 ## CLI execution status from this session
 
-- `pnpm --filter @meatland/agent-mobile eas:whoami` → **blocked** (`Not logged in`)
+- `pnpm --filter @awawda/agent-mobile eas:whoami` → **blocked** (`Not logged in`)
 - `pnpm dlx eas-cli build --platform android --profile preview --non-interactive` → **blocked** (requires `eas login` or `EXPO_TOKEN`)
 
 ## CLI release flow (target)

@@ -23,8 +23,9 @@ function applyGlobalFontDefaults(): void {
   }
 
   const defaultFontFamily = Platform.select({
-    // Plus Jakarta Sans does not ship Hebrew glyphs, so keep Hebrew-capable fallback fonts in web stack.
-    web: '"Plus Jakarta Sans", "Noto Sans Hebrew", "Heebo", sans-serif',
+    web: '"Plus Jakarta Sans", system-ui, sans-serif',
+    ios: 'PlusJakartaSans_400Regular',
+    android: 'PlusJakartaSans_400Regular',
     default: 'PlusJakartaSans_400Regular',
   })
 

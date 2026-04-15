@@ -1,6 +1,6 @@
 # agent-mobile
 
-Expo React Native app for Meatland sales agents.
+Expo React Native app for Awawda Agents.
 
 ## Environment
 
@@ -24,9 +24,9 @@ If needed, `EXPO_PUBLIC_API_BASE_URL=auto` also resolves to `http://localhost:30
 
 ## Scripts
 
-- `pnpm --filter @meatland/agent-mobile start`
-- `pnpm --filter @meatland/agent-mobile lint`
-- `pnpm --filter @meatland/agent-mobile test`
+- `pnpm --filter @awawda/agent-mobile start`
+- `pnpm --filter @awawda/agent-mobile lint`
+- `pnpm --filter @awawda/agent-mobile test`
 
 ## Deployment (Expo EAS)
 
@@ -68,7 +68,7 @@ pnpm eas:submit:production:ios
 - ✅ Runtime + core UX flow is implemented and tested.
 - ✅ EAS build and submit profiles exist (`preview`, `production`).
 - ✅ Android release profile is set to `app-bundle` for Play Store submission.
-- 🟡 Store identity is scaffolded (`co.meatland.agent`) and may still need final organization-owned IDs.
+- 🟡 Store identity is scaffolded (`co.awawda.agent`) and may still need final organization-owned IDs.
 - 🟡 No app icon/splash assets are committed yet (required before final store submission).
 - 🟡 App Store / Play Console credentials are required to complete real submission from CLI.
 

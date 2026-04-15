@@ -131,6 +131,29 @@ export interface CustomerRecentItem {
   lastOrderedAt: string;
 }
 
+export interface CustomerRecentOrderLine {
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  unit: 'kg' | 'unit';
+}
+
+export interface CustomerRecentOrderEntry {
+  compositionSignature: string;
+  lines: CustomerRecentOrderLine[];
+  lastOrderedAt: string;
+  orderCount: number;
+}
+
+export interface CustomerRecentOrdersFeed {
+  entries: CustomerRecentOrderEntry[];
+  total: number;
+  pageSize: number;
+  sortBy: 'lastOrderedAt_desc_compositionSignature_asc';
+  generatedAt: string;
+  windowStartAt: string;
+}
+
 export interface CustomerPricingLine {
   itemId: string;
   unitPrice: number;
@@ -146,6 +169,7 @@ export interface CustomerApprovedItem {
 export interface CustomerPortalDataPayload {
   customer: CustomerPortalCustomer;
   recentItems: CustomerRecentItem[];
+  recentOrders: CustomerRecentOrdersFeed;
   approvedItems: CustomerApprovedItem[];
   pricing: CustomerPricingLine[];
   priceListVersion: string;

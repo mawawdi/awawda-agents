@@ -22,7 +22,7 @@ import type {
   AgentAssignedCustomer,
   AgentMagicLinkIssueResponse,
   AgentOrderCard,
-} from '@meatland/shared-types'
+} from '@awawda/shared-types'
 
 import { buildCandidateBaseUrls } from '../api/api-base-url-fallback'
 import {
@@ -93,7 +93,7 @@ const BASE_VIEWPORT_WIDTH = 430
 const FONT_SCALE = Math.max(0.82, Math.min(1, Dimensions.get('window').width / BASE_VIEWPORT_WIDTH))
 const NUMERIC_FONT_FAMILY =
   Platform.select({
-    web: '"Plus Jakarta Sans", sans-serif',
+    web: '"Plus Jakarta Sans", system-ui, sans-serif',
     default: 'PlusJakartaSans_800ExtraBold',
   }) ?? 'PlusJakartaSans_800ExtraBold'
 const HEBREW_CHAR_PATTERN = /[\u0590-\u05FF]/
@@ -1818,7 +1818,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                         },
                       ]}
                     >
-                      כמות: {line.quantity} {formatOrderUnitLabel(line.unit)}
+                      {renderHebrewNumericRuns(`כמות: ${line.quantity} ${formatOrderUnitLabel(line.unit)}`)}
                     </Text>
                   </View>
                   <View style={[styles.orderDetailListPricing, { minWidth: orderDetailLayout.pricingMinWidth }]}>
@@ -2110,7 +2110,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.brandOnlyBar, { marginTop: 0 }]}>
-            <Text style={styles.brandOnlyText}>MEATLAND</Text>
+            <Text style={styles.brandOnlyText}>עואודה לשיווק בע״מ</Text>
           </View>
           {connectionWarning ? (
             <View style={styles.warningStrip}>

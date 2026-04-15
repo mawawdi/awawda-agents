@@ -2,7 +2,7 @@ import type {
   CustomerOrderMismatchResponse,
   CustomerOrderSubmitLine,
   CustomerOrderSubmitResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 import type { CustomerOrderErpUnavailableResponse } from './orders.errors';
 

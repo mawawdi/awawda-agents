@@ -1,5 +1,5 @@
-import type { AgentApprovedItem } from '@meatland/shared-types';
-import type { AgentAssignedCustomer } from '@meatland/shared-types';
+import type { AgentApprovedItem } from '@awawda/shared-types';
+import type { AgentAssignedCustomer } from '@awawda/shared-types';
 
 export interface AgentCustomersRepository {
   listAssignedCustomers(agentId: string): Promise<AgentAssignedCustomer[]>;

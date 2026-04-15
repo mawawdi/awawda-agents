@@ -1,5 +1,5 @@
 {
-  "name": "@meatland/api",
+  "name": "@awawda/api",
   "private": true,
   "version": "0.1.0",
   "scripts": {
@@ -15,7 +15,7 @@
     "prisma:migrate:reset": "prisma migrate reset --force"
   },
   "dependencies": {
-    "@meatland/shared-types": "workspace:*",
+    "@awawda/shared-types": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-fastify": "^11.1.6",

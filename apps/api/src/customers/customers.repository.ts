@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuditActorType, Prisma, PrismaClient } from '@prisma/client';
-import type { AgentApprovedItem, AgentAssignedCustomer } from '@meatland/shared-types';
+import type { AgentApprovedItem, AgentAssignedCustomer } from '@awawda/shared-types';
 
 import type { AgentCustomersRepository } from './customers.types';
 

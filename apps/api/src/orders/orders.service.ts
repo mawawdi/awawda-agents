@@ -5,7 +5,7 @@ import type {
   CustomerOrderMismatchResponse,
   CustomerOrderSubmitRequest,
   CustomerOrderSubmitResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 
 import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { isErpGatewayError } from '../erp/erp.errors';

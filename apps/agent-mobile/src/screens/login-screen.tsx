@@ -81,7 +81,7 @@ export function LoginScreen(): React.JSX.Element {
       >
         <View style={styles.topMeta}>
           <Text style={styles.salesApp}>אפליקציית סוכנים</Text>
-          <Text style={styles.wordmark}>MEATLAND</Text>
+          <Text style={styles.wordmark}>עואודה לשיווק בע״מ</Text>
         </View>
 
         {errorMessage ? (

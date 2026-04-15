@@ -38,7 +38,7 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
 
   return {
     jwtSecret,
-    jwtIssuer: env.JWT_ISSUER?.trim() || 'meatland-api',
+    jwtIssuer: env.JWT_ISSUER?.trim() || 'awawda-api',
     shiftTokenTtlSeconds: parseDurationToSeconds(rawTtl),
   };
 }

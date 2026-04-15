@@ -73,7 +73,7 @@ Downstream activation/session flows can trust issuance records for status and ex
 Issue #15 required the first production-ready mobile dashboard surface for assigned customers and approved-item management after T09/T10/T14 contracts merged.
 
 **Decision**
-Implement dashboard data access strictly against shared v1 contracts (`@meatland/shared-types`) via authenticated calls to `GET /v1/agent/customers`, `GET /v1/agent/customers/:customerId/approved-items`, and `POST /v1/agent/customers/:customerId/approved-items`, with explicit loading/error/slow-network operator states and duplicate-safe add-item handling.
+Implement dashboard data access strictly against shared v1 contracts (`@awawda/shared-types`) via authenticated calls to `GET /v1/agent/customers`, `GET /v1/agent/customers/:customerId/approved-items`, and `POST /v1/agent/customers/:customerId/approved-items`, with explicit loading/error/slow-network operator states and duplicate-safe add-item handling.
 
 **Rationale**
 Keeping mobile request/response typing pinned to shared contracts prevents drift from backend behavior and enables deterministic handling of `created=false` mutation responses in field workflows.

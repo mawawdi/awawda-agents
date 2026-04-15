@@ -43,11 +43,11 @@ For App Store / Google Play release candidates, the following gates must be gree
 
 1. `apps/agent-mobile` lint/test/build pass.
 2. EAS preview builds pass on both platforms:
-   - `pnpm --filter @meatland/agent-mobile eas:build:preview:ios`
-   - `pnpm --filter @meatland/agent-mobile eas:build:preview:android`
+   - `pnpm --filter @awawda/agent-mobile eas:build:preview:ios`
+   - `pnpm --filter @awawda/agent-mobile eas:build:preview:android`
 3. EAS production builds pass on both platforms:
-   - `pnpm --filter @meatland/agent-mobile eas:build:production:ios`
-   - `pnpm --filter @meatland/agent-mobile eas:build:production:android`
+   - `pnpm --filter @awawda/agent-mobile eas:build:production:ios`
+   - `pnpm --filter @awawda/agent-mobile eas:build:production:android`
 4. Store metadata and legal links are present (privacy policy, support URL, screenshots).
 5. Final bundle identifiers / package names are validated against organization-owned store apps.
 6. Release sign-off includes a documented go/no-go on `docs/mobile-store-release-readiness.md`.

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuditActorType, MagicLinkStatus, PrismaClient, SessionStatus } from '@prisma/client';
-import type { CustomerApprovedItem } from '@meatland/shared-types';
+import type { CustomerApprovedItem, CustomerRecentOrderEntry, CustomerRecentOrdersFeed } from '@awawda/shared-types';
 
 import type {
   RecordActivationAttemptInput,
@@ -8,6 +8,9 @@ import type {
   CustomerSessionsRepository,
   SessionActivationResult,
 } from './sessions.types';
+
+const RECENT_ORDERS_DEFAULT_PAGE_SIZE = 12;
+const RECENT_ORDERS_SORT_ORDER = 'lastOrderedAt_desc_compositionSignature_asc' as const;
 
 @Injectable()
 export class PrismaCustomerSessionsRepository implements CustomerSessionsRepository {
@@ -275,6 +278,75 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
       createdAt: item.createdAt.toISOString(),
     }));
   }
+
+  async listRecentOrdersFeed(customerId: string, now: Date): Promise<CustomerRecentOrdersFeed> {
+    const windowStartAt = computeRecentOrdersWindowStart(now);
+    const orders = await this.prisma.order.findMany({
+      where: {
+        hashCustomerId: customerId,
+        submittedAt: {
+          gte: windowStartAt,
+          lte: now,
+        },
+      },
+      orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+      select: {
+        submittedAt: true,
+        orderLines: {
+          select: {
+            hashItemId: true,
+            itemNameSnapshot: true,
+            quantity: true,
+            unit: true,
+          },
+        },
+      },
+    });
+
+    const entriesBySignature = new Map<string, CustomerRecentOrderEntry>();
+
+    for (const order of orders) {
+      const normalized = normalizeOrderComposition(order.orderLines);
+      if (!normalized) {
+        continue;
+      }
+
+      const existing = entriesBySignature.get(normalized.signature);
+      if (existing) {
+        existing.orderCount += 1;
+        if (order.submittedAt.toISOString() > existing.lastOrderedAt) {
+          existing.lastOrderedAt = order.submittedAt.toISOString();
+          existing.lines = normalized.lines;
+        }
+        continue;
+      }
+
+      entriesBySignature.set(normalized.signature, {
+        compositionSignature: normalized.signature,
+        lines: normalized.lines,
+        lastOrderedAt: order.submittedAt.toISOString(),
+        orderCount: 1,
+      });
+    }
+
+    const entries = [...entriesBySignature.values()].sort((left, right) => {
+      const byLastOrderedAt = right.lastOrderedAt.localeCompare(left.lastOrderedAt);
+      if (byLastOrderedAt !== 0) {
+        return byLastOrderedAt;
+      }
+
+      return left.compositionSignature.localeCompare(right.compositionSignature);
+    });
+
+    return {
+      entries,
+      total: entries.length,
+      pageSize: RECENT_ORDERS_DEFAULT_PAGE_SIZE,
+      sortBy: RECENT_ORDERS_SORT_ORDER,
+      generatedAt: now.toISOString(),
+      windowStartAt: windowStartAt.toISOString(),
+    };
+  }
 }
 
 function normalizeAuditValue(value: string, maxLength: number): string {
@@ -284,4 +356,104 @@ function normalizeAuditValue(value: string, maxLength: number): string {
   }
 
   return trimmed.length <= maxLength ? trimmed : trimmed.slice(0, maxLength);
+}
+
+function computeRecentOrdersWindowStart(now: Date): Date {
+  const windowStart = new Date(now);
+  windowStart.setUTCFullYear(windowStart.getUTCFullYear() - 1);
+  return windowStart;
+}
+
+function normalizeOrderComposition(
+  lines: Array<{
+    hashItemId: string;
+    itemNameSnapshot: string;
+    quantity: { toString(): string };
+    unit: string;
+  }>,
+): { signature: string; lines: CustomerRecentOrderEntry['lines'] } | null {
+  const groupedLines = new Map<
+    string,
+    {
+      normalizedItemId: string;
+      itemName: string;
+      quantity: number;
+      unit: 'kg' | 'unit';
+    }
+  >();
+
+  for (const line of lines) {
+    const normalizedItemId = line.hashItemId.trim().toLowerCase();
+    if (!normalizedItemId) {
+      continue;
+    }
+
+    const unit = normalizeOrderLineUnit(line.unit);
+    const quantity = normalizeOrderLineQuantity(line.quantity.toString());
+    if (quantity <= 0) {
+      continue;
+    }
+
+    const key = `${normalizedItemId}::${unit}`;
+    const existing = groupedLines.get(key);
+    if (existing) {
+      existing.quantity = roundOrderLineQuantity(existing.quantity + quantity);
+      continue;
+    }
+
+    groupedLines.set(key, {
+      normalizedItemId,
+      itemName: resolveLineItemName(line.itemNameSnapshot, normalizedItemId),
+      quantity,
+      unit,
+    });
+  }
+
+  if (groupedLines.size === 0) {
+    return null;
+  }
+
+  const sortedLines = [...groupedLines.values()].sort(
+    (left, right) =>
+      left.normalizedItemId.localeCompare(right.normalizedItemId) || left.unit.localeCompare(right.unit),
+  );
+
+  return {
+    signature: sortedLines
+      .map((line) => `${line.normalizedItemId}:${formatSignatureQuantity(line.quantity)}:${line.unit}`)
+      .join('|'),
+    lines: sortedLines.map((line) => ({
+      itemId: line.normalizedItemId,
+      itemName: line.itemName,
+      quantity: line.quantity,
+      unit: line.unit,
+    })),
+  };
+}
+
+function normalizeOrderLineUnit(unit: string): 'kg' | 'unit' {
+  return unit.trim().toLowerCase() === 'kg' ? 'kg' : 'unit';
+}
+
+function normalizeOrderLineQuantity(quantity: string): number {
+  const parsed = Number(quantity);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return roundOrderLineQuantity(parsed);
+}
+
+function roundOrderLineQuantity(quantity: number): number {
+  const rounded = Math.round(quantity * 1000) / 1000;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+function formatSignatureQuantity(quantity: number): string {
+  return quantity.toFixed(3).replace(/\.?0+$/, '');
+}
+
+function resolveLineItemName(itemNameSnapshot: string, fallbackItemId: string): string {
+  const normalizedName = itemNameSnapshot.trim();
+  return normalizedName.length > 0 ? normalizedName : fallbackItemId;
 }

@@ -59,6 +59,21 @@ describe('Customer session endpoints', () => {
         createdAt: '2026-04-08T08:00:00.000Z',
       },
     ]);
+    vi.spyOn(repository, 'listRecentOrdersFeed').mockResolvedValue({
+      entries: [
+        {
+          compositionSignature: 'item-1:2:kg',
+          lines: [{ itemId: 'item-1', itemName: 'Ribeye Steak', quantity: 2, unit: 'kg' }],
+          lastOrderedAt: '2026-04-07T10:00:00.000Z',
+          orderCount: 1,
+        },
+      ],
+      total: 1,
+      pageSize: 12,
+      sortBy: 'lastOrderedAt_desc_compositionSignature_asc',
+      generatedAt: '2026-04-08T10:00:00.000Z',
+      windowStartAt: '2025-04-08T10:00:00.000Z',
+    });
     vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
       source: 'hashavshevet',
       syncedAt: '2026-04-08T10:00:00.000Z',
@@ -110,6 +125,14 @@ describe('Customer session endpoints', () => {
           itemId: 'item-1',
         },
       ],
+      recentOrders: {
+        entries: [
+          {
+            compositionSignature: 'item-1:2:kg',
+          },
+        ],
+        total: 1,
+      },
       pricing: [
         {
           itemId: 'item-1',
@@ -182,6 +205,21 @@ describe('Customer session endpoints', () => {
         createdAt: '2026-04-08T09:00:00.000Z',
       },
     ]);
+    vi.spyOn(repository, 'listRecentOrdersFeed').mockResolvedValue({
+      entries: [
+        {
+          compositionSignature: 'item-9:1:kg',
+          lines: [{ itemId: 'item-9', itemName: 'Ground Beef Premium', quantity: 1, unit: 'kg' }],
+          lastOrderedAt: '2026-04-08T07:00:00.000Z',
+          orderCount: 2,
+        },
+      ],
+      total: 1,
+      pageSize: 12,
+      sortBy: 'lastOrderedAt_desc_compositionSignature_asc',
+      generatedAt: '2026-04-08T10:00:00.000Z',
+      windowStartAt: '2025-04-08T10:00:00.000Z',
+    });
     vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
       source: 'hashavshevet',
       syncedAt: '2026-04-08T10:00:00.000Z',
@@ -230,6 +268,14 @@ describe('Customer session endpoints', () => {
           itemId: 'item-9',
         },
       ],
+      recentOrders: {
+        entries: [
+          {
+            compositionSignature: 'item-9:1:kg',
+          },
+        ],
+        total: 1,
+      },
       pricing: [
         {
           itemId: 'item-9',

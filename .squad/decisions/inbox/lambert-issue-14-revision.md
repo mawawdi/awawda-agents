@@ -11,10 +11,10 @@ Rebuild T14 from current `main` and keep scope to mobile auth shell + reviewer f
 - Provide runnable Playwright auth-flow validation without modifying T08 backend architecture
 
 ## Validation
-- `pnpm --filter @meatland/agent-mobile lint` ✅
-- `pnpm --filter @meatland/agent-mobile test` ✅
-- `pnpm --filter @meatland/api lint` ✅
-- `JWT_SECRET=test-jwt-secret JWT_SHIFT_TOKEN_TTL=8h pnpm --filter @meatland/api test` ✅
+- `pnpm --filter @awawda/agent-mobile lint` ✅
+- `pnpm --filter @awawda/agent-mobile test` ✅
+- `pnpm --filter @awawda/api lint` ✅
+- `JWT_SECRET=test-jwt-secret JWT_SHIFT_TOKEN_TTL=8h pnpm --filter @awawda/api test` ✅
 - `pnpm lint` ✅
 - `JWT_SECRET=test-jwt-secret JWT_SHIFT_TOKEN_TTL=8h pnpm test` ✅
 - `pnpm build` ✅

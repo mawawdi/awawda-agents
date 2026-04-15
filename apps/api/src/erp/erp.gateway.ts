@@ -1,4 +1,4 @@
-import type { AgentCatalogItem, CustomerPricingLine, CustomerRecentItem } from '@meatland/shared-types';
+import type { AgentCatalogItem, CustomerPricingLine, CustomerRecentItem } from '@awawda/shared-types';
 
 export const ERP_GATEWAY = Symbol('ERP_GATEWAY');
 

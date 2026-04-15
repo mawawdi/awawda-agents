@@ -1,5 +1,5 @@
 import { Controller, Headers, Inject, Param, Post, UseGuards } from '@nestjs/common';
-import type { AgentMagicLinkIssueResponse } from '@meatland/shared-types';
+import type { AgentMagicLinkIssueResponse } from '@awawda/shared-types';
 
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { LinksService } from './links.service';

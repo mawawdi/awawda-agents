@@ -7,7 +7,7 @@ import type {
   AgentOrdersResponse,
   AgentCustomersResponse,
   AgentMagicLinkIssueResponse,
-} from '@meatland/shared-types'
+} from '@awawda/shared-types'
 import { z } from 'zod'
 
 import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
@@ -109,7 +109,7 @@ function mapAgentApiError(status: number, payload: unknown): Error {
         ? 'עדיין לא שובצתם ללקוח הזה.'
         : status === 404
           ? 'ההזמנה המבוקשת לא נמצאה עבור החשבון שלכם.'
-        : 'לא ניתן להתחבר ל-Meatland כעת. נסו שוב.'
+        : 'לא ניתן להתחבר לעואודה לשיווק בע״מ כעת. נסו שוב.'
 
   return new Error(parseErrorBody(payload) ?? fallback)
 }

@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { AddressInfo } from 'node:net'
 
 const VALID_CREDENTIALS = {
-  phoneOrEmail: 'agent@meatland.local',
+  phoneOrEmail: 'agent@awawda.local',
   password: 'Password123!',
 }
 
@@ -14,7 +14,7 @@ const LOGIN_RESPONSE = {
     id: 'agent-001',
     name: 'Line Agent',
     phone: '+972500000000',
-    email: 'agent@meatland.local',
+    email: 'agent@awawda.local',
   },
 }
 

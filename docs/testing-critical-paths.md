@@ -9,17 +9,17 @@
 
 ## Current suite and intent
 
-### API (`pnpm --filter @meatland/api test`)
+### API (`pnpm --filter @awawda/api test`)
 
 - Auth credentials/business rules and token configuration/signing coverage
 - Order handoff business-path coverage (valid handoff + ERP error propagation)
 - Bootstrap route checks for `/v1/health` and `/v1/ready`
 
-### Agent mobile (`pnpm --filter @meatland/agent-mobile test`)
+### Agent mobile (`pnpm --filter @awawda/agent-mobile test`)
 
 - Critical auth shell UI states: bootstrapping, restore failure, login success, logout reset
 
-### Customer portal UI (`pnpm --filter @meatland/customer-portal test`)
+### Customer portal UI (`pnpm --filter @awawda/customer-portal test`)
 
 - Submit-button lock during in-flight requests
 - 409 mismatch state with line-level guidance

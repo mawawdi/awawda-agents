@@ -7,7 +7,7 @@ describe('loadLinksConfig', () => {
     const config = loadLinksConfig({});
 
     expect(config.magicLinkTtlSeconds).toBe(86400);
-    expect(config.magicLinkBaseUrl).toBe('https://portal.meatland.local/activate');
+    expect(config.magicLinkBaseUrl).toBe('https://portal.awawda.local/activate');
   });
 
   it('normalizes localhost https URLs to http', () => {

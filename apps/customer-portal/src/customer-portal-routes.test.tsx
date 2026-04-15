@@ -5,7 +5,7 @@ import type {
   CustomerOrderSubmitResponse,
   CustomerPortalDataResponse,
   CustomerSessionActivateResponse,
-} from '@meatland/shared-types';
+} from '@awawda/shared-types';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -27,6 +27,11 @@ const activationResponse: CustomerSessionActivateResponse = {
   ],
   approvedItems: [
     {
+      hashItemId: 'item-1',
+      addedByAgentId: 'agent-9',
+      createdAt: '2026-04-06T08:30:00.000Z',
+    },
+    {
       hashItemId: 'item-2',
       addedByAgentId: 'agent-9',
       createdAt: '2026-04-06T09:00:00.000Z',
@@ -36,6 +41,42 @@ const activationResponse: CustomerSessionActivateResponse = {
     { itemId: 'item-1', unitPrice: 42.5, currency: 'ILS' },
     { itemId: 'item-2', unitPrice: 50, currency: 'ILS' },
   ],
+  recentOrders: {
+    entries: [
+      {
+        compositionSignature: 'signature-1',
+        lines: [
+          { itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 2, unit: 'unit' },
+          { itemId: 'item-2', itemName: 'מוצר 2', quantity: 1, unit: 'unit' },
+        ],
+        lastOrderedAt: '2026-04-08T11:00:00.000Z',
+        orderCount: 4,
+      },
+      {
+        compositionSignature: 'signature-2',
+        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 3, unit: 'unit' }],
+        lastOrderedAt: '2026-04-07T09:30:00.000Z',
+        orderCount: 2,
+      },
+      {
+        compositionSignature: 'signature-3',
+        lines: [{ itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 1, unit: 'unit' }],
+        lastOrderedAt: '2026-04-05T16:00:00.000Z',
+        orderCount: 1,
+      },
+      {
+        compositionSignature: 'signature-4',
+        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 2, unit: 'unit' }],
+        lastOrderedAt: '2026-04-04T12:00:00.000Z',
+        orderCount: 1,
+      },
+    ],
+    total: 4,
+    pageSize: 20,
+    sortBy: 'lastOrderedAt_desc_compositionSignature_asc',
+    generatedAt: '2099-04-08T14:00:00.000Z',
+    windowStartAt: '2099-03-09T14:00:00.000Z',
+  },
   priceListVersion: 'v-1',
 };
 
@@ -43,6 +84,7 @@ const portalDataResponse: CustomerPortalDataResponse = {
   customer: { customerId: 'cust-1' },
   sessionExpiresAt: '2099-04-08T14:00:00.000Z',
   recentItems: activationResponse.recentItems,
+  recentOrders: activationResponse.recentOrders,
   approvedItems: activationResponse.approvedItems,
   pricing: activationResponse.pricing,
   priceListVersion: 'v-1',
@@ -77,15 +119,16 @@ describe('customer portal runtime routes', () => {
 
     activationDeferred.resolve(activationResponse);
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
-    expect(screen.getByText('הנתחים הקבועים שלכם')).toBeTruthy();
-    expect(screen.getByText('קטלוג מאושר')).toBeTruthy();
-    const recentImage = screen.getByAltText('אנטריקוט פרימיום');
+    expect(screen.getByText('הזמנות אחרונות')).toBeTruthy();
+    expect(screen.getByText('קטלוג מוצרים')).toBeTruthy();
+    const welcomeHeading = screen.getByRole('heading', { level: 1, name: /ברוכים הבאים/i });
+    expect(welcomeHeading.querySelector('.portal-welcome-customer')).toBeTruthy();
     const approvedFallbackImage = screen.getByAltText('מוצר 2');
-    expect((recentImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-1/image?v=testing-cuts-v');
     expect((approvedFallbackImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-2/image?v=testing-cuts-v');
+    expect(screen.getAllByText('לחיצה אחת טוענת את הרכב ההזמנה לסל.').length).toBeGreaterThan(0);
     expect(screen.queryByTestId('layout-state')).toBeNull();
     expect(screen.queryByText(/תצוגה:/)).toBeNull();
     expect(screen.getByTestId('screen-portal-order-composer').getAttribute('dir')).toBe('rtl');
@@ -97,6 +140,68 @@ describe('customer portal runtime routes', () => {
     expect(activateSession).toHaveBeenCalledWith('token-abc');
   });
 
+  it('loads a recent order into cart on one click and paginates cards', async () => {
+    __setPortalSessionForTests({
+      sessionToken: 'session-123',
+      customerId: 'cust-1',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
+      payload: portalDataResponse,
+    });
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('screen-portal-recent-orders')).toBeTruthy();
+    });
+
+    expect(screen.queryByTestId('recent-order-card-4')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'הבא' }));
+    expect(screen.getByTestId('recent-order-card-4')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'הקודם' }));
+
+    await userEvent.click(screen.getByTestId('recent-order-card-1'));
+
+    const firstQuantity = screen.getByRole('spinbutton', { name: 'כמות אנטריקוט פרימיום' }) as HTMLInputElement;
+    const secondQuantity = screen.getByRole('spinbutton', { name: 'כמות מוצר 2' }) as HTMLInputElement;
+    expect(firstQuantity.value).toBe('2');
+    expect(secondQuantity.value).toBe('1');
+    expect(screen.getByTestId('sticky-submit-bar').textContent).toContain('סה"כ משוער ₪135.00');
+    expect(screen.getByTestId('sticky-submit-bar').textContent).toContain('שליחת הזמנה למפעל (3 יחידות)');
+  });
+
+  it('falls back gracefully when recent-orders contract fields are missing', async () => {
+    __setPortalSessionForTests({
+      sessionToken: 'session-123',
+      customerId: 'cust-1',
+      sessionExpiresAt: '2099-04-08T14:00:00.000Z',
+      payload: portalDataResponse,
+    });
+
+    const activationResponseWithoutRecentOrders = {
+      ...activationResponse,
+      recentOrders: undefined,
+    } as unknown as CustomerSessionActivateResponse;
+    const portalDataWithoutRecentOrders = {
+      ...portalDataResponse,
+      recentOrders: undefined,
+    } as unknown as CustomerPortalDataResponse;
+
+    const activateSession = vi.fn(async () => activationResponseWithoutRecentOrders);
+    const getPortalData = vi.fn(async () => portalDataWithoutRecentOrders);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
+
+    await waitFor(() => {
+      expect(screen.getByText('היסטוריית ההזמנות תוצג כאן ברגע שתהיה זמינה.')).toBeTruthy();
+    });
+    expect(screen.getByText('קטלוג מוצרים')).toBeTruthy();
+  });
+
   it('activates /m?token=... links and opens /order', async () => {
     const activateSession = vi.fn(async () => activationResponse);
     const getPortalData = vi.fn(async () => portalDataResponse);
@@ -105,7 +210,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m?token=token-query-123');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-query-123');
@@ -123,14 +228,14 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-storage-fallback');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-storage-fallback');
     setItemSpy.mockRestore();
   });
 
-  it('logs out current session and routes back to activation state', async () => {
+  it('does not render disconnect controls on /order', async () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
@@ -146,15 +251,12 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder, logoutSession }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'התנתקות' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'שגיאת הפעלה' })).toBeTruthy();
-    });
-    expect(logoutSession).toHaveBeenCalledWith('session-123');
+    expect(screen.queryByRole('button', { name: 'התנתקות' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'מתנתקים…' })).toBeNull();
+    expect(logoutSession).not.toHaveBeenCalled();
   });
 
   it('wires quantity controls into estimated total and sticky submit state', async () => {
@@ -172,7 +274,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
@@ -189,8 +291,8 @@ describe('customer portal runtime routes', () => {
     expect(stickyBar.textContent).toContain('סה"כ משוער ₪92.50');
     expect(stickyBar.textContent).toContain('שליחת הזמנה למפעל (2 יחידות)');
     expect(orderSummary.textContent).toContain('סכום ביניים₪92.50');
-    expect(orderSummary.textContent).toContain('דמי לוגיסטיקה₪0.00');
     expect(orderSummary.textContent).toContain('סכום כולל₪92.50');
+    expect(orderSummary.textContent).not.toContain('דמי לוגיסטיקה');
   });
 
   it('shows weak-network then resilient error state on /order load failure', async () => {
@@ -236,7 +338,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'שגיאת הפעלה' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'העמוד לא נמצא' })).toBeTruthy();
     });
     expect(getPortalData).toHaveBeenCalledTimes(1);
   });
@@ -281,7 +383,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
@@ -330,7 +432,7 @@ describe('customer portal runtime routes', () => {
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
@@ -355,7 +457,7 @@ describe('customer portal runtime routes', () => {
     expect(submitOrder).toHaveBeenCalledTimes(2);
   });
 
-  it('prevents duplicate submit action after success confirmation', async () => {
+  it('allows submitting another order after success confirmation', async () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',
       customerId: 'cust-1',
@@ -365,16 +467,23 @@ describe('customer portal runtime routes', () => {
 
     const activateSession = vi.fn(async () => activationResponse);
     const getPortalData = vi.fn(async () => portalDataResponse);
-    const submitOrder = vi.fn(async () => ({
-      orderId: 'order-1',
-      orderRef: 'ORD-2026-00077',
-      status: 'submitted' as const,
-    }));
+    const submitOrder = vi
+      .fn<(sessionToken: string, idempotencyKey: string, request: CustomerOrderSubmitRequest) => Promise<CustomerOrderSubmitResponse>>()
+      .mockResolvedValueOnce({
+        orderId: 'order-1',
+        orderRef: 'ORD-2026-00077',
+        status: 'submitted',
+      })
+      .mockResolvedValueOnce({
+        orderId: 'order-2',
+        orderRef: 'ORD-2026-00078',
+        status: 'submitted',
+      });
 
     renderWithRouter({ activateSession, getPortalData, submitOrder }, '/order');
 
     await waitFor(() => {
-      expect(screen.getByTestId('portal-heading').textContent).toContain('Meatland');
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
@@ -384,11 +493,20 @@ describe('customer portal runtime routes', () => {
       expect(screen.getByTestId('screen-portal-order-success')).toBeTruthy();
     });
 
-    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'הזמנה נוספת' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'הזמנה נוספת' }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('screen-portal-order-success')).toBeNull();
+    });
+
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }).hasAttribute('disabled')).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
-    expect(submitOrder).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(submitOrder).toHaveBeenCalledTimes(2);
+    });
   });
 });
 

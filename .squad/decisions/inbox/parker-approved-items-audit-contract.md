@@ -10,4 +10,4 @@ Implement `GET/POST /v1/agent/customers/:customerId/approved-items` behind assig
 Enforces least-privilege behavior for customer allowlist changes, prevents duplicate mutation failures for repeated requests, and preserves an auditable event trail for approved-item additions.
 
 ## Conflict Resolution (PR #38)
-Rebased onto latest `main` and resolved `packages/shared-types/src/v1/contracts.ts` conflict by preserving `AgentMagicLinkIssueResponse` from main and all approved-items contracts from this PR. Verified with `pnpm --filter @meatland/api lint` and `pnpm --filter @meatland/api test -- agent-read.integration.test.ts` (8 tests passing).
+Rebased onto latest `main` and resolved `packages/shared-types/src/v1/contracts.ts` conflict by preserving `AgentMagicLinkIssueResponse` from main and all approved-items contracts from this PR. Verified with `pnpm --filter @awawda/api lint` and `pnpm --filter @awawda/api test -- agent-read.integration.test.ts` (8 tests passing).

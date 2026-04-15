@@ -5,7 +5,7 @@ Phase 1 lightweight customer ordering portal using magic-link activation.
 ## Implemented in T17
 
 - Runtime `/m/[token]` activation route that exchanges magic-link tokens, shows weak-network guidance, and redirects into ordering on success.
-- Runtime `/order` route wired to portal data fetch + composition UI (recent + approved sections, quantity steppers, estimated total, sticky submit bar).
+- Runtime `/order` route wired to portal data fetch + composition UI (recent-orders cards, products gallery, quantity steppers, estimated total, sticky submit bar).
 - Cart summary model with estimated total math plus mobile-optimized sticky submit bar behavior.
 
 ## Implemented in T18
@@ -16,9 +16,9 @@ Phase 1 lightweight customer ordering portal using magic-link activation.
 
 ## Scripts
 
-- `pnpm --filter @meatland/customer-portal lint`
-- `pnpm --filter @meatland/customer-portal test`
-- `pnpm --filter @meatland/customer-portal build`
+- `pnpm --filter @awawda/customer-portal lint`
+- `pnpm --filter @awawda/customer-portal test`
+- `pnpm --filter @awawda/customer-portal build`
 
 ## Runtime API configuration
 

@@ -1,4 +1,4 @@
-name: meatland-deploy
+name: awawda-deploy
 
 services:
   postgres:
@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-meatland}
+      POSTGRES_DB: ${POSTGRES_DB:-awawda}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d:ro
@@ -18,7 +18,7 @@ services:
       retries: 20
       start_period: 10s
     networks:
-      - meatland-deploy
+      - awawda-deploy
     ports:
       - "5432:5432"
 
@@ -35,7 +35,7 @@ services:
       retries: 20
       start_period: 5s
     networks:
-      - meatland-deploy
+      - awawda-deploy
 
   api:
     build:
@@ -47,7 +47,7 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-meatland}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-awawda}?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -69,7 +69,7 @@ services:
     ports:
       - "${API_PORT:-3000}:3000"
     networks:
-      - meatland-deploy
+      - awawda-deploy
 
   customer-portal:
     build:
@@ -92,12 +92,12 @@ services:
     ports:
       - "${PORTAL_PORT:-8080}:80"
     networks:
-      - meatland-deploy
+      - awawda-deploy
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  meatland-deploy:
+  awawda-deploy:
     driver: bridge

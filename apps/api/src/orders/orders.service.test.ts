@@ -60,6 +60,7 @@ describe('OrdersService', () => {
           createdAt: '2026-04-01T09:00:00.000Z',
         },
       ]),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -154,6 +155,7 @@ describe('OrdersService', () => {
           createdAt: '2026-04-01T09:00:00.000Z',
         },
       ]),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -228,6 +230,7 @@ describe('OrdersService', () => {
       deactivateCustomerSession: vi.fn(),
       recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([]),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -293,6 +296,7 @@ describe('OrdersService', () => {
       deactivateCustomerSession: vi.fn(),
       recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn(),
+      listRecentOrdersFeed: vi.fn(),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -361,6 +365,7 @@ describe('OrdersService', () => {
         deactivateCustomerSession: vi.fn(),
         recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn(),
+        listRecentOrdersFeed: vi.fn(),
       },
       {
         reserveIdempotencyKey: vi.fn().mockResolvedValue({ kind: 'conflict' }),
@@ -413,6 +418,7 @@ describe('OrdersService', () => {
         deactivateCustomerSession: vi.fn(),
         recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn().mockResolvedValue([]),
+        listRecentOrdersFeed: vi.fn(),
       },
       {
         reserveIdempotencyKey: vi.fn().mockResolvedValue({

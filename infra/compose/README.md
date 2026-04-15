@@ -40,7 +40,7 @@ docker compose -f infra/compose/local.yml logs --tail=100
 
 `apps/api/.env.example` is aligned to this stack:
 
-- `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/meatland`
+- `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/awawda`
 - `REDIS_URL=redis://localhost:6379`
 
 Copy `.env.example` to `.env` and keep these defaults for local development.
@@ -67,8 +67,8 @@ On first bootstrap (fresh volume), PostgreSQL runs SQL files in `infra/compose/i
 
 Current init script provisions:
 
-- `meatland` (primary DB via `POSTGRES_DB`)
-- `meatland_test` (created via `01-create-test-db.sql`)
+- `awawda` (primary DB via `POSTGRES_DB`)
+- `awawda_test` (created via `01-create-test-db.sql`)
 
 ---
 
