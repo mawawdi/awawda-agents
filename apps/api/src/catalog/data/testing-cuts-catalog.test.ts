@@ -67,19 +67,20 @@ describe('testing cuts catalog dataset', () => {
     expect(items).toHaveLength(134);
     expect(items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ itemId: 'itm-beef-001', name: 'Chuck eye roast', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-beef-001', name: "צלי צ'אק איי", isTestingOnly: true }),
         expect.objectContaining({
           itemId: 'itm-beef-001',
           iconEmoji: '🐄',
           imageUrl: expect.stringMatching(/^\/v1\/testing-assets\/cuts\/beef\/.+\?v=[a-f0-9]{12}$/),
         }),
-        expect.objectContaining({ itemId: 'itm-beef-067', name: 'Stew meat (beef trimmings)', isTestingOnly: true }),
-        expect.objectContaining({ itemId: 'itm-chicken-001', name: 'Whole roaster', isTestingOnly: true }),
-        expect.objectContaining({ itemId: 'itm-chicken-037', name: 'Ground chicken (Mixed dark/white meat)', isTestingOnly: true }),
-        expect.objectContaining({ itemId: 'itm-lamb-001', name: 'Whole leg of lamb (bone-in)', isTestingOnly: true }),
-        expect.objectContaining({ itemId: 'itm-lamb-030', name: 'Lamb sweetbreads', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-beef-067', name: 'בשר בקר לתבשיל', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-chicken-001', name: 'עוף שלם לצלייה', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-chicken-037', name: 'עוף טחון (תערובת כהה/לבן)', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-lamb-001', name: 'רגל טלה שלמה עם עצם', isTestingOnly: true }),
+        expect.objectContaining({ itemId: 'itm-lamb-030', name: 'שקדים מתוקים מטלה', isTestingOnly: true }),
       ]),
     );
     expect(new Set(items.map((item) => item.itemId)).size).toBe(items.length);
+    expect(items.every((item) => typeof item.imageUrl === 'string' && item.imageUrl.length > 0)).toBe(true);
   });
 });

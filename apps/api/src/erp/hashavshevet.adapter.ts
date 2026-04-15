@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { AgentCatalogItem } from '@meatland/shared-types';
 
-import { listTestingCutAssetItemIds } from '../catalog/data/testing-cut-assets';
 import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
@@ -88,7 +87,16 @@ const DEFAULT_HCONNECT_ENDPOINT_URL = 'https://ws.wizground.com/api';
 const REPORTS_PLUGIN = 'reports';
 const DEFAULT_HANDOFF_PLUGIN = 'imovein';
 const DEFAULT_HANDOFF_DOCUMENT_ID = '30';
-const TESTING_CUT_ASSET_ITEM_IDS = listTestingCutAssetItemIds();
+const TESTING_FALLBACK_CATALOG_ITEMS = buildTestingCatalogItems();
+const TESTING_FALLBACK_CATALOG_ITEM_IDS = TESTING_FALLBACK_CATALOG_ITEMS.map((item) => item.itemId);
+const TESTING_FALLBACK_CATALOG_NAME_BY_ITEM_ID = new Map(
+  TESTING_FALLBACK_CATALOG_ITEMS.map((item) => [item.itemId, item.name]),
+);
+const TESTING_FALLBACK_PRICE_LINES = TESTING_FALLBACK_CATALOG_ITEMS.map((item, index) => ({
+  itemId: item.itemId,
+  unitPrice: resolveTestingFallbackUnitPrice(item.itemId, index),
+  currency: 'ILS',
+}));
 const HCONNECT_DEFAULT_PLUGIN_BY_FAMILY: Record<HConnectPluginFamily, string> = {
   heshin: 'iheshin',
   kupain: 'ikupain',
@@ -277,12 +285,12 @@ export class HashavshevetAdapter {
         items: [
           {
             itemId: primaryItemId,
-            name: humanizeFallbackItemName(primaryItemId),
+            name: resolveFallbackTestingItemName(primaryItemId),
             lastOrderedAt: now,
           },
           {
             itemId: secondaryItemId,
-            name: humanizeFallbackItemName(secondaryItemId),
+            name: resolveFallbackTestingItemName(secondaryItemId),
             lastOrderedAt: now,
           },
         ],
@@ -308,24 +316,12 @@ export class HashavshevetAdapter {
 
     if (!this.config.restEnabled) {
       const now = new Date().toISOString();
-      const [primaryItemId, secondaryItemId] = resolveFallbackTestingItemIds();
 
       return {
         source: 'hashavshevet',
         syncedAt: now,
         version: `price-list-${customerId}`,
-        lines: [
-          {
-            itemId: primaryItemId,
-            unitPrice: 109.9,
-            currency: 'ILS',
-          },
-          {
-            itemId: secondaryItemId,
-            unitPrice: 84.5,
-            currency: 'ILS',
-          },
-        ],
+        lines: TESTING_FALLBACK_PRICE_LINES,
       };
     }
 
@@ -1454,9 +1450,18 @@ function interpolatePath(pathTemplate: string, params: Record<string, string>): 
 }
 
 function resolveFallbackTestingItemIds(): [string, string] {
-  const primary = TESTING_CUT_ASSET_ITEM_IDS[0] ?? 'beef_ribeye_steak_boneless';
-  const secondary = TESTING_CUT_ASSET_ITEM_IDS[1] ?? primary;
+  const primary = TESTING_FALLBACK_CATALOG_ITEM_IDS[0] ?? 'itm-beef-001';
+  const secondary = TESTING_FALLBACK_CATALOG_ITEM_IDS[1] ?? primary;
   return [primary, secondary];
+}
+
+function resolveFallbackTestingItemName(itemId: string): string {
+  const localized = TESTING_FALLBACK_CATALOG_NAME_BY_ITEM_ID.get(itemId);
+  if (localized) {
+    return localized;
+  }
+
+  return humanizeFallbackItemName(itemId);
 }
 
 function humanizeFallbackItemName(itemId: string): string {
@@ -1468,4 +1473,11 @@ function humanizeFallbackItemName(itemId: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
 
   return words.join(' ');
+}
+
+function resolveTestingFallbackUnitPrice(itemId: string, index: number): number {
+  const hash = [...itemId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const shekels = 45 + (hash % 155);
+  const cents = (index % 10) / 10;
+  return Number((shekels + cents).toFixed(2));
 }

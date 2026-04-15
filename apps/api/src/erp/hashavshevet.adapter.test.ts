@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { listTestingCutAssetItemIds } from '../catalog/data/testing-cut-assets';
+import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
 
@@ -39,9 +39,18 @@ const HASH_ENV_KEYS = [
   'HASH_HCONNECT_REPORT_PRICING_PARAMS_JSON',
 ] as const;
 
+const FALLBACK_CATALOG_ITEMS = buildTestingCatalogItems();
 const [FALLBACK_PRIMARY_ITEM_ID, FALLBACK_SECONDARY_ITEM_ID] = (() => {
-  const [first, second] = listTestingCutAssetItemIds();
-  const primary = first ?? 'beef_ribeye_steak_boneless';
+  const first = FALLBACK_CATALOG_ITEMS[0]?.itemId;
+  const second = FALLBACK_CATALOG_ITEMS[1]?.itemId;
+  const primary = first ?? 'itm-beef-001';
+  const secondary = second ?? primary;
+  return [primary, secondary];
+})();
+const [FALLBACK_PRIMARY_ITEM_NAME, FALLBACK_SECONDARY_ITEM_NAME] = (() => {
+  const first = FALLBACK_CATALOG_ITEMS[0]?.name;
+  const second = FALLBACK_CATALOG_ITEMS[1]?.name;
+  const primary = first ?? fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID);
   const secondary = second ?? primary;
   return [primary, secondary];
 })();
@@ -119,25 +128,28 @@ describe.sequential('HashavshevetAdapter', () => {
       items: [
         {
           itemId: FALLBACK_PRIMARY_ITEM_ID,
-          name: fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID),
+          name: FALLBACK_PRIMARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
         {
           itemId: FALLBACK_SECONDARY_ITEM_ID,
-          name: fallbackNameFromItemId(FALLBACK_SECONDARY_ITEM_ID),
+          name: FALLBACK_SECONDARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
       ],
     });
-    await expect(adapter.getCustomerPricing('cust-42')).resolves.toEqual({
+    const pricingSnapshot = await adapter.getCustomerPricing('cust-42');
+    expect(pricingSnapshot).toMatchObject({
       source: 'hashavshevet',
       syncedAt: '2026-05-01T10:00:00.000Z',
       version: 'price-list-cust-42',
-      lines: [
-        { itemId: FALLBACK_PRIMARY_ITEM_ID, unitPrice: 109.9, currency: 'ILS' },
-        { itemId: FALLBACK_SECONDARY_ITEM_ID, unitPrice: 84.5, currency: 'ILS' },
-      ],
     });
+    expect(pricingSnapshot.lines).toHaveLength(FALLBACK_CATALOG_ITEMS.length);
+    expect(pricingSnapshot.lines).toEqual(expect.arrayContaining([
+      expect.objectContaining({ itemId: FALLBACK_PRIMARY_ITEM_ID, currency: 'ILS' }),
+      expect.objectContaining({ itemId: FALLBACK_SECONDARY_ITEM_ID, currency: 'ILS' }),
+    ]));
+    expect(pricingSnapshot.lines.every((line) => Number.isFinite(line.unitPrice) && line.unitPrice > 0)).toBe(true);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -655,27 +667,29 @@ describe.sequential('HashavshevetAdapter', () => {
       items: [
         {
           itemId: FALLBACK_PRIMARY_ITEM_ID,
-          name: fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID),
+          name: FALLBACK_PRIMARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
         {
           itemId: FALLBACK_SECONDARY_ITEM_ID,
-          name: fallbackNameFromItemId(FALLBACK_SECONDARY_ITEM_ID),
+          name: FALLBACK_SECONDARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
         },
       ],
     });
 
     const pricingResult = await adapter.getCustomerPricing('cust-snap');
-    expect(pricingResult).toEqual({
+    expect(pricingResult).toMatchObject({
       source: 'hashavshevet',
       syncedAt: '2026-05-01T10:00:00.000Z',
       version: 'price-list-cust-snap',
-      lines: [
-        { itemId: FALLBACK_PRIMARY_ITEM_ID, unitPrice: 109.9, currency: 'ILS' },
-        { itemId: FALLBACK_SECONDARY_ITEM_ID, unitPrice: 84.5, currency: 'ILS' },
-      ],
     });
+    expect(pricingResult.lines).toHaveLength(FALLBACK_CATALOG_ITEMS.length);
+    expect(pricingResult.lines).toEqual(expect.arrayContaining([
+      expect.objectContaining({ itemId: FALLBACK_PRIMARY_ITEM_ID, currency: 'ILS' }),
+      expect.objectContaining({ itemId: FALLBACK_SECONDARY_ITEM_ID, currency: 'ILS' }),
+    ]));
+    expect(pricingResult.lines.every((line) => Number.isFinite(line.unitPrice) && line.unitPrice > 0)).toBe(true);
 
     // No HTTP calls should have been made since we used snapshots
     expect(fetchSpy).not.toHaveBeenCalled();

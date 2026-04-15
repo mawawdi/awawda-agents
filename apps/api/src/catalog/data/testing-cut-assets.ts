@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, readSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
+import rawLocalizedCuts from './cuts.he.json';
+
 export type TestingCutSpecies = 'beef' | 'chicken' | 'lamb';
 
 type TestingCutAssetRecord = {
@@ -31,6 +33,33 @@ type TestingCutAssetManifest = {
   recordsBySpecies: Record<TestingCutSpecies, TestingCutAssetRecord[]>;
   recordsByStem: Map<string, TestingCutAssetRecord>;
   recordsByPath: Map<string, TestingCutAssetRecord>;
+};
+
+type CatalogCutLookupRecord = {
+  species: TestingCutSpecies;
+  nameEn: string;
+};
+
+type LocalizedCatalogCut = {
+  itemId?: unknown;
+  nameEn?: unknown;
+};
+
+type LocalizedCatalogGroup = {
+  cuts?: unknown;
+};
+
+type LocalizedCatalogPrimal = {
+  groups?: unknown;
+};
+
+type LocalizedCatalogSpecies = {
+  id?: unknown;
+  primals?: unknown;
+};
+
+type LocalizedCatalogRoot = {
+  species?: unknown;
 };
 
 const SUPPORTED_FILE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -91,6 +120,7 @@ const CUT_NAME_ASSET_OVERRIDES: Record<string, string> = {
 };
 
 const TESTING_CUT_ASSETS_MANIFEST = createManifest();
+const TESTING_CATALOG_CUT_BY_ITEM_ID = buildTestingCatalogCutLookup(rawLocalizedCuts);
 
 export function getTestingCutAssetsVersion(): string {
   return TESTING_CUT_ASSETS_MANIFEST.version;
@@ -130,6 +160,14 @@ export function resolveTestingCutAssetByItemId(itemId: string): ResolvedTestingC
     const exactAlias = TESTING_CUT_ASSETS_MANIFEST.recordsByStem.get(aliasStem);
     if (exactAlias) {
       return toResolvedAsset(exactAlias);
+    }
+  }
+
+  const catalogCut = TESTING_CATALOG_CUT_BY_ITEM_ID.get(normalizedItemId);
+  if (catalogCut) {
+    const byCatalogCutName = resolveTestingCutAssetByName(catalogCut.species, catalogCut.nameEn);
+    if (byCatalogCutName) {
+      return byCatalogCutName;
     }
   }
 
@@ -287,6 +325,63 @@ function resolveTestingCutAssetsRootDirectory(): string | null {
     if (existsSync(candidate)) {
       return candidate;
     }
+  }
+
+  return null;
+}
+
+function buildTestingCatalogCutLookup(rawCatalog: unknown): Map<string, CatalogCutLookupRecord> {
+  const map = new Map<string, CatalogCutLookupRecord>();
+  const speciesEntries = (rawCatalog as LocalizedCatalogRoot)?.species;
+  if (!Array.isArray(speciesEntries)) {
+    return map;
+  }
+
+  for (const speciesEntry of speciesEntries as LocalizedCatalogSpecies[]) {
+    const speciesId = normalizeCatalogSpecies(speciesEntry?.id);
+    if (!speciesId) {
+      continue;
+    }
+
+    const primals = speciesEntry?.primals;
+    if (!Array.isArray(primals)) {
+      continue;
+    }
+
+    for (const primalEntry of primals as LocalizedCatalogPrimal[]) {
+      const groups = primalEntry?.groups;
+      if (!Array.isArray(groups)) {
+        continue;
+      }
+
+      for (const groupEntry of groups as LocalizedCatalogGroup[]) {
+        const cuts = groupEntry?.cuts;
+        if (!Array.isArray(cuts)) {
+          continue;
+        }
+
+        for (const cutEntry of cuts as LocalizedCatalogCut[]) {
+          const itemId = typeof cutEntry?.itemId === 'string' ? cutEntry.itemId.trim().toLowerCase() : '';
+          const nameEn = typeof cutEntry?.nameEn === 'string' ? cutEntry.nameEn.trim() : '';
+          if (!itemId || !nameEn) {
+            continue;
+          }
+
+          map.set(itemId, {
+            species: speciesId,
+            nameEn,
+          });
+        }
+      }
+    }
+  }
+
+  return map;
+}
+
+function normalizeCatalogSpecies(rawSpecies: unknown): TestingCutSpecies | null {
+  if (rawSpecies === 'beef' || rawSpecies === 'chicken' || rawSpecies === 'lamb') {
+    return rawSpecies;
   }
 
   return null;

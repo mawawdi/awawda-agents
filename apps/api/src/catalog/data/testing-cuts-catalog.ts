@@ -60,7 +60,7 @@ export function buildTestingCatalogItems(): AgentCatalogItem[] {
           return {
             itemId: cut.itemId,
             sku: cut.sku,
-            name: cut.nameEn,
+            name: cut.nameHe,
             unit: cut.unit,
             isActive: true,
             category: cut.category,

@@ -7,6 +7,7 @@ import type {
   CustomerOrderSubmitResponse,
 } from '@meatland/shared-types';
 
+import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { isErpGatewayError } from '../erp/erp.errors';
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { CUSTOMER_SESSIONS_REPOSITORY } from '../sessions/sessions.constants';
@@ -24,6 +25,8 @@ export type SubmitOrderContext = {
   customerSessionId: string;
   idempotencyKey: string;
 };
+
+const TESTING_CATALOG_NAME_BY_ITEM_ID = new Map(buildTestingCatalogItems().map((item) => [item.itemId, item.name]));
 
 @Injectable()
 export class OrdersService {
@@ -164,7 +167,7 @@ export class OrdersService {
       const unitPrice = pricingByItemId.get(line.itemId)?.unitPrice ?? line.clientUnitPrice;
       return {
         ...line,
-        itemNameSnapshot: recentItemNames.get(line.itemId) ?? line.itemId,
+        itemNameSnapshot: resolveItemNameSnapshot(line.itemId, recentItemNames.get(line.itemId)),
         unitPriceSnapshot: unitPrice,
         lineTotalSnapshot: roundMoney(line.quantity * unitPrice),
       };
@@ -213,6 +216,42 @@ function hashRequestPayload(request: CustomerOrderSubmitRequest): string {
   };
 
   return createHash('sha256').update(JSON.stringify(canonicalPayload)).digest('hex');
+}
+
+function resolveItemNameSnapshot(itemId: string, recentItemName: string | undefined): string {
+  const normalizedRecentName = recentItemName?.trim() ?? '';
+  if (normalizedRecentName && !looksLikeRawItemIdentifier(normalizedRecentName, itemId)) {
+    return normalizedRecentName;
+  }
+
+  const localizedTestingName = TESTING_CATALOG_NAME_BY_ITEM_ID.get(itemId);
+  if (localizedTestingName) {
+    return localizedTestingName;
+  }
+
+  if (normalizedRecentName) {
+    return normalizedRecentName;
+  }
+
+  return itemId;
+}
+
+function looksLikeRawItemIdentifier(name: string, itemId: string): boolean {
+  const normalizedName = name.trim().toLowerCase();
+  const normalizedItemId = itemId.trim().toLowerCase();
+  if (!normalizedName) {
+    return false;
+  }
+
+  if (normalizedName === normalizedItemId) {
+    return true;
+  }
+
+  if (/^\d{1,4}$/.test(normalizedName)) {
+    return true;
+  }
+
+  return false;
 }
 
 function areEqualMoneyValues(left: number, right: number): boolean {

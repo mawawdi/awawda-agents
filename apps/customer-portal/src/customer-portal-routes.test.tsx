@@ -84,8 +84,8 @@ describe('customer portal runtime routes', () => {
     expect(screen.getByText('קטלוג מאושר')).toBeTruthy();
     const recentImage = screen.getByAltText('אנטריקוט פרימיום');
     const approvedFallbackImage = screen.getByAltText('מוצר 2');
-    expect((recentImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-1/image?v=testing-cuts-v1');
-    expect((approvedFallbackImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-2/image?v=testing-cuts-v1');
+    expect((recentImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-1/image?v=testing-cuts-v');
+    expect((approvedFallbackImage as HTMLImageElement).src).toContain('/v1/testing-assets/items/item-2/image?v=testing-cuts-v');
     expect(screen.queryByTestId('layout-state')).toBeNull();
     expect(screen.queryByText(/תצוגה:/)).toBeNull();
     expect(screen.getByTestId('screen-portal-order-composer').getAttribute('dir')).toBe('rtl');

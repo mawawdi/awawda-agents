@@ -46,6 +46,7 @@ import {
 import {
   placeholderColor,
   placeholderImageUri,
+  resolveTestingCatalogItemName,
 } from './authenticated-home-screen.helpers'
 import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
@@ -80,8 +81,8 @@ const ORDERS_PAGE_SIZE = 6
 const TESTING_CUT_MIN_DIMENSION_PX = 512
 const CATALOG_GRID_GAP = spacing.sm
 const CATALOG_GRID_ROWS_PER_PAGE = 3
-const CATALOG_GRID_COLUMNS = 3
-const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v2'
+const CATALOG_GRID_COLUMNS = 4
+const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v4'
 const TESTING_IMAGE_BASE_URLS = buildCandidateBaseUrls(API_BASE_URL)
 const IS_RTL_LAYOUT = true
 const DEFAULT_CUSTOMER_PHONE = '054-000-0000'
@@ -258,6 +259,11 @@ function normalizeItemTokens(itemId: string): string[] {
 }
 
 function humanizeItemName(itemId: string): string {
+  const localizedTestingName = resolveTestingCatalogItemName(itemId)
+  if (localizedTestingName) {
+    return localizedTestingName
+  }
+
   const species = inferItemSpecies(itemId)
   const speciesPrefix = species ? new Set([species]) : new Set<string>()
   const tokens = normalizeItemTokens(itemId).filter((token) => !speciesPrefix.has(token))
@@ -276,30 +282,41 @@ function humanizeItemName(itemId: string): string {
   return translated.join(' ')
 }
 
-function latinCharacterCount(value: string): number {
-  const matches = value.match(/[A-Za-z]/g)
-  return matches ? matches.length : 0
-}
-
 function resolveOrderItemDisplayName(itemId: string, itemName: string): string {
   const rawName = itemName.trim()
-  const normalizedFromName = rawName ? humanizeItemName(rawName) : ''
-  const normalizedFromId = humanizeItemName(itemId)
-  const candidates = [rawName, normalizedFromName, normalizedFromId].filter((candidate) => candidate.length > 0)
-
-  if (candidates.length === 0) {
-    return itemId
+  if (rawName && !looksLikeRawItemIdentifier(rawName, itemId)) {
+    return rawName
   }
 
-  const ranked = candidates.sort((left, right) => {
-    const latinDelta = latinCharacterCount(left) - latinCharacterCount(right)
-    if (latinDelta !== 0) {
-      return latinDelta
-    }
-    return left.length - right.length
-  })
+  const localizedFromId = humanizeItemName(itemId).trim()
+  if (localizedFromId && !looksLikeRawItemIdentifier(localizedFromId, itemId)) {
+    return localizedFromId
+  }
 
-  return ranked[0] ?? itemId
+  const normalizedFromName = rawName ? humanizeItemName(rawName).trim() : ''
+  if (normalizedFromName && !looksLikeRawItemIdentifier(normalizedFromName, itemId)) {
+    return normalizedFromName
+  }
+
+  if (rawName) {
+    return rawName
+  }
+
+  return localizedFromId || itemId
+}
+
+function looksLikeRawItemIdentifier(name: string, itemId: string): boolean {
+  const normalizedName = name.trim().toLowerCase()
+  const normalizedItemId = itemId.trim().toLowerCase()
+  if (!normalizedName) {
+    return false
+  }
+
+  if (normalizedName === normalizedItemId) {
+    return true
+  }
+
+  return /^\d{1,4}$/.test(normalizedName)
 }
 
 function renderSpeciesBadge(itemId: string, size: 'default' | 'small' = 'default'): React.JSX.Element | null {
@@ -401,6 +418,24 @@ function resolveCatalogGridCellDimension(containerWidth: number, columns: number
   const totalGap = CATALOG_GRID_GAP * Math.max(0, columns - 1)
   const dimension = Math.floor((containerWidth - totalGap - 2) / columns)
   return Math.max(1, Math.min(TESTING_CUT_MIN_DIMENSION_PX, dimension))
+}
+
+function resolveCatalogTitleFontSize(cellDimension: number): number {
+  if (!Number.isFinite(cellDimension) || cellDimension <= 0) {
+    return scaledFont(16)
+  }
+
+  const proportionalSize = Math.round(cellDimension * 0.065)
+  return Math.max(scaledFont(14), Math.min(scaledFont(20), proportionalSize))
+}
+
+function resolveCatalogMetaFontSize(cellDimension: number): number {
+  if (!Number.isFinite(cellDimension) || cellDimension <= 0) {
+    return scaledFont(13)
+  }
+
+  const proportionalSize = Math.round(cellDimension * 0.048)
+  return Math.max(scaledFont(12), Math.min(scaledFont(16), proportionalSize))
 }
 
 function formatCurrency(value: number, currency: string): string {
@@ -1443,7 +1478,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 }))
                 const approvedColumnCount = resolveCatalogGridColumnCount(catalogGridWidth)
                 const approvedCellDimension = resolveCatalogGridCellDimension(catalogGridWidth, approvedColumnCount)
-                const approvedImageDimension = Math.max(56, approvedCellDimension - spacing.sm)
+                const approvedImageDimension = Math.max(112, Math.floor(approvedCellDimension * 0.68))
+                const approvedTitleFontSize = resolveCatalogTitleFontSize(approvedCellDimension)
+                const approvedTitleLineHeight = Math.round(approvedTitleFontSize * 1.26)
+                const approvedMetaFontSize = resolveCatalogMetaFontSize(approvedCellDimension)
+                const approvedMetaLineHeight = Math.round(approvedMetaFontSize * 1.25)
+                const approvedTitleBlockMinHeight = approvedTitleLineHeight * 2
                 const approvedPageSize = Math.max(approvedColumnCount * CATALOG_GRID_ROWS_PER_PAGE, 1)
                 const approvedTotalPages = Math.max(1, Math.ceil(approvedGalleryItems.length / approvedPageSize))
                 const approvedActivePage = Math.min(catalogPage, approvedTotalPages)
@@ -1476,12 +1516,18 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                           >
                             {renderSpeciesBadge(item.hashItemId)}
                           </ImageBackground>
-                          <View style={styles.catalogItemHeader}>
-                            <Text numberOfLines={2} style={styles.catalogItemTitleEnhanced}>
+                          <View style={[styles.catalogItemHeader, { minHeight: approvedTitleBlockMinHeight }]}>
+                            <Text
+                              numberOfLines={2}
+                              style={[styles.catalogItemTitleEnhanced, { fontSize: approvedTitleFontSize, lineHeight: approvedTitleLineHeight }]}
+                            >
                               {humanizeItemName(item.hashItemId)}
                             </Text>
                           </View>
-                          <Text numberOfLines={1} style={styles.catalogItemMetaEnhanced}>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.catalogItemMetaEnhanced, { fontSize: approvedMetaFontSize, lineHeight: approvedMetaLineHeight }]}
+                          >
                             {formatCurrency(item.unitPrice, 'ILS')} / יח׳
                           </Text>
                         </View>
@@ -2199,11 +2245,11 @@ const styles = StyleSheet.create({
     borderColor: palette.outline,
     backgroundColor: palette.surface,
     overflow: 'hidden',
-    padding: spacing.xs,
+    padding: spacing.sm,
     gap: spacing.xs,
   },
   catalogItemHeader: {
-    minHeight: 30,
+    minHeight: 44,
   },
   catalogItemImagePlaceholder: {
     width: '100%',
@@ -2217,16 +2263,17 @@ const styles = StyleSheet.create({
   },
   catalogItemTitleEnhanced: {
     color: palette.primary,
-    fontSize: scaledFont(11),
+    fontSize: scaledFont(16),
     fontWeight: '800',
-    lineHeight: scaledFont(14),
+    lineHeight: scaledFont(21),
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
   catalogItemMetaEnhanced: {
     color: palette.secondary,
-    fontSize: scaledFont(9),
-    fontWeight: '600',
+    fontSize: scaledFont(13),
+    fontWeight: '700',
+    lineHeight: scaledFont(17),
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },

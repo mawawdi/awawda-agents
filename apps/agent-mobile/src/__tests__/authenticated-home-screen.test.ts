@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getCurrentTimeLabel, placeholderImageUri } from '../screens/authenticated-home-screen.helpers'
+import {
+  getCurrentTimeLabel,
+  placeholderImageUri,
+  resolveTestingCatalogItemName,
+} from '../screens/authenticated-home-screen.helpers'
 
 describe('authenticated home screen helpers', () => {
   it('formats dashboard freshness label from current time instead of a hardcoded value', () => {
@@ -18,5 +22,10 @@ describe('authenticated home screen helpers', () => {
     expect(uri.startsWith('data:image/svg+xml;utf8,')).toBe(true)
     expect(uri).not.toContain('picsum.photos')
     expect(uri).not.toContain('cust-internal-42')
+  })
+
+  it('resolves localized testing catalog names from canonical item IDs', () => {
+    expect(resolveTestingCatalogItemName('itm-beef-001')).toBe("צלי צ'אק איי")
+    expect(resolveTestingCatalogItemName(' itm-lamb-001 ')).toBe('רגל טלה שלמה עם עצם')
   })
 })

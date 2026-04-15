@@ -106,6 +106,97 @@ describe('OrdersService', () => {
     expect(ordersRepository.finalizeIdempotencyKey).toHaveBeenCalledTimes(1);
   });
 
+  it('stores localized snapshot name when ERP recent name is numeric identifier', async () => {
+    const erpGateway: ErpGateway = {
+      handoffOrder: vi.fn().mockResolvedValue({
+        status: 'submitted',
+        provider: 'hashavshevet',
+        externalRef: 'ORD-2026-00101',
+        acceptedAt: '2026-04-10T11:00:00.000Z',
+      }),
+      getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
+      getMasterCatalog: vi.fn(),
+      getCustomerRecentItems: vi.fn().mockResolvedValue({
+        source: 'hashavshevet',
+        syncedAt: '2026-04-10T10:55:00.000Z',
+        items: [
+          {
+            itemId: 'itm-beef-001',
+            name: '001',
+            lastOrderedAt: '2026-04-09T09:00:00.000Z',
+          },
+        ],
+      }),
+      getCustomerPricing: vi.fn().mockResolvedValue({
+        source: 'hashavshevet',
+        syncedAt: '2026-04-10T10:56:00.000Z',
+        version: 'v4',
+        lines: [
+          {
+            itemId: 'itm-beef-001',
+            unitPrice: 49.9,
+            currency: 'ILS',
+          },
+        ],
+      }),
+    };
+
+    const sessionsRepository: CustomerSessionsRepository = {
+      activateMagicToken: vi.fn(),
+      validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
+      recordActivationAttempt: vi.fn(),
+      listApprovedItems: vi.fn().mockResolvedValue([
+        {
+          hashItemId: 'itm-beef-001',
+          addedByAgentId: 'agent-1',
+          createdAt: '2026-04-01T09:00:00.000Z',
+        },
+      ]),
+    };
+
+    const ordersRepository: OrdersRepository = {
+      reserveIdempotencyKey: vi.fn().mockResolvedValue({
+        kind: 'reserved',
+        idempotencyId: 'idem-row-name-fallback',
+      }),
+      persistOrderSubmission: vi.fn().mockResolvedValue(undefined),
+      finalizeIdempotencyKey: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
+
+    await service.submitOrder(
+      {
+        customerId: 'cust-7',
+        customerSessionId: 'sess-7',
+        idempotencyKey: 'idem-name-fallback',
+      },
+      {
+        lines: [
+          {
+            itemId: 'itm-beef-001',
+            quantity: 1,
+            unit: 'kg',
+            clientUnitPrice: 49.9,
+          },
+        ],
+      },
+    );
+
+    expect(ordersRepository.persistOrderSubmission).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lines: expect.arrayContaining([
+          expect.objectContaining({
+            itemId: 'itm-beef-001',
+            itemNameSnapshot: "צלי צ'אק איי",
+          }),
+        ]),
+      }),
+    );
+  });
+
   it('returns 409 mismatch details when ERP price or scope diverges', async () => {
     const erpGateway: ErpGateway = {
       handoffOrder: vi.fn(),

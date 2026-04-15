@@ -1,7 +1,7 @@
 import argon2 from 'argon2'
 import { PrismaClient } from '@prisma/client'
 
-import { listTestingCutAssetItemIds } from '../src/catalog/data/testing-cut-assets'
+import { buildTestingCatalogItems } from '../src/catalog/data/testing-cuts-catalog'
 
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/meatland?schema=public'
@@ -53,10 +53,14 @@ const TEST_CUSTOMERS: string[] = [
   'cust-גריל-הכנרת-טבריה',
 ]
 
-const TEST_CATALOG_ITEM_IDS: string[] = listTestingCutAssetItemIds()
+const TEST_CATALOG_ITEM_IDS: string[] = buildTestingCatalogItems().map((item) => item.itemId)
 
 if (TEST_CATALOG_ITEM_IDS.length === 0) {
   throw new Error('No testing cut images were found. Expected files under apps/api/public/testing-cuts-images.')
+}
+
+function hasLatinCustomerSlug(customerId: string): boolean {
+  return /[A-Za-z]/.test(customerId.replace(/^cust-/i, ''))
 }
 
 async function main(): Promise<void> {
@@ -85,6 +89,96 @@ async function main(): Promise<void> {
   }
 
   const orderedAgents = Array.from(agentByEmail.values())
+  const seededAgentIds = orderedAgents.map((agent) => agent.id)
+  const legacyAssignments = await prisma.assignment.findMany({
+    where: {
+      agentId: {
+        in: seededAgentIds,
+      },
+    },
+    select: {
+      hashCustomerId: true,
+    },
+  })
+  const legacyCustomerSessions = await prisma.session.findMany({
+    where: {
+      hashCustomerId: {
+        startsWith: 'cust-',
+      },
+    },
+    select: {
+      hashCustomerId: true,
+    },
+  })
+  const legacyCustomerOrders = await prisma.order.findMany({
+    where: {
+      hashCustomerId: {
+        startsWith: 'cust-',
+      },
+    },
+    select: {
+      hashCustomerId: true,
+    },
+  })
+  const legacyLatinCustomerIds = [
+    ...legacyCustomerSessions.map((session) => session.hashCustomerId),
+    ...legacyCustomerOrders.map((order) => order.hashCustomerId),
+  ].filter((customerId) => hasLatinCustomerSlug(customerId))
+  const customerIdsToReset = Array.from(
+    new Set([
+      ...TEST_CUSTOMERS,
+      ...legacyAssignments.map((assignment) => assignment.hashCustomerId),
+      ...legacyLatinCustomerIds,
+    ]),
+  )
+
+  await prisma.approvedItem.deleteMany({
+    where: {
+      hashCustomerId: {
+        in: customerIdsToReset,
+      },
+    },
+  })
+
+  await prisma.order.deleteMany({
+    where: {
+      hashCustomerId: {
+        in: customerIdsToReset,
+      },
+    },
+  })
+
+  await prisma.session.deleteMany({
+    where: {
+      hashCustomerId: {
+        in: customerIdsToReset,
+      },
+    },
+  })
+
+  await prisma.magicLink.deleteMany({
+    where: {
+      hashCustomerId: {
+        in: customerIdsToReset,
+      },
+    },
+  })
+
+  await prisma.idempotencyKey.deleteMany({
+    where: {
+      hashCustomerId: {
+        in: customerIdsToReset,
+      },
+    },
+  })
+
+  await prisma.assignment.deleteMany({
+    where: {
+      agentId: {
+        in: seededAgentIds,
+      },
+    },
+  })
 
   const assignmentRows = TEST_CUSTOMERS.flatMap((customerId, index) => {
     const primary = orderedAgents[index % orderedAgents.length]
