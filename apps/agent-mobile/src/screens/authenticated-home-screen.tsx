@@ -7,6 +7,7 @@ import {
   Easing,
   ImageBackground,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -81,13 +82,27 @@ const ORDERS_PAGE_SIZE = 6
 const TESTING_CUT_MIN_DIMENSION_PX = 512
 const CATALOG_GRID_GAP = spacing.sm
 const CATALOG_GRID_ROWS_PER_PAGE = 3
-const CATALOG_GRID_COLUMNS = 4
+const MOBILE_CATALOG_GRID_COLUMNS = 3
+const WIDE_CATALOG_GRID_COLUMNS = 4
+const TABLET_MIN_VIEWPORT_WIDTH = 768
 const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v4'
 const TESTING_IMAGE_BASE_URLS = buildCandidateBaseUrls(API_BASE_URL)
 const IS_RTL_LAYOUT = true
 const DEFAULT_CUSTOMER_PHONE = '054-000-0000'
 const BASE_VIEWPORT_WIDTH = 430
 const FONT_SCALE = Math.max(0.82, Math.min(1, Dimensions.get('window').width / BASE_VIEWPORT_WIDTH))
+const NUMERIC_FONT_FAMILY =
+  Platform.select({
+    web: '"Plus Jakarta Sans", sans-serif',
+    default: 'PlusJakartaSans_800ExtraBold',
+  }) ?? 'PlusJakartaSans_800ExtraBold'
+const HEBREW_CHAR_PATTERN = /[\u0590-\u05FF]/
+const DIGIT_PATTERN = /\d/
+const NUMERIC_TOKEN_PATTERN = /([₪$€£]?-?\d[\d,]*(?:\.\d+)?%?)/g
+const TWO_DECIMAL_NUMBER_FORMATTER = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
 
 type ItemSpecies = 'beef' | 'chicken' | 'lamb'
 
@@ -406,8 +421,15 @@ function moveToNextTestingImageCandidate(
   }
 }
 
-function resolveCatalogGridColumnCount(_containerWidth: number): number {
-  return CATALOG_GRID_COLUMNS
+function resolveCatalogGridColumnCount(containerWidth: number): number {
+  const width =
+    Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : Dimensions.get('window').width
+
+  if (Platform.OS === 'web' || width >= TABLET_MIN_VIEWPORT_WIDTH) {
+    return WIDE_CATALOG_GRID_COLUMNS
+  }
+
+  return MOBILE_CATALOG_GRID_COLUMNS
 }
 
 function resolveCatalogGridCellDimension(containerWidth: number, columns: number): number {
@@ -438,12 +460,102 @@ function resolveCatalogMetaFontSize(cellDimension: number): number {
   return Math.max(scaledFont(12), Math.min(scaledFont(16), proportionalSize))
 }
 
-function formatCurrency(value: number, currency: string): string {
-  if (currency === 'ILS') {
-    return `₪${value.toFixed(2)}`
+type CatalogTitleLayout = {
+  fontSize: number
+  lineHeight: number
+  maxLines: number
+  minHeight: number
+}
+
+function resolveCatalogTitleLayout(cellDimension: number, itemName: string): CatalogTitleLayout {
+  const baseFontSize = resolveCatalogTitleFontSize(cellDimension)
+  const normalizedLength = itemName.trim().length
+
+  let fontSize = baseFontSize
+  let maxLines = 2
+
+  if (normalizedLength >= 26) {
+    fontSize = Math.max(scaledFont(12), baseFontSize - 2)
+    maxLines = 3
+  } else if (normalizedLength >= 20) {
+    fontSize = Math.max(scaledFont(13), baseFontSize - 1)
   }
 
-  return `${value.toFixed(2)} ${currency}`
+  const lineHeight = Math.round(fontSize * 1.24)
+  return {
+    fontSize,
+    lineHeight,
+    maxLines,
+    minHeight: lineHeight * maxLines,
+  }
+}
+
+type OrderDetailLayout = {
+  imageSize: number
+  imageRequestSize: number
+  pricingMinWidth: number
+  titleFontSize: number
+  titleLineHeight: number
+  subtitleFontSize: number
+  subtitleLineHeight: number
+  titleMaxLines: number
+}
+
+function resolveOrderDetailLayout(containerWidth: number): OrderDetailLayout {
+  const width =
+    Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : Dimensions.get('window').width
+  const isWideViewport = Platform.OS === 'web' || width >= TABLET_MIN_VIEWPORT_WIDTH
+  const isCompactViewport = !isWideViewport && width < 390
+
+  const imageSize = isWideViewport ? 104 : isCompactViewport ? 78 : 88
+  const pricingMinWidth = isWideViewport ? 120 : isCompactViewport ? 82 : 92
+
+  const estimatedNameColumnWidth = width - spacing.md * 2 - spacing.md * 2 - imageSize - pricingMinWidth
+  const compactNameColumn = estimatedNameColumnWidth < 132
+
+  const titleFontSize = compactNameColumn ? scaledFont(12.5) : estimatedNameColumnWidth < 164 ? scaledFont(13) : scaledFont(14)
+  const titleLineHeight = Math.round(titleFontSize * 1.25)
+  const subtitleFontSize = compactNameColumn ? scaledFont(10) : scaledFont(11)
+  const subtitleLineHeight = Math.round(subtitleFontSize * 1.22)
+
+  return {
+    imageSize,
+    imageRequestSize: Math.max(128, Math.round(imageSize * 2)),
+    pricingMinWidth,
+    titleFontSize,
+    titleLineHeight,
+    subtitleFontSize,
+    subtitleLineHeight,
+    titleMaxLines: compactNameColumn ? 3 : 2,
+  }
+}
+
+function formatCurrency(value: number, currency: string): string {
+  const normalizedValue = Number.isFinite(value) ? value : 0
+  const formattedValue = TWO_DECIMAL_NUMBER_FORMATTER.format(normalizedValue)
+
+  if (currency === 'ILS') {
+    return `₪${formattedValue}`
+  }
+
+  return `${formattedValue} ${currency}`
+}
+
+function renderHebrewNumericRuns(value: string): React.ReactNode {
+  if (!HEBREW_CHAR_PATTERN.test(value) || !DIGIT_PATTERN.test(value)) {
+    return value
+  }
+
+  const segments = value.split(NUMERIC_TOKEN_PATTERN).filter((segment) => segment.length > 0)
+  return segments.map((segment, index) =>
+    DIGIT_PATTERN.test(segment) ? (
+      <Text key={`numeric-${index}`} style={styles.inlineNumericRun}>
+        {segment}
+      </Text>
+    ) : (
+      segment
+    ),
+  )
 }
 
 function estimateCatalogUnitPrice(itemId: string): number {
@@ -566,6 +678,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [itemImageCandidateIndexByItemId, setItemImageCandidateIndexByItemId] = useState<Record<string, number>>({})
   const [catalogPage, setCatalogPage] = useState(1)
   const [catalogGridWidth, setCatalogGridWidth] = useState(0)
+  const [orderDetailListWidth, setOrderDetailListWidth] = useState(0)
 
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
   const [magicLinkError, setMagicLinkError] = useState<string | null>(null)
@@ -1162,8 +1275,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         {latestMagicLink && latestMagicLinkCustomerId === customerId ? (
           <View style={styles.linkMetaCard}>
             <Text style={styles.linkMetaTitle}>קישור הזמנה מוכן</Text>
-            <Text style={styles.linkMetaValue}>פג תוקף: {formatMagicLinkExpiry(latestMagicLink.expiresAt)}</Text>
-            <Text style={styles.linkMetaHint}>תוקף הקישור נקבע ל־24 שעות.</Text>
+            <Text style={styles.linkMetaValue}>
+              {renderHebrewNumericRuns(`פג תוקף: ${formatMagicLinkExpiry(latestMagicLink.expiresAt)}`)}
+            </Text>
+            <Text style={styles.linkMetaHint}>{renderHebrewNumericRuns('תוקף הקישור נקבע ל־24 שעות.')}</Text>
           </View>
         ) : null}
       </View>
@@ -1215,7 +1330,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   ]}
                 >
                   <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
-                    {filter.label}
+                    {renderHebrewNumericRuns(filter.label)}
                   </Text>
                 </Pressable>
               )
@@ -1250,7 +1365,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   <Text style={styles.customerCode}>לקוח פעיל</Text>
                 </View>
                 <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
-                <Text style={styles.customerMeta}>הזמנה אחרונה: {formatRelativeLastOrder(customer.lastOrderAt)}</Text>
+                <Text style={styles.customerMeta}>
+                  {renderHebrewNumericRuns(`הזמנה אחרונה: ${formatRelativeLastOrder(customer.lastOrderAt)}`)}
+                </Text>
               </Pressable>
             )
           })}
@@ -1281,12 +1398,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             {order.customerName}
           </Text>
           <Text numberOfLines={1} style={styles.orderTotal}>
-            סיכום ביניים: {formatCurrency(order.estimatedTotal, order.currency)}
+            {renderHebrewNumericRuns(`סיכום ביניים: ${formatCurrency(order.estimatedTotal, order.currency)}`)}
           </Text>
         </View>
 
         <View style={styles.orderSummaryMetaRow}>
-          <Text style={styles.orderMetaStrong}>{submittedLabel}</Text>
+          <Text style={styles.orderMetaStrong}>{renderHebrewNumericRuns(submittedLabel)}</Text>
           <Text style={styles.orderMeta}>{statusLabel}</Text>
         </View>
 
@@ -1318,7 +1435,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   <Text numberOfLines={2} style={styles.orderPreviewItemName}>
                     {localizedName}
                   </Text>
-                  <Text style={styles.orderPreviewItemQuantity}>כמות: {line.quantity}</Text>
+                  <Text style={styles.orderPreviewItemQuantity}>{renderHebrewNumericRuns(`כמות: ${line.quantity}`)}</Text>
                   <View style={styles.orderPreviewMetricsRow}>
                     <View style={styles.orderPreviewMetric}>
                       <Text style={styles.orderPreviewMetricLabel}>סך הכל:</Text>
@@ -1347,7 +1464,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         <Text style={styles.dashboardHeroLabel}>{dashboardKpis[0]?.label ?? 'מכירות היום'}</Text>
         <Text style={styles.dashboardHeroValue}>{dashboardKpis[0]?.value ?? '₪0.00'}</Text>
         <View style={styles.dashboardHeroMetaRow}>
-          <Text style={styles.dashboardHeroMeta}>{dashboardKpis[0]?.meta ?? '0 הזמנות'}</Text>
+          <Text style={styles.dashboardHeroMeta}>{renderHebrewNumericRuns(dashboardKpis[0]?.meta ?? '0 הזמנות')}</Text>
           <MaterialIcons color="#fecaca" name="payments" size={24} />
         </View>
       </View>
@@ -1359,7 +1476,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <MaterialIcons color={palette.secondary} name={kpi.icon} size={18} />
             </View>
             <Text style={styles.kpiValue}>{kpi.value}</Text>
-            <Text style={styles.kpiMeta}>{kpi.meta}</Text>
+            <Text style={styles.kpiMeta}>{renderHebrewNumericRuns(kpi.meta)}</Text>
           </View>
         ))}
       </View>
@@ -1367,7 +1484,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       <View style={styles.panelSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>הזמנות היום</Text>
-          <Text style={styles.sectionMeta}>{homeOrdersToday.length} הזמנות</Text>
+          <Text style={styles.sectionMeta}>{renderHebrewNumericRuns(`${homeOrdersToday.length} הזמנות`)}</Text>
         </View>
         {renderBanner(getResilienceHint(false, homeOrdersError), Boolean(homeOrdersError))}
         {isHomeOrdersLoading ? (
@@ -1478,12 +1595,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 }))
                 const approvedColumnCount = resolveCatalogGridColumnCount(catalogGridWidth)
                 const approvedCellDimension = resolveCatalogGridCellDimension(catalogGridWidth, approvedColumnCount)
-                const approvedImageDimension = Math.max(112, Math.floor(approvedCellDimension * 0.68))
-                const approvedTitleFontSize = resolveCatalogTitleFontSize(approvedCellDimension)
-                const approvedTitleLineHeight = Math.round(approvedTitleFontSize * 1.26)
+                const approvedImageDimension = Math.max(96, Math.floor(approvedCellDimension * (approvedColumnCount >= 4 ? 0.72 : 0.8)))
                 const approvedMetaFontSize = resolveCatalogMetaFontSize(approvedCellDimension)
                 const approvedMetaLineHeight = Math.round(approvedMetaFontSize * 1.25)
-                const approvedTitleBlockMinHeight = approvedTitleLineHeight * 2
                 const approvedPageSize = Math.max(approvedColumnCount * CATALOG_GRID_ROWS_PER_PAGE, 1)
                 const approvedTotalPages = Math.max(1, Math.ceil(approvedGalleryItems.length / approvedPageSize))
                 const approvedActivePage = Math.min(catalogPage, approvedTotalPages)
@@ -1499,39 +1613,52 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                       }}
                       style={styles.catalogCardList}
                     >
-                      {approvedPageItems.map((item) => (
-                        <View key={`${item.hashItemId}-${item.createdAt}`} style={[styles.catalogItemCard, { width: approvedCellDimension }]}>
-                          <ImageBackground
-                            accessibilityIgnoresInvertColors
-                            onError={() => {
-                              markItemImageUnavailable(item.hashItemId)
-                            }}
-                            resizeMode="contain"
-                            source={{ uri: resolveItemImageUri(item.hashItemId, 640, 640) }}
-                            style={[
-                              styles.catalogItemImagePlaceholder,
-                              { backgroundColor: placeholderColor(item.hashItemId), height: approvedImageDimension },
-                            ]}
-                            imageStyle={styles.catalogItemImageAsset}
-                          >
-                            {renderSpeciesBadge(item.hashItemId)}
-                          </ImageBackground>
-                          <View style={[styles.catalogItemHeader, { minHeight: approvedTitleBlockMinHeight }]}>
-                            <Text
-                              numberOfLines={2}
-                              style={[styles.catalogItemTitleEnhanced, { fontSize: approvedTitleFontSize, lineHeight: approvedTitleLineHeight }]}
+                      {approvedPageItems.map((item) => {
+                        const itemDisplayName = humanizeItemName(item.hashItemId)
+                        const titleLayout = resolveCatalogTitleLayout(approvedCellDimension, itemDisplayName)
+
+                        return (
+                          <View key={`${item.hashItemId}-${item.createdAt}`} style={[styles.catalogItemCard, { width: approvedCellDimension }]}>
+                            <ImageBackground
+                              accessibilityIgnoresInvertColors
+                              onError={() => {
+                                markItemImageUnavailable(item.hashItemId)
+                              }}
+                              resizeMode="cover"
+                              source={{ uri: resolveItemImageUri(item.hashItemId, 640, 640) }}
+                              style={[
+                                styles.catalogItemImagePlaceholder,
+                                { backgroundColor: placeholderColor(item.hashItemId), height: approvedImageDimension },
+                              ]}
+                              imageStyle={styles.catalogItemImageAsset}
                             >
-                              {humanizeItemName(item.hashItemId)}
+                              {renderSpeciesBadge(item.hashItemId)}
+                            </ImageBackground>
+                            <View style={[styles.catalogItemHeader, { minHeight: titleLayout.minHeight }]}>
+                              <Text
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.84}
+                                numberOfLines={titleLayout.maxLines}
+                                style={[
+                                  styles.catalogItemTitleEnhanced,
+                                  {
+                                    fontSize: titleLayout.fontSize,
+                                    lineHeight: titleLayout.lineHeight,
+                                  },
+                                ]}
+                              >
+                                {itemDisplayName}
+                              </Text>
+                            </View>
+                            <Text
+                              numberOfLines={1}
+                              style={[styles.catalogItemMetaEnhanced, { fontSize: approvedMetaFontSize, lineHeight: approvedMetaLineHeight }]}
+                            >
+                              {renderHebrewNumericRuns(`${formatCurrency(item.unitPrice, 'ILS')} / יח׳`)}
                             </Text>
                           </View>
-                          <Text
-                            numberOfLines={1}
-                            style={[styles.catalogItemMetaEnhanced, { fontSize: approvedMetaFontSize, lineHeight: approvedMetaLineHeight }]}
-                          >
-                            {formatCurrency(item.unitPrice, 'ILS')} / יח׳
-                          </Text>
-                        </View>
-                      ))}
+                        )
+                      })}
                     </View>
                     {approvedTotalPages > 1 ? (
                       <View style={styles.catalogPaginationRow}>
@@ -1547,7 +1674,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                         >
                           <Text style={styles.outlineButtonText}>הקודם</Text>
                         </Pressable>
-                        <Text style={styles.catalogPaginationLabel}>עמוד {approvedActivePage} מתוך {approvedTotalPages}</Text>
+                        <Text style={styles.catalogPaginationLabel}>
+                          {renderHebrewNumericRuns(`עמוד ${approvedActivePage} מתוך ${approvedTotalPages}`)}
+                        </Text>
                         <Pressable
                           accessibilityRole="button"
                           disabled={approvedActivePage >= approvedTotalPages}
@@ -1580,7 +1709,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       {!isCustomerDetailOpen ? (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>לקוחות</Text>
-          <Text style={styles.sectionMeta}>{filteredCustomers.length} לקוחות בתצוגה</Text>
+          <Text style={styles.sectionMeta}>{renderHebrewNumericRuns(`${filteredCustomers.length} לקוחות בתצוגה`)}</Text>
         </View>
       ) : null}
       {renderBanner(getResilienceHint(isCustomersSlow, customersError), Boolean(customersError))}
@@ -1589,6 +1718,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   )
 
   const renderOrdersTab = (): React.JSX.Element => {
+    const orderDetailLayout = resolveOrderDetailLayout(orderDetailListWidth)
+
     if (selectedOrder) {
       return (
         <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.orderDetail}>
@@ -1616,36 +1747,86 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
           <View style={styles.panelSection}>
             <Text style={styles.panelTitle}>פרטי ההזמנה</Text>
-            <View style={styles.orderDetailListCard}>
+            <View
+              onLayout={(event) => {
+                const width = Math.floor(event.nativeEvent.layout.width)
+                setOrderDetailListWidth((current) => (current === width ? current : width))
+              }}
+              style={styles.orderDetailListCard}
+            >
               {selectedOrder.items.map((line, index) => (
                 <View
                   key={`${selectedOrder.orderId}-${line.itemId}-${index}`}
                   style={[styles.orderDetailListRow, index < selectedOrder.items.length - 1 && styles.orderDetailListRowDivider]}
                 >
-                  <View style={styles.orderDetailItemImageWrap}>
+                  <View
+                    style={[
+                      styles.orderDetailItemImageWrap,
+                      {
+                        width: orderDetailLayout.imageSize,
+                        height: orderDetailLayout.imageSize,
+                      },
+                    ]}
+                  >
                     <ImageBackground
                       accessibilityIgnoresInvertColors
                       onError={() => {
                         markItemImageUnavailable(line.itemId)
                       }}
-                      resizeMode="contain"
-                      source={{ uri: resolveItemImageUri(line.itemId, 96, 96) }}
-                      style={[styles.orderDetailItemImage, { backgroundColor: placeholderColor(line.itemId) }]}
+                      resizeMode="cover"
+                      source={{
+                        uri: resolveItemImageUri(
+                          line.itemId,
+                          orderDetailLayout.imageRequestSize,
+                          orderDetailLayout.imageRequestSize,
+                        ),
+                      }}
+                      style={[
+                        styles.orderDetailItemImage,
+                        {
+                          backgroundColor: placeholderColor(line.itemId),
+                          width: orderDetailLayout.imageSize,
+                          height: orderDetailLayout.imageSize,
+                        },
+                      ]}
                       imageStyle={styles.orderDetailItemImageAsset}
                     >
                       {renderSpeciesBadge(line.itemId)}
                     </ImageBackground>
                   </View>
                   <View style={styles.orderDetailListInfo}>
-                    <Text style={styles.orderDetailItemTitle}>{resolveOrderItemDisplayName(line.itemId, line.itemName)}</Text>
-                    <Text style={styles.orderDetailItemSubtitle}>
+                    <Text
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.84}
+                      numberOfLines={orderDetailLayout.titleMaxLines}
+                      style={[
+                        styles.orderDetailItemTitle,
+                        {
+                          fontSize: orderDetailLayout.titleFontSize,
+                          lineHeight: orderDetailLayout.titleLineHeight,
+                        },
+                      ]}
+                    >
+                      {resolveOrderItemDisplayName(line.itemId, line.itemName)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.orderDetailItemSubtitle,
+                        {
+                          fontSize: orderDetailLayout.subtitleFontSize,
+                          lineHeight: orderDetailLayout.subtitleLineHeight,
+                        },
+                      ]}
+                    >
                       כמות: {line.quantity} {formatOrderUnitLabel(line.unit)}
                     </Text>
                   </View>
-                  <View style={styles.orderDetailListPricing}>
+                  <View style={[styles.orderDetailListPricing, { minWidth: orderDetailLayout.pricingMinWidth }]}>
                     <Text style={styles.orderDetailListLineTotal}>{formatCurrency(line.lineTotal, selectedOrder.currency)}</Text>
                     <Text style={styles.orderDetailListUnitPrice}>
-                      {formatCurrency(line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal, selectedOrder.currency)} ליח׳
+                      {renderHebrewNumericRuns(
+                        `${formatCurrency(line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal, selectedOrder.currency)} ליח׳`,
+                      )}
                     </Text>
                   </View>
                 </View>
@@ -1670,7 +1851,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               <Text style={styles.dangerButtonText}>ביטול הזמנה</Text>
             )}
           </Pressable>
-          {selectedOrder.orderRef ? <Text style={styles.orderDetailOrderRef}>מספר הזמנה: {selectedOrder.orderRef}</Text> : null}
+          {selectedOrder.orderRef ? (
+            <Text style={styles.orderDetailOrderRef}>{renderHebrewNumericRuns(`מספר הזמנה: ${selectedOrder.orderRef}`)}</Text>
+          ) : null}
         </View>
       )
     }
@@ -1679,7 +1862,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.ordersList}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>הזמנות קודמות</Text>
-          <Text style={styles.sectionMeta}>{ordersTotal} הזמנות</Text>
+          <Text style={styles.sectionMeta}>{renderHebrewNumericRuns(`${ordersTotal} הזמנות`)}</Text>
         </View>
 
         <ScrollView
@@ -1704,7 +1887,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 ]}
               >
                 <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
-                  {filter.label}
+                  {renderHebrewNumericRuns(filter.label)}
                 </Text>
               </Pressable>
             )
@@ -1749,7 +1932,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             <Text style={styles.outlineButtonText}>עמוד קודם</Text>
           </Pressable>
           <Text style={styles.paginationText}>
-            עמוד {ordersPage} מתוך {ordersTotalPages}
+            {renderHebrewNumericRuns(`עמוד ${ordersPage} מתוך ${ordersTotalPages}`)}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -1819,7 +2002,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           </Pressable>
         </View>
         {monthlyGoalError ? <Text style={styles.errorText}>{monthlyGoalError}</Text> : null}
-        <Text style={styles.noticeText}>יעד נוכחי: {formatCurrency(monthlyGoalAmount, 'ILS')}</Text>
+        <Text style={styles.noticeText}>{renderHebrewNumericRuns(`יעד נוכחי: ${formatCurrency(monthlyGoalAmount, 'ILS')}`)}</Text>
       </View>
 
       <View style={styles.panelSection}>
@@ -2063,7 +2246,7 @@ const styles = StyleSheet.create({
   brandOnlyText: {
     color: palette.primaryContainer,
     fontSize: scaledFont(22),
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 0.8,
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
@@ -2117,6 +2300,7 @@ const styles = StyleSheet.create({
     color: palette.secondary,
     fontWeight: '600',
     fontSize: scaledFont(12),
+    fontVariant: ['tabular-nums'],
   },
   kpiGrid: {
     flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
@@ -2140,7 +2324,8 @@ const styles = StyleSheet.create({
   dashboardHeroValue: {
     color: '#fff',
     fontSize: scaledFont(28),
-    fontWeight: '900',
+    fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
   },
   dashboardHeroMetaRow: {
     flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
@@ -2151,6 +2336,8 @@ const styles = StyleSheet.create({
     color: '#fecaca',
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   kpiCard: {
     flex: 1,
@@ -2176,11 +2363,15 @@ const styles = StyleSheet.create({
     color: palette.primaryContainer,
     fontSize: scaledFont(18),
     fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   kpiMeta: {
     color: palette.secondary,
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   homeOrdersList: {
     gap: spacing.sm,
@@ -2209,6 +2400,8 @@ const styles = StyleSheet.create({
     color: palette.primaryContainer,
     fontSize: 16,
     fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   panelSection: {
     backgroundColor: palette.surface,
@@ -2232,6 +2425,8 @@ const styles = StyleSheet.create({
     color: palette.primaryContainer,
     fontSize: 20,
     fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   catalogCardList: {
     flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
@@ -2266,6 +2461,7 @@ const styles = StyleSheet.create({
     fontSize: scaledFont(16),
     fontWeight: '800',
     lineHeight: scaledFont(21),
+    flexShrink: 1,
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
@@ -2476,7 +2672,7 @@ const styles = StyleSheet.create({
   customerNameCardTitle: {
     color: palette.primary,
     fontSize: scaledFont(28),
-    fontWeight: '900',
+    fontWeight: '800',
     textAlign: 'center',
     lineHeight: 42,
   },
@@ -2549,6 +2745,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: scaledFont(11),
     lineHeight: scaledFont(14),
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
@@ -2569,6 +2767,8 @@ const styles = StyleSheet.create({
     color: '#0f766e',
     fontSize: 15,
     fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
@@ -2639,7 +2839,9 @@ const styles = StyleSheet.create({
   orderPreviewMetricValue: {
     color: palette.primary,
     fontSize: scaledFont(16),
-    fontWeight: '900',
+    fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
   },
   orderThumbBadge: {
@@ -2671,7 +2873,7 @@ const styles = StyleSheet.create({
   orderDetailRestaurant: {
     color: palette.primary,
     fontSize: scaledFont(22),
-    fontWeight: '900',
+    fontWeight: '800',
   },
   orderDetailDate: {
     color: palette.secondary,
@@ -2681,7 +2883,9 @@ const styles = StyleSheet.create({
   orderDetailTotal: {
     color: palette.primaryContainer,
     fontSize: scaledFont(20),
-    fontWeight: '900',
+    fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   orderDetailStatusPill: {
     alignSelf: IS_RTL_LAYOUT ? 'flex-end' : 'flex-start',
@@ -2740,7 +2944,8 @@ const styles = StyleSheet.create({
   orderDetailItemTitle: {
     color: palette.primary,
     fontSize: scaledFont(14),
-    fontWeight: '900',
+    fontWeight: '800',
+    flexShrink: 1,
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
   },
@@ -2754,7 +2959,9 @@ const styles = StyleSheet.create({
   orderDetailListLineTotal: {
     color: palette.primaryContainer,
     fontSize: scaledFont(18),
-    fontWeight: '900',
+    fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
     textAlign: IS_RTL_LAYOUT ? 'left' : 'right',
   },
   orderDetailListUnitPrice: {
@@ -3090,6 +3297,11 @@ const styles = StyleSheet.create({
   noticeText: {
     color: palette.warning,
     fontSize: 13,
+  },
+  inlineNumericRun: {
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
+    writingDirection: 'ltr',
   },
   linkMetaCard: {
     marginTop: spacing.xs,

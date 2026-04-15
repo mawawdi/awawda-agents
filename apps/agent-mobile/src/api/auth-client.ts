@@ -1,4 +1,3 @@
-import { API_BASE_URL } from '../config/env'
 import { LOGIN_RESPONSE_SCHEMA, type LoginInput, type LoginResponse } from '../auth/contracts'
 import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
 
@@ -14,10 +13,6 @@ function parseErrorBody(payload: unknown): string | null {
 }
 
 export async function loginAgent(input: LoginInput): Promise<LoginResponse> {
-  if (/YOUR_LAN_IP/i.test(API_BASE_URL)) {
-    throw new Error('כתובת בסיס ה-API אינה מוגדרת. הגדירו EXPO_PUBLIC_API_BASE_URL בקובץ apps/agent-mobile/.env.')
-  }
-
   const { response } = await fetchWithBaseUrlFallback(
     '/v1/agent/auth/login',
     {

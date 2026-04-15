@@ -5,6 +5,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
   wordmark: {
     color: '#7f1d1d',
     fontSize: scaledFont(36),
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: -0.8,
   },
   errorBanner: {
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#1c1917',
     fontSize: scaledFont(36),
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: -0.8,
     writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
     textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
@@ -299,10 +300,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     position: 'relative',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 1px 4px rgba(15, 23, 42, 0.06)' }
+      : {
+          shadowColor: '#0f172a',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.06,
+          shadowRadius: 4,
+        }),
   },
   input: {
     minHeight: 54,
@@ -348,11 +353,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#7f1d1d',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7f1d1d',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 6,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 12px 20px rgba(127, 29, 29, 0.20)' }
+      : {
+          shadowColor: '#7f1d1d',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.2,
+          shadowRadius: 20,
+          elevation: 6,
+        }),
   },
   buttonDisabled: {
     opacity: 0.62,

@@ -6,13 +6,13 @@ Expo React Native app for Meatland sales agents.
 
 Copy `.env.example` to `.env` and set:
 
-- `EXPO_PUBLIC_API_BASE_URL` (API origin; use `http://localhost:3000` for web/simulators, or `http://YOUR_LAN_IP:3000` for Expo Go on a physical device)
+- `EXPO_PUBLIC_API_BASE_URL=http://localhost:3000` for all local development (web + Expo Go).
 
-When using **Expo Go**, all mobile API requests (login/customers/orders) fall back and try:
-- the Metro bundle host on port `3000` (for example `http://192.168.x.x:3000`)
-- optional explicit host via `EXPO_PUBLIC_EXPO_GO_HOST` (for example `192.168.1.77`)
+When using **Expo Go** on a physical device, mobile API requests automatically fall back from `localhost` to:
+- runtime Expo/Metro host discovery (for example `http://192.168.x.x:3000`)
+- optional explicit override via `EXPO_PUBLIC_EXPO_GO_HOST` (for example `192.168.1.77`)
 
-if `localhost` is unreachable.
+If needed, `EXPO_PUBLIC_API_BASE_URL=auto` also resolves to `http://localhost:3000`.
 
 ## Implemented in T14
 

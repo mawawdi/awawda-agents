@@ -45,19 +45,43 @@ describe('auth client', () => {
     })
   })
 
-  it('fails fast when EXPO_PUBLIC_API_BASE_URL still uses placeholder', async () => {
+  it('normalizes placeholder API base URL to localhost defaults', async () => {
     process.env.EXPO_PUBLIC_API_BASE_URL = 'http://YOUR_LAN_IP:3000'
     const { loginAgent } = await import('../api/auth-client')
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          accessToken: 'token-local-default',
+          expiresIn: 28800,
+          agentProfile: {
+            id: 'agent-1',
+            name: 'Line Agent',
+            phone: '+972500000000',
+            email: 'agent@example.test',
+          },
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
 
-    await expect(
-      loginAgent({
+    const result = await loginAgent({
+      phoneOrEmail: 'agent@example.test',
+      password: 'Password123',
+    })
+
+    expect(result.accessToken).toBe('token-local-default')
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3000/v1/agent/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
         phoneOrEmail: 'agent@example.test',
         password: 'Password123',
       }),
-    ).rejects.toThrow('כתובת בסיס ה-API אינה מוגדרת')
-
-    expect(fetchMock).not.toHaveBeenCalled()
+      signal: expect.any(AbortSignal),
+    })
   })
 
   it('shows timeout guidance for slow network path', async () => {

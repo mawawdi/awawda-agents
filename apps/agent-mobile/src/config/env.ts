@@ -1,7 +1,16 @@
-const requiredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim()
+const DEFAULT_LOCAL_API_BASE_URL = 'http://localhost:3000'
+const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim()
 
-if (!requiredApiBaseUrl) {
-  throw new Error('EXPO_PUBLIC_API_BASE_URL must be configured for agent-mobile')
+function resolveApiBaseUrl(): string {
+  if (!rawApiBaseUrl) {
+    return DEFAULT_LOCAL_API_BASE_URL
+  }
+
+  if (/^auto$/i.test(rawApiBaseUrl) || /YOUR_LAN_IP/i.test(rawApiBaseUrl)) {
+    return DEFAULT_LOCAL_API_BASE_URL
+  }
+
+  return rawApiBaseUrl.replace(/\/$/, '')
 }
 
-export const API_BASE_URL = requiredApiBaseUrl.replace(/\/$/, '')
+export const API_BASE_URL = resolveApiBaseUrl()

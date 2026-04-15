@@ -10,7 +10,6 @@ import type {
 } from '@meatland/shared-types'
 import { z } from 'zod'
 
-import { API_BASE_URL } from '../config/env'
 import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
 
 const AGENT_ASSIGNED_CUSTOMER_SCHEMA: z.ZodType<AgentAssignedCustomer> = z.object({
@@ -134,10 +133,6 @@ async function parseValidatedResponse<T>(
 }
 
 async function requestAgentApi(path: string, init: RequestInit): Promise<Response> {
-  if (/YOUR_LAN_IP/i.test(API_BASE_URL)) {
-    throw new Error('כתובת בסיס ה-API אינה מוגדרת. הגדירו EXPO_PUBLIC_API_BASE_URL בקובץ apps/agent-mobile/.env.')
-  }
-
   const { response } = await fetchWithBaseUrlFallback(path, init, {
     requestLabel: 'שרת ה-API',
     timeoutMs: 8000,

@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '../config/env'
 
-const LOCAL_FALLBACK_BASE_URLS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://10.0.2.2:3000'] as const
+const LOCAL_FALLBACK_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2'] as const
 const LOCAL_HOSTNAME_PATTERN = /^localhost$|^127\.0\.0\.1$|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\./
 
 export type FetchWithFallbackOptions = {
@@ -10,7 +10,15 @@ export type FetchWithFallbackOptions = {
 
 export function buildCandidateBaseUrls(baseUrl: string): string[] {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
-  const candidates = [normalizedBaseUrl]
+  const localBaseTemplate = parseLocalBaseTemplate(normalizedBaseUrl)
+  const candidates: string[] = []
+  const pushCandidate = (candidate: string): void => {
+    if (candidate && !candidates.includes(candidate)) {
+      candidates.push(candidate)
+    }
+  }
+
+  pushCandidate(normalizedBaseUrl)
 
   if (!isLocalLikeBaseUrl(normalizedBaseUrl)) {
     return candidates
@@ -18,16 +26,11 @@ export function buildCandidateBaseUrls(baseUrl: string): string[] {
 
   const runtimeHosts = resolveRuntimeLocalHosts()
   for (const host of runtimeHosts) {
-    const candidate = `http://${host}:3000`
-    if (!candidates.includes(candidate)) {
-      candidates.push(candidate)
-    }
+    pushCandidate(buildBaseUrlFromTemplate(host, localBaseTemplate))
   }
 
-  for (const fallback of LOCAL_FALLBACK_BASE_URLS) {
-    if (!candidates.includes(fallback)) {
-      candidates.push(fallback)
-    }
+  for (const fallbackHost of LOCAL_FALLBACK_HOSTS) {
+    pushCandidate(buildBaseUrlFromTemplate(fallbackHost, localBaseTemplate))
   }
 
   return candidates
@@ -52,8 +55,14 @@ export async function fetchWithBaseUrlFallback(
   }
 
   throw new Error(
-    `לא ניתן להגיע אל ${options.requestLabel}. נבדקו הכתובות: ${checkedBaseUrls.join(', ')}. עדכנו את EXPO_PUBLIC_API_BASE_URL.`,
+    `לא ניתן להגיע אל ${options.requestLabel}. נבדקו הכתובות: ${checkedBaseUrls.join(', ')}. עדכנו את EXPO_PUBLIC_API_BASE_URL או EXPO_PUBLIC_EXPO_GO_HOST.`,
   )
+}
+
+type LocalBaseTemplate = {
+  protocol: 'http:' | 'https:'
+  port: string
+  pathname: string
 }
 
 function isLocalLikeBaseUrl(baseUrl: string): boolean {
@@ -84,11 +93,22 @@ function resolveRuntimeLocalHosts(): string[] {
         DevSettings?: { bundleURL?: string }
       }
     }
+    const expoConstantsModule = require('expo-constants') as {
+      default?: Record<string, unknown>
+    } & Record<string, unknown>
+    const expoConstants = (expoConstantsModule.default ?? expoConstantsModule) as {
+      expoConfig?: { hostUri?: string }
+      manifest2?: { extra?: { expoClient?: { hostUri?: string } } }
+      manifest?: { debuggerHost?: string }
+    }
 
     const runtimeHostCandidates = [
       reactNative.NativeModules?.SourceCode?.scriptURL,
       reactNative.NativeModules?.PlatformConstants?.ServerHost,
       reactNative.NativeModules?.DevSettings?.bundleURL,
+      expoConstants.expoConfig?.hostUri,
+      expoConstants.manifest2?.extra?.expoClient?.hostUri,
+      expoConstants.manifest?.debuggerHost,
     ]
 
     for (const candidate of runtimeHostCandidates) {
@@ -119,7 +139,7 @@ function extractHostCandidate(value: string): string {
   try {
     return new URL(trimmed).hostname
   } catch {
-    const withoutProtocol = trimmed.replace(/^https?:\/\//i, '')
+    const withoutProtocol = trimmed.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
     return withoutProtocol.split('/')[0]?.split(':')[0] ?? ''
   }
 }
@@ -143,6 +163,36 @@ function normalizeBaseUrl(baseUrl: string): string {
   } catch {
     return correctedBaseUrl.replace(/\/$/, '')
   }
+}
+
+function parseLocalBaseTemplate(baseUrl: string): LocalBaseTemplate {
+  try {
+    const parsed = new URL(baseUrl)
+    const protocol = parsed.protocol === 'https:' ? 'https:' : 'http:'
+    const port = parsed.port || (protocol === 'https:' ? '443' : '3000')
+    const pathname = normalizeBasePath(parsed.pathname)
+    return { protocol, port, pathname }
+  } catch {
+    return { protocol: 'http:', port: '3000', pathname: '' }
+  }
+}
+
+function normalizeBasePath(pathname: string): string {
+  if (!pathname || pathname === '/') {
+    return ''
+  }
+
+  return pathname.replace(/\/+$/g, '')
+}
+
+function buildBaseUrlFromTemplate(host: string, template: LocalBaseTemplate): string {
+  const normalizedHost = normalizeHost(host)
+  if (!normalizedHost) {
+    return ''
+  }
+
+  const portSegment = template.port ? `:${template.port}` : ''
+  return `${template.protocol}//${normalizedHost}${portSegment}${template.pathname}`
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs?: number): Promise<Response> {
