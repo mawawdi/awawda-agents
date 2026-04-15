@@ -116,6 +116,8 @@ docker compose --env-file infra/compose/deploy.env -f infra/compose/deploy.yml p
 - Portal: `http://localhost:8080`
 - API health: `http://localhost:3000/v1/health`
 
+If this deploy stack is running, `localhost:3000` points to the containerized API + containerized Postgres from `deploy.yml`. Keep seeding and troubleshooting scoped to that runtime DB to avoid local-vs-deploy data drift.
+
 ## Stop deployment
 
 ```bash

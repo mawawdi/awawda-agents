@@ -42,3 +42,5 @@ pnpm deploy:ps
 ```bash
 pnpm deploy:down
 ```
+
+> While deploy stack is running, API traffic on `localhost:3000` uses deploy containers (API + Postgres), not your separate local-dev database process.

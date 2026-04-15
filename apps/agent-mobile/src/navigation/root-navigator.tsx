@@ -30,7 +30,7 @@ export function RootNavigator(): React.JSX.Element {
     >
       {status === 'authenticated' ? (
         <Stack.Screen
-          name="AgentHome"
+          name="עואודה סוכנים"
           component={AuthenticatedHomeScreen}
           options={{ headerShown: false }}
         />

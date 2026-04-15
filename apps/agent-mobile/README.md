@@ -14,13 +14,18 @@ When using **Expo Go** on a physical device, mobile API requests automatically f
 
 If needed, `EXPO_PUBLIC_API_BASE_URL=auto` also resolves to `http://localhost:3000`.
 
-## Implemented in T14
+## Current auth/runtime notes
 
 - Login screen wired to `POST /v1/agent/auth/login`.
 - Access token persisted with Expo SecureStore.
 - Boot-time session restore and logout token clear.
 - Authenticated navigation shell with protected home route.
 - Mobile-friendly validation and user-facing error messages.
+- API client detects `Cannot GET /v1/...` route-mismatch responses and retries candidate API hosts before failing with actionable guidance.
+
+> `GET /v1/agent/auth/login` is not a valid auth call. Login must be `POST /v1/agent/auth/login`.
+>
+> If `infra/compose/deploy.yml` stack is running, port `3000` is usually served by containerized API + containerized Postgres. Seed the same runtime DB you are actually calling to avoid valid-credentials login mismatches.
 
 ## Scripts
 

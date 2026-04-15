@@ -15,6 +15,8 @@ export type PortalRequestFailure =
   | 'order_mismatch'
   | 'idempotency_conflict';
 
+const API_ROUTE_MISMATCH_PATTERN = /^Cannot (GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\/v1\//;
+
 export class PortalApiError extends Error {
   readonly mismatch?: CustomerOrderMismatchResponse;
 
@@ -139,8 +141,16 @@ export class PortalApiClient {
 
   private async request(path: string, init: RequestInit): Promise<Response> {
     try {
-      return await this.fetchImpl(`${this.baseUrl}${path}`, init);
-    } catch {
+      const response = await this.fetchImpl(`${this.baseUrl}${path}`, init);
+      const routeMismatchMessage = await this.readRouteMismatchMessage(response);
+      if (routeMismatchMessage) {
+        throw new PortalApiError('server', routeMismatchMessage);
+      }
+      return response;
+    } catch (error) {
+      if (error instanceof PortalApiError) {
+        throw error;
+      }
       throw new PortalApiError('network', 'חיבור הרשת נכשל');
     }
   }
@@ -149,6 +159,24 @@ export class PortalApiClient {
     try {
       const body = (await response.json()) as { code?: unknown };
       return typeof body.code === 'string' ? body.code : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async readRouteMismatchMessage(response: Response): Promise<string | null> {
+    if (response.status !== 404) {
+      return null;
+    }
+
+    try {
+      const body = (await response.clone().json()) as { message?: unknown };
+      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      if (!API_ROUTE_MISMATCH_PATTERN.test(message)) {
+        return null;
+      }
+
+      return 'נתיב API לא תואם לשרת הפעיל. ודאו שהפורטל מצביע לשרת API נכון ובגרסה עדכנית.';
     } catch {
       return null;
     }

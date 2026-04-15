@@ -21,9 +21,9 @@
 
 ### Customer portal UI (`pnpm --filter @awawda/customer-portal test`)
 
-- Submit-button lock during in-flight requests
+- Submit-button lock during in-flight requests only
 - 409 mismatch state with line-level guidance
-- Success state that prevents duplicate submit actions
+- Success overlay rendering (order ref, totals, line items) with repeat-order continuation (`הזמנה נוספת`)
 
 ### Portal scenarios (`pnpm exec playwright test tests/playwright/portal-critical-paths.spec.ts`)
 

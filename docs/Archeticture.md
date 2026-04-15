@@ -26,7 +26,7 @@ Non-goals for Phase 1:
 ```mermaid
 flowchart LR
     A[Agent Mobile App\nReact Native + Expo] -->|HTTPS| B[Backend API\nNestJS + Fastify]
-    C[Customer Web Portal\nNext.js Web App] -->|HTTPS| B
+    C[Customer Web Portal\nVite + React Web App] -->|HTTPS| B
     B -->|Read/Write| D[Hashavshevet API]
     B -->|Fallback Output| E[B-MAX XML Export]
     B --> F[(PostgreSQL)]
@@ -71,14 +71,14 @@ Reasoning:
 
 ## 3.2 Customer Portal (Web)
 
-- Next.js (TypeScript, App Router)
-- Tailwind CSS (small, responsive UI)
+- Vite + React (TypeScript)
+- CSS Modules / app-level CSS
 - TanStack Query
-- React Hook Form + Zod
+- Zod-validated API contracts
 
 Reasoning:
 
-- Next.js gives fast initial load and straightforward deployment.
+- Vite static build gives fast initial load and straightforward deployment.
 - Small, mobile-first pages for weak networks.
 
 ## 3.3 Backend API
@@ -118,7 +118,7 @@ Reasoning:
 awawda-agents/
   apps/
     agent-mobile/           # React Native Expo app
-    customer-portal/        # Next.js app
+    customer-portal/        # Vite + React app
     api/                    # NestJS backend
   packages/
     shared-types/           # Shared TS types + zod schemas
@@ -514,7 +514,7 @@ Optional (still open-source):
 ## 13.2 Runtime Components
 
 - `api` service (NestJS)
-- `customer-portal` service (Next.js)
+- `customer-portal` service (Vite static app served via nginx)
 - `postgres`
 - `redis`
 
@@ -580,16 +580,16 @@ Use deep link format:
 
 ## 15.2 UI Sections
 
-- Recent Items (from recent deliveries)
+- Recent Orders (deduped compositions with last-order date)
 - Approved Items (persistent whitelist)
-- Cart summary with estimated total
+- Persistent order summary rail with estimated total
 
 ## 15.3 UX Constraints
 
 - Zero-login.
 - Large tap targets.
 - Minimal typography and low visual weight for weak-network reliability.
-- Sticky submit bar for one-hand operation.
+- In-flight submit guard with repeat-order capability after confirmation.
 
 ---
 
@@ -699,7 +699,7 @@ Recommended tools:
 ## 19. Key Decisions Summary
 
 - Cross-platform mobile app: React Native + Expo.
-- Customer ordering UX: lightweight Next.js web portal (no app install).
+- Customer ordering UX: lightweight Vite + React web portal (no app install).
 - Backend: NestJS modular monolith with PostgreSQL + Redis.
 - ERP integration: Hashavshevet primary, B-MAX XML fallback adapter.
 - Security: one-time tokenized magic links, short sessions, post-submit link invalidation.
@@ -715,7 +715,7 @@ Recommended tools:
 - Customer opens link with no login and sees only relevant items.
 - Prices come from Hashavshevet at session activation.
 - Order submit revalidates against current Hashavshevet state.
-- Successful submit invalidates link/session to prevent duplicates.
+- Successful submit shows confirmation and supports immediate additional orders.
 - Portal and APIs meet mobile performance and security baseline.
 
 ---

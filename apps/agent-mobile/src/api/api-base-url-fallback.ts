@@ -2,6 +2,7 @@ import { API_BASE_URL } from '../config/env'
 
 const LOCAL_FALLBACK_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2'] as const
 const LOCAL_HOSTNAME_PATTERN = /^localhost$|^127\.0\.0\.1$|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\./
+const API_ROUTE_MISMATCH_PATTERN = /^Cannot (GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\/v1\//
 
 export type FetchWithFallbackOptions = {
   requestLabel: string
@@ -43,15 +44,27 @@ export async function fetchWithBaseUrlFallback(
 ): Promise<{ response: Response; checkedBaseUrls: string[] }> {
   const candidateBaseUrls = buildCandidateBaseUrls(API_BASE_URL)
   const checkedBaseUrls: string[] = []
+  let routeMismatchDetected = false
 
   for (const candidateBaseUrl of candidateBaseUrls) {
     checkedBaseUrls.push(candidateBaseUrl)
     try {
       const response = await fetchWithTimeout(`${candidateBaseUrl}${path}`, init, options.timeoutMs)
+      const routeMismatchMessage = await readApiRouteMismatchMessage(response)
+      if (routeMismatchMessage) {
+        routeMismatchDetected = true
+        continue
+      }
       return { response, checkedBaseUrls }
     } catch {
       continue
     }
+  }
+
+  if (routeMismatchDetected) {
+    throw new Error(
+      `נתיב ה-API לא תואם לשרת הפעיל. ודאו שה-API רץ עם גרסה עדכנית וש-EXPO_PUBLIC_API_BASE_URL מצביע לשרת הנכון. נבדקו הכתובות: ${checkedBaseUrls.join(', ')}`,
+    )
   }
 
   throw new Error(
@@ -211,5 +224,23 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs?: numb
     })
   } finally {
     clearTimeout(timeoutId)
+  }
+}
+
+async function readApiRouteMismatchMessage(response: Response): Promise<string | null> {
+  if (response.status !== 404) {
+    return null
+  }
+
+  try {
+    const payload = (await response.clone().json()) as { message?: unknown }
+    const message = typeof payload.message === 'string' ? payload.message.trim() : ''
+    if (!API_ROUTE_MISMATCH_PATTERN.test(message)) {
+      return null
+    }
+
+    return message
+  } catch {
+    return null
   }
 }

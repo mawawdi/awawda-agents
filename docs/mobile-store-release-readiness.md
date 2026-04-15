@@ -27,7 +27,7 @@ This document tracks how close `apps/agent-mobile` is to a production App Store 
 5. **Release execution evidence**
    - No production store submission artifacts (build IDs / submitted release records) are checked in yet.
 6. **Cross-workspace quality gate**
-   - `@awawda/customer-portal` currently has one failing test (`customer-portal-routes.test.tsx` image URL expectation) that should be fixed before final production cutover.
+   - Current workspace quality gates are passing (`pnpm lint && pnpm test && pnpm build`), but final pre-release validation should still be rerun at release freeze.
 
 ## Production readiness estimate
 

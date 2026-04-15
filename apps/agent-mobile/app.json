@@ -1,28 +1,24 @@
 {
-  "expo": {
-    "name": "Awawda Agents",
-    "slug": "awawda-agents-mobile",
-    "version": "0.1.0",
-    "orientation": "portrait",
-    "scheme": "awawda-agents",
-    "userInterfaceStyle": "light",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "plugins": [
-      "expo-secure-store"
-    ],
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "co.awawda.agent",
-      "buildNumber": "1",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
-    },
-    "android": {
-      "package": "co.awawda.agent",
-      "versionCode": 1
-    }
-  }
+	"expo": {
+		"name": "עואודה סוכנים",
+		"slug": "awawda-agents-mobile",
+		"version": "0.1.0",
+		"orientation": "portrait",
+		"scheme": "awawda-agents",
+		"userInterfaceStyle": "light",
+		"assetBundlePatterns": ["**/*"],
+		"plugins": ["expo-secure-store"],
+		"ios": {
+			"supportsTablet": false,
+			"bundleIdentifier": "co.awawda.agent",
+			"buildNumber": "1",
+			"infoPlist": {
+				"ITSAppUsesNonExemptEncryption": false
+			}
+		},
+		"android": {
+			"package": "co.awawda.agent",
+			"versionCode": 1
+		}
+	}
 }

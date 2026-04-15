@@ -1,18 +1,18 @@
 # customer-portal
 
-Phase 1 lightweight customer ordering portal using magic-link activation.
+Awawda Customer Portal (Vite + React) for customer ordering via magic links.
 
-## Implemented in T17
+## Current behavior
 
-- Runtime `/m/[token]` activation route that exchanges magic-link tokens, shows weak-network guidance, and redirects into ordering on success.
-- Runtime `/order` route wired to portal data fetch + composition UI (recent-orders cards, products gallery, quantity steppers, estimated total, sticky submit bar).
-- Cart summary model with estimated total math plus mobile-optimized sticky submit bar behavior.
-
-## Implemented in T18
-
-- `/order` submit flow now calls `POST /v1/customer/orders` with idempotency key handling.
-- `409 ORDER_LINES_MISMATCH` responses render line-level remediation with refresh + reconfirm actions.
-- Success confirmation displays returned `orderRef` and hard-locks duplicate submit actions.
+- `/m/[token]` activation route with weak-network guidance and resilient 404-style activation error screen.
+- `/order` route with:
+  - paginated **recent orders** cards (one-click load into cart),
+  - paginated approved-items smart gallery,
+  - persistent right-side order summary + submit action,
+  - centered success confirmation card (includes order details for screenshot-at-a-glance),
+  - repeat-order flow (`הזמנה נוספת`) without permanent submit lock.
+- Submit flow calls `POST /v1/customer/orders` with idempotency and mismatch handling (`409 ORDER_LINES_MISMATCH`).
+- Runtime API mismatch handling for `Cannot GET /v1/...` responses with actionable client error messaging.
 
 ## Scripts
 
@@ -26,3 +26,5 @@ The portal reads API base URL from `globalThis.__CUSTOMER_PORTAL_API_BASE_URL__`
 
 - Local/dev default: `/v1` (`public/runtime-config.js`)
 - Container deploy override: `CUSTOMER_PORTAL_API_BASE_URL` env var (in `infra/compose/deploy.env`)
+
+> Note: `GET /v1/...` browser hits on write endpoints are not valid API calls. Portal mutations are `POST` calls via the app runtime.

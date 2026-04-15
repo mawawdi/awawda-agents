@@ -45,6 +45,18 @@ describe('PortalApiClient submitOrder', () => {
       },
     });
   });
+
+  it('maps route-method mismatch 404 payload to actionable server error', async () => {
+    const client = new PortalApiClient(
+      '/v1',
+      vi.fn(async () => createJsonResponse(404, { message: 'Cannot GET /v1/customer/portal-data' })),
+    );
+
+    await expect(client.getPortalData('session-token')).rejects.toMatchObject({
+      kind: 'server',
+      message: 'נתיב API לא תואם לשרת הפעיל. ודאו שהפורטל מצביע לשרת API נכון ובגרסה עדכנית.',
+    });
+  });
 });
 
 function createJsonResponse(status: number, body: unknown): Response {

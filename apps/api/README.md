@@ -12,7 +12,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @awawda/api test` — run API tests
 - `pnpm --filter @awawda/api build` — compile TypeScript to `dist/`
 - `pnpm --filter @awawda/api prisma:migrate:deploy` — run migrations in deploy environments
-- `pnpm --filter @awawda/api seed:testing` — seed realistic **testing-only** agents/customers/approved-items data
+- `pnpm --filter @awawda/api seed:testing` — create DB if missing, run `prisma migrate deploy`, then seed realistic **testing-only** agents/customers/approved-items data
 
 ## Operational routes
 
@@ -26,6 +26,8 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `POST /v1/agent/customers/:customerId/magic-links` — issue secure customer magic links with hash-only token persistence
 - `POST /v1/customer/session/logout` — authenticated customer-session close to invalidate active ordering session
 - `POST /v1/customer/orders` — idempotent order submit; returns actionable `503 CUSTOMER_ORDER_ERP_UNAVAILABLE` on ERP outages
+
+`GET /v1/agent/auth/login` is expected to return `404 Not Found` because login is a mutation endpoint and only supports `POST`.
 
 ## Auth environment variables
 
@@ -143,7 +145,7 @@ Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT
 ## ERP integration boundary (T07)
 
 - Application modules consume ERP via the `ERP_GATEWAY` abstraction token (`apps/api/src/erp/erp.gateway.ts`).
-- `HashavshevetAdapter` is wired as a retry/backoff-ready skeleton for the primary handoff path.
+- `HashavshevetAdapter` is wired for read flows and production `imovein` handoff via H-Connect plugin envelope mode.
 - `BMaxXmlAdapter` is wired as XML fallback stub for order handoff when primary ERP delivery fails.
 - Internal ERP failures use stable `ERP_*` error codes from `apps/api/src/erp/erp.errors.ts`.
 ### Testing-only rich dataset
@@ -160,3 +162,9 @@ This seeds:
 - realistic customer assignment IDs
 - broad approved-items coverage across customers
 - fallback catalog metadata with per-cut icon/image fields (`iconEmoji`, `imageUrl`) for UI testing
+
+## Runtime DB alignment note (local vs deploy stack)
+
+When `pnpm deploy:up` is running, `http://localhost:3000` is served by the containerized API and its containerized Postgres from `infra/compose/deploy.yml`.
+
+Always seed the same DB your active API process is using. Seeding a different local Postgres instance will not affect credentials/orders for the running deploy API.

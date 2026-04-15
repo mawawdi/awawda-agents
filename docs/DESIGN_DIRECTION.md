@@ -6,7 +6,7 @@ The modernization of business-to-business (B2B) operational ecosystems represent
 
 The core architectural paradigm driving this digital transformation is a "read/write" integration model heavily reliant on the Hashavshevet Enterprise Resource Planning (ERP) system.3 Hashavshevet serves as the infallible Single Source of Truth (SSOT) across the entire application ecosystem, governing master item catalogs, intricate customer profiles, and highly individualized, pre-negotiated pricing matrices.3 The proposed software ecosystem acts as a specialized interaction layer that securely reads from and writes to this central ERP ledger via advanced Application Programming Interfaces (APIs), ensuring that no ledger discrepancies occur between the physical factory floor and the digital interface.3
 
-Designing for this environment requires a deep understanding of dual-sided platform dynamics.5 The architecture necessitates two distinct yet symbiotically connected user interfaces. The first is a high-density, cross-platform mobile application engineered specifically for the factory Sales Agent using React Native and Expo.3 The second is a lightweight, zero-login, mobile-first web portal built with the Next.js App Router, explicitly tailored for the Customer persona, which primarily consists of restaurant chefs and institutional butchers operating in high-stress, fast-paced environments.3 This exhaustive design direction document delineates the comprehensive visual systems, exact screen layouts, cognitive load management strategies, and complex transaction flows required to execute this B2B marketplace to optimal 2026 industry standards.7
+Designing for this environment requires a deep understanding of dual-sided platform dynamics.5 The architecture necessitates two distinct yet symbiotically connected user interfaces. The first is a high-density, cross-platform mobile application engineered specifically for the factory Sales Agent using React Native and Expo.3 The second is a lightweight, zero-login, mobile-first web portal built with Vite + React, explicitly tailored for the Customer persona, which primarily consists of restaurant chefs and institutional butchers operating in high-stress, fast-paced environments.3 This exhaustive design direction document delineates the comprehensive visual systems, exact screen layouts, cognitive load management strategies, and complex transaction flows required to execute this B2B marketplace to optimal 2026 industry standards.7
 
 ## **2\. Dual-Sided Platform Dynamics and Persona-Driven UX**
 
@@ -20,13 +20,13 @@ Because agents manage complex, interconnected business workflows, the interface 
 
 ### **2.2 The Customer Persona: Zero-Friction Utility**
 
-Conversely, the Customer persona—comprising professional chefs, procurement managers, and butchers—interacts exclusively with a Next.js responsive web portal.3 These users operate within chaotic, high-pressure environments such as loud commercial kitchens, subterranean walk-in refrigerators, or bustling loading docks.3 In these scenarios, traditional software barriers, such as mandatory account creation, complex password recovery loops, and multi-step onboarding tutorials, result in catastrophic abandonment rates.16
+Conversely, the Customer persona—comprising professional chefs, procurement managers, and butchers—interacts exclusively with a responsive Vite + React web portal.3 These users operate within chaotic, high-pressure environments such as loud commercial kitchens, subterranean walk-in refrigerators, or bustling loading docks.3 In these scenarios, traditional software barriers, such as mandatory account creation, complex password recovery loops, and multi-step onboarding tutorials, result in catastrophic abandonment rates.16
 
 The paramount UX metric for the Customer Portal is "time-to-checkout." To achieve optimal performance, the portal must load instantaneously on degraded 3G/4G cellular networks.3 Furthermore, the customer expects an experience devoid of cognitive friction, presenting a highly curated, hyper-personalized dashboard consisting only of previously ordered items and products explicitly whitelisted by their assigned Sales Agent.3 The pricing displayed must dynamically fetch their specific, pre-negotiated rates from Hashavshevet upon link activation, eliminating any ambiguity regarding order totals.3
 
 ## **3\. Visual Identity, Thematic Styling, and Component Architecture**
 
-Establishing a robust, systemic design language is the bedrock of cross-platform consistency. It ensures that both the internal React Native mobile application and the external Next.js web portal share a unified visual syntax, which systematically builds trust, reduces decision fatigue, and vastly accelerates the engineering development lifecycle.14
+Establishing a robust, systemic design language is the bedrock of cross-platform consistency. It ensures that both the internal React Native mobile application and the external Vite + React web portal share a unified visual syntax, which systematically builds trust, reduces decision fatigue, and vastly accelerates the engineering development lifecycle.14
 
 ### **3.1 Editorial and Premium Color Palette Psychology**
 
@@ -49,7 +49,7 @@ This highly constrained palette simplifies the user interface, utilizing color s
 
 Because the primary operational environment for Phase 1 deployment requires Hebrew localization, the entire typographic system must be engineered explicitly for Right-to-Left (RTL) reading patterns and the specific geometric metrics of Hebrew glyphs.28 Hebrew characters typically appear visually larger, denser, and squarer than Latin characters at equivalent point sizes, necessitating highly specific, systemic adjustments to the baseline type scale, line-height parameters, and spatial tracking.28
 
-The North Star design system mandates the pairing of **Heebo** (for all Hebrew scripts) with **Inter** (for Latin scripts, automated system numerals, and alphanumeric SKUs).28 This specific typographic combination provides a clean, neutral, and highly legible aesthetic perfectly suited for dense SaaS environments and administrative data tables.28
+The North Star design system mandates **Plus Jakarta Sans** as the primary family across app and portal surfaces, with Hebrew-capable fallback fonts where glyph coverage is needed. This keeps numeric runs visually consistent while preserving strong Hebrew readability in dense SaaS environments and administrative data tables.
 
 To ensure optimal legibility and prevent visual crowding, the typographic scale is mathematically adjusted specifically for the Hebrew alphabet 28:
 
@@ -66,7 +66,7 @@ A critical constraint within Hebrew typographic design dictates that letter-spac
 
 ### **3.3 Spatial Geometry and the 8-Point Grid System**
 
-To maintain a mathematically harmonious and deeply predictable visual rhythm across wildly varying device viewports, both the React Native and Next.js interfaces strictly adhere to a systemic **8-point grid architecture**.31 This methodology dictates that every margin, padding, dimensional property, and layout gap scales exclusively in multiples of 8 (e.g., 8px, 16px, 24px, 32px, 64px).31 A supplementary **4-point baseline grid** is utilized exclusively for fine-grained typographic alignment and internal iconography spacing within constrained components like buttons or input fields.32
+To maintain a mathematically harmonious and deeply predictable visual rhythm across wildly varying device viewports, both the React Native and Vite + React interfaces strictly adhere to a systemic **8-point grid architecture**.31 This methodology dictates that every margin, padding, dimensional property, and layout gap scales exclusively in multiples of 8 (e.g., 8px, 16px, 24px, 32px, 64px).31 A supplementary **4-point baseline grid** is utilized exclusively for fine-grained typographic alignment and internal iconography spacing within constrained components like buttons or input fields.32
 
 The macroscopic layout relies on highly responsive, flex-based column grids 31:
 
@@ -103,7 +103,7 @@ To ensure a 100% template approval rate from Meta and to prevent the messages fr
 
 ### **4.3 Session Initialization and the Security Lifecycle**
 
-When the chef or butcher taps the WhatsApp CTA button, they are instantly routed to the Next.js web application.3 The frontend intercepts the token from the URL parameters and executes a handshake with the backend API, which validates the string against the magic_links table.3 Upon successful validation, the backend issues an HttpOnly, Secure session cookie, establishing an authenticated state without the user ever touching a keyboard.41
+When the chef or butcher taps the WhatsApp CTA button, they are instantly routed to the customer web application.3 The frontend intercepts the token from the URL parameters and executes a handshake with the backend API, which validates the string against the magic_links table.3 Upon successful validation, the backend issues an HttpOnly, Secure session cookie, establishing an authenticated state without the user ever touching a keyboard.41
 
 To mitigate the inherent security risks associated with URL-based authentication (such as a user accidentally forwarding the link to an unauthorized party), the system enforces stringent, non-negotiable lifecycle rules 36:
 
@@ -156,11 +156,11 @@ Anchored to the bottom of the Customer Detail View is a prominent, full-width bu
 
 ## **6\. Customer Ordering Portal: E-Commerce Conversion Strategy**
 
-The Customer Portal, engineered on the Next.js App Router architecture, operates under the absolute, uncompromising mandate of "Frictionless Entry and Immediate Utility".3 Because access is granted exclusively via the WhatsApp magic link, the user is authenticated instantly, entirely bypassing registration forms, login screens, and cumbersome onboarding tutorials.16 The interface is meticulously optimized for high-converting e-commerce flows, tailored specifically to the unique, high-frequency nuances of wholesale B2B food distribution.9
+The Customer Portal, engineered on a Vite + React architecture, operates under the absolute, uncompromising mandate of "Frictionless Entry and Immediate Utility".3 Because access is granted exclusively via the WhatsApp magic link, the user is authenticated instantly, entirely bypassing registration forms, login screens, and cumbersome onboarding tutorials.16 The interface is meticulously optimized for high-converting e-commerce flows, tailored specifically to the unique, high-frequency nuances of wholesale B2B food distribution.9
 
 ### **6.1 Catalog Presentation, Skeleton Loading, and Real-Time Pricing**
 
-Upon link activation, the Next.js application immediately executes server-side or edge-based queries to the Hashavshevet ERP API, fetching the master catalog, the customer's specific individualized price list, and combining this massive dataset with the backend's customer_approved_items relational matrix.3
+Upon link activation, the portal application immediately executes API queries to fetch the master catalog, the customer's specific individualized price list, and combine that dataset with the backend's customer_approved_items relational matrix.3
 
 To elegantly mask the expected \~500ms API latency inherent to communicating with legacy ERP systems 3, the frontend renders sophisticated skeletal placeholders. These animated, grayed-out blocks mimic the exact spatial dimensions of the incoming product cards. This critical UX pattern maintains strict spatial stability, prevents jarring Cumulative Layout Shifts (CLS), and provides the psychological illusion of immediate performance.19
 
@@ -203,7 +203,7 @@ The checkout screen strictly contains:
 - **Financial Estimation Summary:** The order subtotal is explicitly and legally labeled as an "Estimated Total," reinforcing the catch-weight parameters.54
 - **Submission Action:** The final CTA is a massive, full-width button rendered in Deep Cherry Red (\#480003), anchored to the bottom edge of the viewport.
 
-Upon the user tapping "Submit Order," the Next.js frontend packages the payload and dispatches it to the NestJS backend. To prevent disastrous duplicate orders caused by impatient users double-tapping the button during periods of high network latency, the backend utilizes cryptographic **idempotency keys** linked to the idempotency_keys PostgreSQL table.3 This guarantees the payload is processed exactly once.3 The backend validates the payload prices against the live Hashavshevet API one final time.3 Upon successful ERP injection, the user is instantly transitioned to the Order Confirmation screen.
+Upon the user tapping "Submit Order," the portal frontend packages the payload and dispatches it to the NestJS backend. To prevent disastrous duplicate orders caused by impatient users double-tapping the button during periods of high network latency, the backend utilizes cryptographic **idempotency keys** linked to the idempotency_keys PostgreSQL table.3 This guarantees the payload is processed exactly once.3 The backend validates the payload prices against the live Hashavshevet API one final time.3 Upon successful ERP injection, the user is instantly transitioned to the Order Confirmation screen.
 
 ### **6.4 Order Confirmation and Post-Purchase UI Deconstruction**
 
@@ -229,7 +229,7 @@ Given that the immediate deployment context requires complete Hebrew localizatio
 The platform's absolute dependency on the legacy Hashavshevet ERP as the SSOT introduces profound technical and UX challenges, primarily revolving around API latency, connection timeouts, and strict data validation.3
 
 - **Redis Caching and Ephemeral State Management:** To prevent the entire application from bottlenecking or crashing during high-traffic morning ordering windows, the NestJS backend employs a Redis caching layer.3 The backend proactively caches the massive master catalog (refreshing the cache every 5–15 minutes) and caches the customer-specific price lists upon link generation (refreshing every 2–5 minutes).3 The UI subtly communicates this caching strategy to the user via non-intrusive microcopy (e.g., "Prices synchronized 2 mins ago"), effectively managing user expectations regarding data freshness without exposing the underlying technical constraints.
-- **The Adapter Pattern Fallback Architecture:** The backend architecture utilizes a sophisticated ErpGateway interface that strictly implements the software Adapter Pattern.3 This abstraction layer allows the Next.js and React Native UIs to remain entirely ignorant of whether the backend is communicating with the live Hashavshevet API or utilizing the heavily optimized fallback B-MAX XML Export method.3 Consequently, the frontend UX remains perfectly stable, performant, and responsive regardless of the specific communication protocol dictated by the ERP's current operational status.
+- **The Adapter Pattern Fallback Architecture:** The backend architecture utilizes a sophisticated ErpGateway interface that strictly implements the software Adapter Pattern.3 This abstraction layer allows the portal and React Native UIs to remain entirely ignorant of whether the backend is communicating with the live Hashavshevet API or utilizing the heavily optimized fallback B-MAX XML Export method.3 Consequently, the frontend UX remains perfectly stable, performant, and responsive regardless of the specific communication protocol dictated by the ERP's current operational status.
 
 ### **7.3 Advanced Error Handling and Graceful Offline States**
 
