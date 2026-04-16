@@ -338,4 +338,380 @@ describe('agent customers client', () => {
       }),
     )
   })
+
+  it('loads supervisor dashboard entities with authorized headers', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { listSupervisorAgents, listSupervisorCustomers, getSupervisorOversightSnapshot } = await import(
+      '../api/agent-customers-client'
+    )
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            agents: [
+              {
+                agentId: 'agent-1',
+                name: 'Parpar',
+                phone: '+972500000000',
+                email: 'parpar@awawda.test',
+                role: 'field_agent',
+                isActive: true,
+                assignmentCount: 4,
+              },
+            ],
+            total: 1,
+            generatedAt: '2026-04-16T09:00:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            customers: [
+              {
+                customerId: 'cust-alpha',
+                name: 'לקוח אלפא',
+                contactName: null,
+                phone: null,
+                city: null,
+                notes: null,
+                status: 'active',
+                updatedAt: '2026-04-16T09:30:00.000Z',
+                assignment: {
+                  assignmentCount: 1,
+                  assignedAgentIds: ['agent-1'],
+                  lastAssignedAt: '2026-04-16T09:30:00.000Z',
+                },
+              },
+            ],
+            total: 1,
+            generatedAt: '2026-04-16T09:30:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            window: {
+              startAt: '2026-04-16T00:00:00.000Z',
+              endAt: '2026-04-16T23:59:59.999Z',
+              timezone: 'Asia/Jerusalem',
+            },
+            orders: {
+              totalOrders: 1,
+              submittedCount: 1,
+              pendingRetryCount: 0,
+              failedCount: 0,
+              totalAmount: 650,
+              byAgent: [
+                {
+                  agentId: 'agent-1',
+                  agentName: 'Parpar',
+                  orderCount: 1,
+                  submittedCount: 1,
+                  pendingRetryCount: 0,
+                  failedCount: 0,
+                  totalAmount: 650,
+                },
+              ],
+              byCustomer: [
+                {
+                  customerId: 'cust-alpha',
+                  customerName: 'לקוח אלפא',
+                  assignedAgentId: 'agent-1',
+                  assignedAgentName: 'Parpar',
+                  orderCount: 1,
+                  submittedCount: 1,
+                  pendingRetryCount: 0,
+                  failedCount: 0,
+                  totalAmount: 650,
+                },
+              ],
+            },
+            unassignedCustomers: {
+              total: 0,
+              customers: [],
+            },
+            erp: {
+              pendingRetryCount: 0,
+              failedCount: 0,
+              totalNeedingAttention: 0,
+              recentSignals: [],
+            },
+            funnel: {
+              magicLinksIssued: 2,
+              activationAttempts: 2,
+              activationSuccesses: 1,
+              sessionsActivated: 1,
+              ordersSubmitted: 1,
+              activationSuccessRate: 50,
+              linkToSessionConversionRate: 50,
+              sessionToOrderConversionRate: 100,
+            },
+            generatedAt: '2026-04-16T09:31:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+
+    const agents = await listSupervisorAgents('token-supervisor')
+    const customers = await listSupervisorCustomers('token-supervisor')
+    const oversight = await getSupervisorOversightSnapshot('token-supervisor')
+
+    expect(agents.total).toBe(1)
+    expect(customers.total).toBe(1)
+    expect(oversight.orders.totalOrders).toBe(1)
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('/v1/supervisor/agents'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-supervisor',
+        },
+      }),
+    )
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/v1/supervisor/customers'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-supervisor',
+        },
+      }),
+    )
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('/v1/supervisor/oversight'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-supervisor',
+        },
+      }),
+    )
+  })
+
+  it('updates supervisor customer profile and validates empty agent assignment guards', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { assignSupervisorCustomer, updateSupervisorCustomerProfile } = await import('../api/agent-customers-client')
+
+    await expect(assignSupervisorCustomer('token-supervisor', 'cust-alpha', '   ')).rejects.toThrow(
+      'נדרש מזהה סוכן תקין לצורך שיוך הלקוח.',
+    )
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          customerId: 'cust-alpha',
+          name: 'לקוח אלפא',
+          contactName: 'שרה',
+          phone: '+972500000001',
+          city: 'ירושלים',
+          notes: 'עדיפות גבוהה',
+          status: 'on_hold',
+          updatedAt: '2026-04-16T10:15:00.000Z',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    const response = await updateSupervisorCustomerProfile('token-supervisor', 'cust-alpha', {
+      city: 'ירושלים',
+      notes: 'עדיפות גבוהה',
+      status: 'on_hold',
+    })
+
+    expect(response.status).toBe('on_hold')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/supervisor/customers/cust-alpha/profile'),
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: 'Bearer token-supervisor',
+        },
+        body: JSON.stringify({
+          city: 'ירושלים',
+          notes: 'עדיפות גבוהה',
+          status: 'on_hold',
+        }),
+      }),
+    )
+  })
+
+  it('updates agent access, performs bulk reassignment, and loads supervisor audit entries', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const {
+      updateSupervisorAgentAccess,
+      bulkReassignSupervisorCustomers,
+      listSupervisorAuditEntries,
+    } = await import('../api/agent-customers-client')
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            agent: {
+              agentId: 'agent-2',
+              name: 'Agent Two',
+              phone: '+972500000002',
+              email: null,
+              role: 'field_agent',
+              isActive: false,
+              assignmentCount: 3,
+            },
+            changed: true,
+            reason: 'Vacation',
+            updatedAt: '2026-04-16T10:20:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            fromAgentId: 'agent-1',
+            toAgentId: 'agent-2',
+            requestedCustomers: 3,
+            reassignedCustomers: 2,
+            skippedCustomers: 1,
+            createdAssignments: 2,
+            removedAssignments: 2,
+            processedCustomerIds: ['cust-a', 'cust-b'],
+            generatedAt: '2026-04-16T10:22:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            entries: [
+              {
+                id: 'audit-1',
+                actorType: 'agent',
+                actorId: 'supervisor-1',
+                eventType: 'supervisor.customer_assignment.bulk_reassign',
+                eventPayload: { customerId: 'cust-a' },
+                createdAt: '2026-04-16T10:23:00.000Z',
+              },
+            ],
+            page: 1,
+            pageSize: 20,
+            total: 1,
+            totalPages: 1,
+            generatedAt: '2026-04-16T10:23:00.000Z',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+
+    const access = await updateSupervisorAgentAccess('token-supervisor', 'agent-2', {
+      isActive: false,
+      reason: 'Vacation',
+    })
+    const bulk = await bulkReassignSupervisorCustomers('token-supervisor', {
+      fromAgentId: 'agent-1',
+      toAgentId: 'agent-2',
+      reason: 'Coverage',
+    })
+    const audit = await listSupervisorAuditEntries('token-supervisor', {
+      customerId: 'cust-a',
+      page: 1,
+      pageSize: 20,
+    })
+
+    expect(access.agent.isActive).toBe(false)
+    expect(bulk.reassignedCustomers).toBe(2)
+    expect(audit.entries).toHaveLength(1)
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('/v1/supervisor/agents/agent-2/access'),
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/v1/supervisor/customers/bulk-reassign'),
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('/v1/supervisor/audit?customerId=cust-a&page=1&pageSize=20'),
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('creates a supervisor-managed agent account', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { createSupervisorAgent } = await import('../api/agent-customers-client')
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          agent: {
+            agentId: 'agent-new-1',
+            name: 'Agent New',
+            phone: '+972500000099',
+            email: 'agent.new@awawda.test',
+            role: 'field_agent',
+            isActive: true,
+            assignmentCount: 0,
+          },
+          createdAt: '2026-04-16T12:30:00.000Z',
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    const response = await createSupervisorAgent('token-supervisor', {
+      name: 'Agent New',
+      phone: '+972500000099',
+      email: 'agent.new@awawda.test',
+      password: 'Password123!',
+      role: 'field_agent',
+    })
+
+    expect(response.agent.agentId).toBe('agent-new-1')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/supervisor/agents'),
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('forces agent logout from supervisor control plane', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { forceLogoutSupervisorAgent } = await import('../api/agent-customers-client')
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          agentId: 'agent-2',
+          revoked: true,
+          reason: 'Manual revoke',
+          revokedAt: '2026-04-16T12:35:00.000Z',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    const response = await forceLogoutSupervisorAgent('token-supervisor', 'agent-2', {
+      reason: 'Manual revoke',
+    })
+
+    expect(response.revoked).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/supervisor/agents/agent-2/force-logout'),
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
 })

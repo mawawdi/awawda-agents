@@ -9,7 +9,9 @@
     "start": "node dist/src/main.js",
     "test": "vitest run",
     "prisma:generate": "prisma generate",
-    "seed:testing": "tsx scripts/seed-testing-data.ts",
+    "seed:testing:raw": "tsx scripts/seed-testing-data.ts",
+    "seed:testing": "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55432/awawda?schema=public pnpm run seed:testing:raw",
+    "seed:testing:deploy": "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55433/awawda?schema=public pnpm run seed:testing:raw",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:reset": "prisma migrate reset --force"

@@ -3,12 +3,15 @@ export interface AuthAgentRecord {
   name: string;
   phone: string;
   email: string | null;
+  role: 'field_agent' | 'supervisor';
   passwordHash: string;
   isActive: boolean;
+  updatedAt: Date;
 }
 
 export interface AuthAgentRepository {
   findByPhoneOrEmail(phoneOrEmail: string): Promise<AuthAgentRecord | null>;
+  findById(agentId: string): Promise<AuthAgentRecord | null>;
 }
 
 export interface PasswordVerifier {

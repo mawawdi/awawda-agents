@@ -5,5 +5,6 @@ export const AGENT_SCREEN_TEST_IDS = {
   approvedCatalog: 'screen-agent-approved-catalog',
   ordersList: 'screen-agent-orders-list',
   orderDetail: 'screen-agent-order-detail',
+  supervisorControlPlane: 'screen-agent-supervisor-control-plane',
   settingsSync: 'screen-agent-settings-sync',
 } as const

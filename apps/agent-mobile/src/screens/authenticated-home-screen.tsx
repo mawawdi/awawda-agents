@@ -22,17 +22,36 @@ import type {
   AgentAssignedCustomer,
   AgentMagicLinkIssueResponse,
   AgentOrderCard,
+  SupervisorAgentAssignment,
+  SupervisorAgentOverview,
+  SupervisorAuditEntry,
+  SupervisorCustomerOverview,
+  SupervisorCustomerStatus,
+  SupervisorOversightResponse,
 } from '@awawda/shared-types'
 
 import { buildCandidateBaseUrls } from '../api/api-base-url-fallback'
 import {
+  AgentApiError,
   cancelAgentOrder,
   generateMagicLink,
   listAgentOrders,
   listApprovedItems,
   listAssignedCustomers,
+  assignSupervisorCustomer,
+  bulkReassignSupervisorCustomers,
+  createSupervisorAgent,
+  forceLogoutSupervisorAgent,
+  getSupervisorOversightSnapshot,
+  listSupervisorAgents,
+  listSupervisorAuditEntries,
+  listSupervisorCustomerAssignments,
+  listSupervisorCustomers,
+  unassignSupervisorCustomer,
+  updateSupervisorAgentAccess,
+  updateSupervisorCustomerProfile,
 } from '../api/agent-customers-client'
-import { API_BASE_URL } from '../config/env'
+import { API_BASE_URL, IS_PRODUCTION_RUNTIME } from '../config/env'
 import { useAuth } from '../auth/auth-provider'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 import {
@@ -53,10 +72,23 @@ import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
 const SLOW_NETWORK_THRESHOLD_MS = 1800
 
-const TAB_ITEMS: Array<{ id: AgentDashboardTabId; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }> = [
+const FIELD_TAB_ITEMS: Array<{
+  id: AgentDashboardTabId
+  label: string
+  icon: React.ComponentProps<typeof MaterialIcons>['name']
+}> = [
   { id: 'home', label: 'בית', icon: 'home' },
   { id: 'customers', label: 'לקוחות', icon: 'group' },
   { id: 'orders', label: 'הזמנות', icon: 'receipt' },
+  { id: 'settings', label: 'הגדרות', icon: 'settings' },
+]
+
+const SUPERVISOR_TAB_ITEMS: Array<{
+  id: AgentDashboardTabId
+  label: string
+  icon: React.ComponentProps<typeof MaterialIcons>['name']
+}> = [
+  { id: 'supervisor', label: 'בקרה', icon: 'admin-panel-settings' },
   { id: 'settings', label: 'הגדרות', icon: 'settings' },
 ]
 
@@ -71,11 +103,39 @@ const CUSTOMER_FILTERS: Array<{ id: CustomerFilterId; label: string }> = [
 
 type OrderDateFilterId = 'all' | '7d' | '30d' | '90d'
 
+type SupervisorProfileDraft = {
+  name: string
+  contactName: string
+  phone: string
+  city: string
+  notes: string
+  status: SupervisorCustomerStatus
+}
+
+type SupervisorCreateAgentDraft = {
+  name: string
+  phone: string
+  email: string
+  password: string
+  role: 'field_agent' | 'supervisor'
+}
+
 const ORDER_DATE_FILTERS: Array<{ id: OrderDateFilterId; label: string; days?: number }> = [
   { id: 'all', label: 'כל התקופה' },
   { id: '7d', label: '7 ימים', days: 7 },
   { id: '30d', label: '30 ימים', days: 30 },
   { id: '90d', label: '90 ימים', days: 90 },
+]
+
+const SUPERVISOR_STATUS_OPTIONS: Array<{ value: SupervisorCustomerStatus; label: string }> = [
+  { value: 'active', label: 'פעיל' },
+  { value: 'inactive', label: 'לא פעיל' },
+  { value: 'on_hold', label: 'מושהה' },
+]
+
+const SUPERVISOR_AGENT_ROLE_OPTIONS: Array<{ value: 'field_agent' | 'supervisor'; label: string }> = [
+  { value: 'field_agent', label: 'סוכן שטח' },
+  { value: 'supervisor', label: 'סופרווייזר' },
 ]
 
 const ORDERS_PAGE_SIZE = 6
@@ -353,6 +413,10 @@ function renderSpeciesBadge(itemId: string, size: 'default' | 'small' = 'default
 }
 
 function buildTestingItemImageUri(itemId: string, baseUrl: string): string | null {
+  if (IS_PRODUCTION_RUNTIME) {
+    return null
+  }
+
   const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/g, '')
   if (!normalizedBaseUrl || !itemId.trim()) {
     return null
@@ -654,6 +718,70 @@ function formatOrderUnitLabel(unit: 'kg' | 'unit'): string {
   return unit === 'kg' ? 'ק״ג' : 'יח׳'
 }
 
+function toSupervisorProfileDraft(customer: SupervisorCustomerOverview | null): SupervisorProfileDraft {
+  if (!customer) {
+    return {
+      name: '',
+      contactName: '',
+      phone: '',
+      city: '',
+      notes: '',
+      status: 'active',
+    }
+  }
+
+  return {
+    name: customer.name,
+    contactName: customer.contactName ?? '',
+    phone: customer.phone ?? '',
+    city: customer.city ?? '',
+    notes: customer.notes ?? '',
+    status: customer.status,
+  }
+}
+
+function formatSupervisorAuditEvent(eventType: string): string {
+  switch (eventType) {
+    case 'supervisor.customer_assignment.added':
+      return 'שיוך לקוח נוסף'
+    case 'supervisor.customer_assignment.removed':
+      return 'שיוך לקוח הוסר'
+    case 'supervisor.customer_assignment.bulk_reassign':
+      return 'העברה מרוכזת בוצעה'
+    case 'supervisor.customer_profile.updated':
+      return 'פרופיל לקוח עודכן'
+    case 'supervisor.agent_access.updated':
+      return 'גישה לסוכן עודכנה'
+    default:
+      return eventType
+  }
+}
+
+function formatSupervisorAuditTime(createdAt: string): string {
+  const parsed = Date.parse(createdAt)
+  if (Number.isNaN(parsed)) {
+    return 'זמן לא זמין'
+  }
+
+  return new Date(parsed).toLocaleString('he-IL')
+}
+
+function formatSupervisorOversightRate(value: number): string {
+  const normalized = Number.isFinite(value) ? Math.max(0, value) : 0
+  const rounded = Math.round(normalized * 10) / 10
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`
+}
+
+function formatSupervisorOrderStatus(status: 'submitted' | 'pending_retry' | 'failed'): string {
+  if (status === 'pending_retry') {
+    return 'ממתין לניסיון חוזר'
+  }
+  if (status === 'failed') {
+    return 'נכשל'
+  }
+  return 'נשלח'
+}
+
 function scaledFont(baseSize: number): number {
   return Math.max(10, Math.round(baseSize * FONT_SCALE))
 }
@@ -661,7 +789,9 @@ function scaledFont(baseSize: number): number {
 export function AuthenticatedHomeScreen(): React.JSX.Element {
   const { signOut, profile, token } = useAuth()
   const insets = useSafeAreaInsets()
-  const [activeTab, setActiveTab] = useState<AgentDashboardTabId>('home')
+  const isSupervisorRole = profile?.role === 'supervisor'
+  const tabItems = isSupervisorRole ? SUPERVISOR_TAB_ITEMS : FIELD_TAB_ITEMS
+  const [activeTab, setActiveTab] = useState<AgentDashboardTabId>(isSupervisorRole ? 'supervisor' : 'home')
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
   const [ordersSearchQuery, setOrdersSearchQuery] = useState('')
   const [activeCustomerFilter, setActiveCustomerFilter] = useState<CustomerFilterId>('all')
@@ -706,6 +836,37 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [monthlyGoalAmount, setMonthlyGoalAmount] = useState(120_000)
   const [monthlyGoalDraft, setMonthlyGoalDraft] = useState('120000')
   const [monthlyGoalError, setMonthlyGoalError] = useState<string | null>(null)
+
+  const [supervisorAgents, setSupervisorAgents] = useState<SupervisorAgentOverview[]>([])
+  const [supervisorCustomers, setSupervisorCustomers] = useState<SupervisorCustomerOverview[]>([])
+  const [supervisorOversight, setSupervisorOversight] = useState<SupervisorOversightResponse | null>(null)
+  const [supervisorAssignments, setSupervisorAssignments] = useState<SupervisorAgentAssignment[]>([])
+  const [supervisorAuditEntries, setSupervisorAuditEntries] = useState<SupervisorAuditEntry[]>([])
+  const [selectedSupervisorCustomerId, setSelectedSupervisorCustomerId] = useState<string | null>(null)
+  const [selectedSupervisorAgentId, setSelectedSupervisorAgentId] = useState<string | null>(null)
+  const [selectedSupervisorAccessAgentId, setSelectedSupervisorAccessAgentId] = useState<string | null>(null)
+  const [selectedSupervisorBulkFromAgentId, setSelectedSupervisorBulkFromAgentId] = useState<string | null>(null)
+  const [selectedSupervisorBulkToAgentId, setSelectedSupervisorBulkToAgentId] = useState<string | null>(null)
+  const [supervisorCreateAgentDraft, setSupervisorCreateAgentDraft] = useState<SupervisorCreateAgentDraft>({
+    name: '',
+    phone: '',
+    email: '',
+    password: '',
+    role: 'field_agent',
+  })
+  const [supervisorProfileDraft, setSupervisorProfileDraft] = useState<SupervisorProfileDraft>({
+    name: '',
+    contactName: '',
+    phone: '',
+    city: '',
+    notes: '',
+    status: 'active',
+  })
+  const [isSupervisorLoading, setIsSupervisorLoading] = useState(false)
+  const [isSupervisorAuditLoading, setIsSupervisorAuditLoading] = useState(false)
+  const [isSupervisorMutating, setIsSupervisorMutating] = useState(false)
+  const [supervisorError, setSupervisorError] = useState<string | null>(null)
+  const [supervisorInfo, setSupervisorInfo] = useState<string | null>(null)
 
   const rootOpacity = useRef(new Animated.Value(1)).current
   const headerTranslateY = useRef(new Animated.Value(0)).current
@@ -762,6 +923,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     ]).start()
   }, [activeTab, contentOpacity, contentTranslateY])
 
+  useEffect(() => {
+    if (isSupervisorRole) {
+      if (activeTab !== 'supervisor' && activeTab !== 'settings') {
+        setActiveTab('supervisor')
+      }
+      return
+    }
+
+    if (activeTab === 'supervisor') {
+      setActiveTab('home')
+    }
+  }, [activeTab, isSupervisorRole])
+
   const beginSlowNetworkTimer = useCallback((setSlowState: (value: boolean) => void): (() => void) => {
     setSlowState(false)
     const timeoutId = setTimeout(() => {
@@ -801,6 +975,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         setIsCustomerDetailOpen(false)
       }
     } catch (error) {
+      if (error instanceof AgentApiError && error.status === 401) {
+        await signOut()
+        return
+      }
       setCustomersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את רשימת הלקוחות.')
       setCustomers([])
       setSelectedCustomerId(null)
@@ -809,7 +987,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       clearSlowState()
       setIsCustomersLoading(false)
     }
-  }, [beginSlowNetworkTimer, token])
+  }, [beginSlowNetworkTimer, signOut, token])
 
   const loadApprovedItemsForCustomer = useCallback(
     async (customerId: string) => {
@@ -980,11 +1158,510 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     setMonthlyGoalError(null)
   }, [monthlyGoalDraft])
 
+  const loadSupervisorAuditLog = useCallback(
+    async (customerId: string | null) => {
+      if (!token) {
+        setSupervisorAuditEntries([])
+        setSupervisorError('הסשן חסר. התחברו מחדש כדי להמשיך.')
+        return
+      }
+
+      setIsSupervisorAuditLoading(true)
+      try {
+        const response = await listSupervisorAuditEntries(token, {
+          customerId: customerId ?? undefined,
+          page: 1,
+          pageSize: 20,
+        })
+        setSupervisorAuditEntries(response.entries)
+      } catch (error) {
+        setSupervisorAuditEntries([])
+        setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את יומן הפעולות.')
+      } finally {
+        setIsSupervisorAuditLoading(false)
+      }
+    },
+    [token],
+  )
+
+  const loadSupervisorData = useCallback(async () => {
+    if (!token) {
+      setSupervisorAgents([])
+      setSupervisorCustomers([])
+      setSupervisorOversight(null)
+      setSupervisorAssignments([])
+      setSupervisorAuditEntries([])
+      setSelectedSupervisorCustomerId(null)
+      setSelectedSupervisorAgentId(null)
+      setSelectedSupervisorAccessAgentId(null)
+      setSelectedSupervisorBulkFromAgentId(null)
+      setSelectedSupervisorBulkToAgentId(null)
+      setSupervisorError('הסשן חסר. התחברו מחדש כדי להמשיך.')
+      return
+    }
+
+    setIsSupervisorLoading(true)
+    setSupervisorError(null)
+
+    try {
+      const [agentsResponse, customersResponse, oversightResponse] = await Promise.all([
+        listSupervisorAgents(token),
+        listSupervisorCustomers(token),
+        getSupervisorOversightSnapshot(token),
+      ])
+
+      const fieldAgents = agentsResponse.agents.filter((agent) => agent.role === 'field_agent')
+      const assignableAgents = fieldAgents.filter((agent) => agent.isActive)
+      const fallbackBulkFromAgentId = fieldAgents[0]?.agentId ?? null
+      setSupervisorAgents(agentsResponse.agents)
+      setSupervisorCustomers(customersResponse.customers)
+      setSupervisorOversight(oversightResponse)
+      setSelectedSupervisorCustomerId((current) => {
+        if (current && customersResponse.customers.some((customer) => customer.customerId === current)) {
+          return current
+        }
+
+        return customersResponse.customers[0]?.customerId ?? null
+      })
+      setSelectedSupervisorAgentId((current) => {
+        if (current && assignableAgents.some((agent) => agent.agentId === current)) {
+          return current
+        }
+
+        return assignableAgents[0]?.agentId ?? null
+      })
+      setSelectedSupervisorAccessAgentId((current) => {
+        if (current && fieldAgents.some((agent) => agent.agentId === current)) {
+          return current
+        }
+
+        return fieldAgents[0]?.agentId ?? null
+      })
+      setSelectedSupervisorBulkFromAgentId((current) => {
+        if (current && fieldAgents.some((agent) => agent.agentId === current)) {
+          return current
+        }
+
+        return fallbackBulkFromAgentId
+      })
+      setSelectedSupervisorBulkToAgentId((current) => {
+        if (
+          current &&
+          assignableAgents.some(
+            (agent) => agent.agentId === current && agent.agentId !== (fallbackBulkFromAgentId ?? ''),
+          )
+        ) {
+          return current
+        }
+
+        return assignableAgents.find((agent) => agent.agentId !== (fallbackBulkFromAgentId ?? ''))?.agentId ?? null
+      })
+    } catch (error) {
+      setSupervisorAgents([])
+      setSupervisorCustomers([])
+      setSupervisorOversight(null)
+      setSupervisorAssignments([])
+      setSupervisorAuditEntries([])
+      setSelectedSupervisorCustomerId(null)
+      setSelectedSupervisorAgentId(null)
+      setSelectedSupervisorAccessAgentId(null)
+      setSelectedSupervisorBulkFromAgentId(null)
+      setSelectedSupervisorBulkToAgentId(null)
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את נתוני הבקרה של סופרווייזר.')
+    } finally {
+      setIsSupervisorLoading(false)
+    }
+  }, [token])
+
+  const loadSupervisorAssignments = useCallback(
+    async (customerId: string) => {
+      if (!token) {
+        setSupervisorAssignments([])
+        setSupervisorError('הסשן חסר. התחברו מחדש כדי להמשיך.')
+        return
+      }
+
+      try {
+        const response = await listSupervisorCustomerAssignments(token, customerId)
+        setSupervisorAssignments(response.assignments)
+      } catch (error) {
+        setSupervisorAssignments([])
+        setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לטעון שיוכי לקוחות.')
+      }
+    },
+    [token],
+  )
+
+  const selectedSupervisorCustomer = useMemo(
+    () => supervisorCustomers.find((customer) => customer.customerId === selectedSupervisorCustomerId) ?? null,
+    [selectedSupervisorCustomerId, supervisorCustomers],
+  )
+  const supervisorFieldAgents = useMemo(
+    () => supervisorAgents.filter((agent) => agent.role === 'field_agent'),
+    [supervisorAgents],
+  )
+  const assignableSupervisorAgents = useMemo(
+    () => supervisorFieldAgents.filter((agent) => agent.isActive),
+    [supervisorFieldAgents],
+  )
+  const selectedSupervisorAccessAgent = useMemo(
+    () => supervisorFieldAgents.find((agent) => agent.agentId === selectedSupervisorAccessAgentId) ?? null,
+    [selectedSupervisorAccessAgentId, supervisorFieldAgents],
+  )
+
+  useEffect(() => {
+    setSupervisorProfileDraft(toSupervisorProfileDraft(selectedSupervisorCustomer))
+  }, [selectedSupervisorCustomer])
+
+  useEffect(() => {
+    if (!selectedSupervisorCustomerId || !isSupervisorRole) {
+      setSupervisorAssignments([])
+      return
+    }
+
+    void loadSupervisorAssignments(selectedSupervisorCustomerId)
+  }, [isSupervisorRole, loadSupervisorAssignments, selectedSupervisorCustomerId])
+
+  useEffect(() => {
+    if (!isSupervisorRole || activeTab !== 'supervisor') {
+      setSupervisorAuditEntries([])
+      return
+    }
+
+    void loadSupervisorAuditLog(selectedSupervisorCustomerId)
+  }, [activeTab, isSupervisorRole, loadSupervisorAuditLog, selectedSupervisorCustomerId])
+
+  useEffect(() => {
+    if (!selectedSupervisorBulkFromAgentId) {
+      return
+    }
+
+    if (
+      selectedSupervisorBulkToAgentId &&
+      selectedSupervisorBulkToAgentId !== selectedSupervisorBulkFromAgentId &&
+      assignableSupervisorAgents.some((agent) => agent.agentId === selectedSupervisorBulkToAgentId)
+    ) {
+      return
+    }
+
+    const fallbackTarget =
+      assignableSupervisorAgents.find((agent) => agent.agentId !== selectedSupervisorBulkFromAgentId)?.agentId ?? null
+    setSelectedSupervisorBulkToAgentId(fallbackTarget)
+  }, [assignableSupervisorAgents, selectedSupervisorBulkFromAgentId, selectedSupervisorBulkToAgentId])
+
+  const assignCustomerOwnership = useCallback(async () => {
+    if (!token || !selectedSupervisorCustomerId || !selectedSupervisorAgentId) {
+      setSupervisorError('יש לבחור לקוח וסוכן פעיל כדי לבצע שיוך.')
+      return
+    }
+
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      const result = await assignSupervisorCustomer(token, selectedSupervisorCustomerId, selectedSupervisorAgentId)
+      setSupervisorInfo(result.created ? 'שיוך הלקוח נשמר בהצלחה.' : 'הלקוח כבר משויך לסוכן זה.')
+      await Promise.all([
+        loadSupervisorData(),
+        loadSupervisorAssignments(selectedSupervisorCustomerId),
+        loadSupervisorAuditLog(selectedSupervisorCustomerId),
+      ])
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לשייך את הלקוח לסוכן.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [
+    loadSupervisorAssignments,
+    loadSupervisorAuditLog,
+    loadSupervisorData,
+    selectedSupervisorAgentId,
+    selectedSupervisorCustomerId,
+    token,
+  ])
+
+  const unassignCustomerOwnership = useCallback(
+    async (agentId: string) => {
+      if (!token || !selectedSupervisorCustomerId) {
+        setSupervisorError('יש לבחור לקוח לפני הסרת שיוך.')
+        return
+      }
+
+      setIsSupervisorMutating(true)
+      setSupervisorError(null)
+      setSupervisorInfo(null)
+
+      try {
+        const result = await unassignSupervisorCustomer(token, selectedSupervisorCustomerId, agentId)
+        setSupervisorInfo(result.removed ? 'שיוך הוסר בהצלחה.' : 'לא נמצא שיוך להסרה עבור הסוכן שנבחר.')
+        await Promise.all([
+          loadSupervisorData(),
+          loadSupervisorAssignments(selectedSupervisorCustomerId),
+          loadSupervisorAuditLog(selectedSupervisorCustomerId),
+        ])
+      } catch (error) {
+        setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו להסיר את השיוך.')
+      } finally {
+        setIsSupervisorMutating(false)
+      }
+    },
+    [loadSupervisorAssignments, loadSupervisorAuditLog, loadSupervisorData, selectedSupervisorCustomerId, token],
+  )
+
+  const toggleSupervisorAgentAccess = useCallback(async () => {
+    if (!token || !selectedSupervisorAccessAgent) {
+      setSupervisorError('יש לבחור סוכן כדי לעדכן את הגישה שלו.')
+      return
+    }
+
+    const nextIsActive = !selectedSupervisorAccessAgent.isActive
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      const updated = await updateSupervisorAgentAccess(token, selectedSupervisorAccessAgent.agentId, {
+        isActive: nextIsActive,
+        reason: nextIsActive ? 'הפעלה מחדש מהאפליקציה' : 'השעיה מהאפליקציה',
+      })
+
+      setSupervisorAgents((current) =>
+        current.map((agent) => (agent.agentId === updated.agent.agentId ? updated.agent : agent)),
+      )
+
+      if (!nextIsActive && selectedSupervisorAgentId === selectedSupervisorAccessAgent.agentId) {
+        setSelectedSupervisorAgentId((current) => {
+          if (current !== selectedSupervisorAccessAgent.agentId) {
+            return current
+          }
+
+          return (
+            supervisorFieldAgents.find(
+              (agent) => agent.isActive && agent.agentId !== selectedSupervisorAccessAgent.agentId,
+            )?.agentId ?? null
+          )
+        })
+      }
+
+      setSupervisorInfo(nextIsActive ? 'גישת הסוכן הופעלה מחדש.' : 'גישת הסוכן הושבתה בהצלחה.')
+      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לעדכן את גישת הסוכן.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [
+    loadSupervisorAuditLog,
+    selectedSupervisorAccessAgent,
+    selectedSupervisorAgentId,
+    selectedSupervisorCustomerId,
+    supervisorFieldAgents,
+    token,
+  ])
+
+  const forceLogoutSelectedSupervisorAgent = useCallback(async () => {
+    if (!token || !selectedSupervisorAccessAgent) {
+      setSupervisorError('יש לבחור סוכן לפני ניתוק הסשנים הפעילים שלו.')
+      return
+    }
+
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      await forceLogoutSupervisorAgent(token, selectedSupervisorAccessAgent.agentId, {
+        reason: 'ניתוק יזום ממסך הסופרווייזר',
+      })
+      setSupervisorInfo(`הסשנים הפעילים של ${selectedSupervisorAccessAgent.name} נותקו.`)
+      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לנתק את הסשנים הפעילים.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [loadSupervisorAuditLog, selectedSupervisorAccessAgent, selectedSupervisorCustomerId, token])
+
+  const bulkReassignSupervisorCustomersByAgent = useCallback(async () => {
+    if (!token || !selectedSupervisorBulkFromAgentId || !selectedSupervisorBulkToAgentId) {
+      setSupervisorError('יש לבחור סוכן מקור וסוכן יעד לפני ביצוע העברה מרוכזת.')
+      return
+    }
+    if (selectedSupervisorBulkFromAgentId === selectedSupervisorBulkToAgentId) {
+      setSupervisorError('סוכן המקור וסוכן היעד חייבים להיות שונים.')
+      return
+    }
+
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      const result = await bulkReassignSupervisorCustomers(token, {
+        fromAgentId: selectedSupervisorBulkFromAgentId,
+        toAgentId: selectedSupervisorBulkToAgentId,
+        reason: 'איזון עומסים מהאפליקציה',
+      })
+
+      setSupervisorInfo(
+        `בוצעה העברה מרוכזת: ${result.reassignedCustomers} הועברו, ${result.skippedCustomers} דולגו.`,
+      )
+      await Promise.all([
+        loadSupervisorData(),
+        selectedSupervisorCustomerId ? loadSupervisorAssignments(selectedSupervisorCustomerId) : Promise.resolve(),
+        loadSupervisorAuditLog(selectedSupervisorCustomerId),
+      ])
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לבצע העברה מרוכזת.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [
+    loadSupervisorAssignments,
+    loadSupervisorAuditLog,
+    loadSupervisorData,
+    selectedSupervisorBulkFromAgentId,
+    selectedSupervisorBulkToAgentId,
+    selectedSupervisorCustomerId,
+    token,
+  ])
+
+  const createSupervisorManagedAgent = useCallback(async () => {
+    if (!token) {
+      setSupervisorError('הסשן חסר. התחברו מחדש כדי להמשיך.')
+      return
+    }
+
+    const normalizedName = supervisorCreateAgentDraft.name.trim()
+    const normalizedPhone = supervisorCreateAgentDraft.phone.trim()
+    const normalizedPassword = supervisorCreateAgentDraft.password.trim()
+    const normalizedEmail = supervisorCreateAgentDraft.email.trim()
+
+    if (!normalizedName || !normalizedPhone || !normalizedPassword) {
+      setSupervisorError('שם, טלפון וסיסמה הם שדות חובה ליצירת סוכן.')
+      return
+    }
+
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      const result = await createSupervisorAgent(token, {
+        name: normalizedName,
+        phone: normalizedPhone,
+        email: normalizedEmail.length > 0 ? normalizedEmail : null,
+        password: normalizedPassword,
+        role: supervisorCreateAgentDraft.role,
+      })
+
+      setSupervisorInfo(`נוצר סוכן חדש: ${result.agent.name}.`)
+      setSupervisorCreateAgentDraft((current) => ({
+        ...current,
+        name: '',
+        phone: '',
+        email: '',
+        password: '',
+      }))
+
+      await Promise.all([loadSupervisorData(), loadSupervisorAuditLog(selectedSupervisorCustomerId)])
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו ליצור סוכן חדש.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [loadSupervisorAuditLog, loadSupervisorData, selectedSupervisorCustomerId, supervisorCreateAgentDraft, token])
+
+  const saveSupervisorCustomerProfile = useCallback(async () => {
+    if (!token || !selectedSupervisorCustomerId) {
+      setSupervisorError('יש לבחור לקוח לפני שמירת פרופיל.')
+      return
+    }
+
+    const normalizedName = supervisorProfileDraft.name.trim()
+    if (!normalizedName) {
+      setSupervisorError('שם הלקוח הוא שדה חובה.')
+      return
+    }
+
+    const toNullable = (value: string): string | null => {
+      const normalized = value.trim()
+      return normalized.length > 0 ? normalized : null
+    }
+
+    setIsSupervisorMutating(true)
+    setSupervisorError(null)
+    setSupervisorInfo(null)
+
+    try {
+      const updated = await updateSupervisorCustomerProfile(token, selectedSupervisorCustomerId, {
+        name: normalizedName,
+        contactName: toNullable(supervisorProfileDraft.contactName),
+        phone: toNullable(supervisorProfileDraft.phone),
+        city: toNullable(supervisorProfileDraft.city),
+        notes: toNullable(supervisorProfileDraft.notes),
+        status: supervisorProfileDraft.status,
+      })
+
+      setSupervisorCustomers((current) =>
+        current.map((customer) =>
+          customer.customerId === updated.customerId
+            ? {
+                ...customer,
+                name: updated.name,
+                contactName: updated.contactName,
+                phone: updated.phone,
+                city: updated.city,
+                notes: updated.notes,
+                status: updated.status,
+                updatedAt: updated.updatedAt,
+              }
+            : customer,
+        ),
+      )
+      setSupervisorProfileDraft(
+        toSupervisorProfileDraft({
+          customerId: updated.customerId,
+          name: updated.name,
+          contactName: updated.contactName,
+          phone: updated.phone,
+          city: updated.city,
+          notes: updated.notes,
+          status: updated.status,
+          updatedAt: updated.updatedAt,
+          assignment: selectedSupervisorCustomer?.assignment ?? {
+            assignmentCount: 0,
+            assignedAgentIds: [],
+            lastAssignedAt: null,
+          },
+        }),
+      )
+      setSupervisorInfo('פרטי הלקוח עודכנו בהצלחה.')
+      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+    } catch (error) {
+      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לשמור את פרופיל הלקוח.')
+    } finally {
+      setIsSupervisorMutating(false)
+    }
+  }, [loadSupervisorAuditLog, selectedSupervisorCustomer, selectedSupervisorCustomerId, supervisorProfileDraft, token])
+
   useEffect(() => {
     setOrdersPage(1)
   }, [activeOrderDateFilter, ordersSearchQuery])
 
   useEffect(() => {
+    if (activeTab === 'supervisor') {
+      if (isSupervisorRole) {
+        void loadSupervisorData()
+      }
+      return
+    }
+
+    if (isSupervisorRole) {
+      return
+    }
+
     if (activeTab === 'orders') {
       void loadOrders()
       return
@@ -998,7 +1675,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     if (activeTab === 'customers') {
       void loadCustomers()
     }
-  }, [activeTab, loadCustomers, loadHomeOrdersSnapshot, loadOrders])
+  }, [activeTab, isSupervisorRole, loadCustomers, loadHomeOrdersSnapshot, loadOrders, loadSupervisorData])
 
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
@@ -1955,6 +2632,646 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     )
   }
 
+  const renderSupervisorTab = (): React.JSX.Element => {
+    const customerSelectionRequired = !selectedSupervisorCustomerId
+    const canAssign = Boolean(selectedSupervisorCustomerId && selectedSupervisorAgentId)
+    const canToggleAccess = Boolean(selectedSupervisorAccessAgent)
+    const canBulkReassign = Boolean(
+      selectedSupervisorBulkFromAgentId &&
+        selectedSupervisorBulkToAgentId &&
+        selectedSupervisorBulkFromAgentId !== selectedSupervisorBulkToAgentId,
+    )
+    const agentNameById = new Map(supervisorAgents.map((agent) => [agent.agentId, agent.name]))
+    const bulkDestinationAgents = assignableSupervisorAgents.filter(
+      (agent) => agent.agentId !== selectedSupervisorBulkFromAgentId,
+    )
+    const oversightByAgent = supervisorOversight?.orders.byAgent ?? []
+    const oversightByCustomer = supervisorOversight?.orders.byCustomer ?? []
+    const oversightErpSignals = supervisorOversight?.erp.recentSignals ?? []
+
+    return (
+      <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.supervisorControlPlane}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>מרכז בקרה לסופרווייזר</Text>
+          <Text style={styles.sectionMeta}>
+            {renderHebrewNumericRuns(`${supervisorCustomers.length} לקוחות · ${supervisorAgents.length} סוכנים`)}
+          </Text>
+        </View>
+
+        {renderBanner(getResilienceHint(false, supervisorError), Boolean(supervisorError))}
+        {supervisorInfo ? <Text style={styles.noticeBanner}>{supervisorInfo}</Text> : null}
+
+        {isSupervisorLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator />
+            <Text style={styles.mutedText}>טוענים נתוני בקרה…</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.panelSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.panelTitle}>דשבורד תפעולי יומי</Text>
+                <Text style={styles.sectionMeta}>
+                  {supervisorOversight
+                    ? renderHebrewNumericRuns(`עודכן ${formatSupervisorAuditTime(supervisorOversight.generatedAt)}`)
+                    : 'ללא נתוני דשבורד'}
+                </Text>
+              </View>
+
+              {supervisorOversight ? (
+                <>
+                  <View style={styles.supervisorOversightMetricsGrid}>
+                    <View style={styles.supervisorOversightMetricCard}>
+                      <Text style={styles.supervisorOversightMetricLabel}>הזמנות היום</Text>
+                      <Text style={styles.supervisorOversightMetricValue}>
+                        {renderHebrewNumericRuns(String(supervisorOversight.orders.totalOrders))}
+                      </Text>
+                    </View>
+                    <View style={styles.supervisorOversightMetricCard}>
+                      <Text style={styles.supervisorOversightMetricLabel}>ממתינות לניסיון חוזר</Text>
+                      <Text style={styles.supervisorOversightMetricValue}>
+                        {renderHebrewNumericRuns(String(supervisorOversight.orders.pendingRetryCount))}
+                      </Text>
+                    </View>
+                    <View style={styles.supervisorOversightMetricCard}>
+                      <Text style={styles.supervisorOversightMetricLabel}>כשלי ERP</Text>
+                      <Text style={styles.supervisorOversightMetricValue}>
+                        {renderHebrewNumericRuns(String(supervisorOversight.orders.failedCount))}
+                      </Text>
+                    </View>
+                    <View style={styles.supervisorOversightMetricCard}>
+                      <Text style={styles.supervisorOversightMetricLabel}>לקוחות ללא שיוך</Text>
+                      <Text style={styles.supervisorOversightMetricValue}>
+                        {renderHebrewNumericRuns(String(supervisorOversight.unassignedCustomers.total))}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.supervisorOversightColumns}>
+                    <View style={styles.supervisorOversightColumn}>
+                      <Text style={styles.supervisorBulkLabel}>הזמנות לפי סוכן</Text>
+                      {oversightByAgent.length === 0 ? (
+                        <Text style={styles.mutedText}>אין הזמנות בסלוט היומי.</Text>
+                      ) : (
+                        <View style={styles.supervisorOversightList}>
+                          {oversightByAgent.slice(0, 5).map((entry) => (
+                            <View
+                              key={entry.agentId ?? 'unassigned-agent'}
+                              style={styles.supervisorOversightRow}
+                            >
+                              <Text style={styles.supervisorOversightRowPrimary}>{entry.agentName}</Text>
+                              <Text style={styles.supervisorOversightRowMeta}>
+                                {renderHebrewNumericRuns(
+                                  `${entry.orderCount} הזמנות · ${formatCurrency(entry.totalAmount, 'ILS')}`,
+                                )}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.supervisorOversightColumn}>
+                      <Text style={styles.supervisorBulkLabel}>הזמנות לפי לקוח</Text>
+                      {oversightByCustomer.length === 0 ? (
+                        <Text style={styles.mutedText}>אין הזמנות בסלוט היומי.</Text>
+                      ) : (
+                        <View style={styles.supervisorOversightList}>
+                          {oversightByCustomer.slice(0, 5).map((entry) => (
+                            <View key={entry.customerId} style={styles.supervisorOversightRow}>
+                              <Text style={styles.supervisorOversightRowPrimary}>{entry.customerName}</Text>
+                              <Text style={styles.supervisorOversightRowMeta}>
+                                {renderHebrewNumericRuns(
+                                  `${entry.orderCount} הזמנות · ${formatCurrency(entry.totalAmount, 'ILS')}`,
+                                )}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.supervisorOversightColumn}>
+                    <Text style={styles.supervisorBulkLabel}>משפך הפעלה והמרה</Text>
+                    <Text style={styles.supervisorOversightRowMeta}>
+                      {renderHebrewNumericRuns(
+                        `קישורים ${supervisorOversight.funnel.magicLinksIssued} · ניסיונות ${supervisorOversight.funnel.activationAttempts} · הפעלות ${supervisorOversight.funnel.sessionsActivated} · הזמנות ${supervisorOversight.funnel.ordersSubmitted}`,
+                      )}
+                    </Text>
+                    <Text style={styles.supervisorOversightRowMeta}>
+                      {renderHebrewNumericRuns(
+                        `הצלחת הפעלה ${formatSupervisorOversightRate(supervisorOversight.funnel.activationSuccessRate)} · יחס קישור→סשן ${formatSupervisorOversightRate(supervisorOversight.funnel.linkToSessionConversionRate)} · יחס סשן→הזמנה ${formatSupervisorOversightRate(supervisorOversight.funnel.sessionToOrderConversionRate)}`,
+                      )}
+                    </Text>
+                  </View>
+
+                  <View style={styles.supervisorOversightColumn}>
+                    <Text style={styles.supervisorBulkLabel}>אותות ERP לטיפול</Text>
+                    {oversightErpSignals.length === 0 ? (
+                      <Text style={styles.mutedText}>אין כשלים או retries פתוחים להיום.</Text>
+                    ) : (
+                      <View style={styles.supervisorOversightList}>
+                        {oversightErpSignals.slice(0, 4).map((signal) => (
+                          <View key={signal.orderId} style={styles.supervisorOversightRow}>
+                            <Text style={styles.supervisorOversightRowPrimary}>
+                              {renderHebrewNumericRuns(`${signal.customerName} · ${formatSupervisorOrderStatus(signal.status)}`)}
+                            </Text>
+                            <Text style={styles.supervisorOversightRowMeta}>
+                              {renderHebrewNumericRuns(
+                                `${formatCurrency(signal.estimatedTotal, 'ILS')} · ${formatSupervisorAuditTime(signal.submittedAt)}`,
+                              )}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.mutedText}>לא הצלחנו לטעון נתוני דשבורד תפעולי כרגע.</Text>
+              )}
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>בחירת לקוח לניהול</Text>
+              {supervisorCustomers.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.mutedText}>אין לקוחות זמינים לניהול כרגע.</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
+                  {supervisorCustomers.map((customer) => {
+                    const isSelected = customer.customerId === selectedSupervisorCustomerId
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        key={customer.customerId}
+                        onPress={() => {
+                          setSelectedSupervisorCustomerId(customer.customerId)
+                        }}
+                        style={({ pressed }) => [
+                          styles.filterChip,
+                          isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                          pressed && styles.tabButtonPressed,
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                          {customer.name}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>ניהול גישת סוכנים</Text>
+              {supervisorFieldAgents.length === 0 ? (
+                <Text style={styles.mutedText}>לא נמצאו סוכנים לניהול גישה.</Text>
+              ) : (
+                <>
+                  <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
+                    {supervisorFieldAgents.map((agent) => {
+                      const isSelected = agent.agentId === selectedSupervisorAccessAgentId
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          key={agent.agentId}
+                          onPress={() => {
+                            setSelectedSupervisorAccessAgentId(agent.agentId)
+                          }}
+                          style={({ pressed }) => [
+                            styles.filterChip,
+                            isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                            pressed && styles.tabButtonPressed,
+                          ]}
+                        >
+                          <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                            {renderHebrewNumericRuns(`${agent.name} · ${agent.isActive ? 'פעיל' : 'מושבת'}`)}
+                          </Text>
+                        </Pressable>
+                      )
+                    })}
+                  </ScrollView>
+
+                  {selectedSupervisorAccessAgent ? (
+                    <Text style={styles.supervisorAgentHint}>
+                      {renderHebrewNumericRuns(
+                        `סטטוס: ${selectedSupervisorAccessAgent.isActive ? 'פעיל' : 'מושבת'} · ${selectedSupervisorAccessAgent.assignmentCount} לקוחות`,
+                      )}
+                    </Text>
+                  ) : null}
+
+                  <View style={styles.settingsActionRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={!canToggleAccess || isSupervisorMutating}
+                      onPress={() => {
+                        void toggleSupervisorAgentAccess()
+                      }}
+                      style={({ pressed }) => [
+                        styles.primaryButtonSmall,
+                        selectedSupervisorAccessAgent?.isActive ? styles.supervisorDangerActionButton : null,
+                        (!canToggleAccess || isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
+                      ]}
+                    >
+                      <Text
+                        style={
+                          selectedSupervisorAccessAgent?.isActive
+                            ? styles.supervisorDangerActionText
+                            : styles.primaryButtonText
+                        }
+                      >
+                        {selectedSupervisorAccessAgent?.isActive ? 'השבתת סוכן' : 'הפעלת סוכן'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={!canToggleAccess || isSupervisorMutating}
+                      onPress={() => {
+                        void forceLogoutSelectedSupervisorAgent()
+                      }}
+                      style={({ pressed }) => [
+                        styles.secondaryButtonSmall,
+                        (!canToggleAccess || isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
+                      ]}
+                    >
+                      <Text style={styles.secondaryButtonText}>ניתוק סשנים</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>יצירת חשבון סוכן חדש</Text>
+              <TextInput
+                accessibilityLabel="שם סוכן חדש"
+                onChangeText={(value) => {
+                  setSupervisorCreateAgentDraft((current) => ({ ...current, name: value }))
+                }}
+                placeholder="שם מלא"
+                style={styles.input}
+                value={supervisorCreateAgentDraft.name}
+              />
+              <TextInput
+                accessibilityLabel="טלפון סוכן חדש"
+                keyboardType="phone-pad"
+                onChangeText={(value) => {
+                  setSupervisorCreateAgentDraft((current) => ({ ...current, phone: value }))
+                }}
+                placeholder="טלפון"
+                style={styles.input}
+                value={supervisorCreateAgentDraft.phone}
+              />
+              <TextInput
+                accessibilityLabel="אימייל סוכן חדש"
+                keyboardType="email-address"
+                onChangeText={(value) => {
+                  setSupervisorCreateAgentDraft((current) => ({ ...current, email: value }))
+                }}
+                placeholder="אימייל (אופציונלי)"
+                style={styles.input}
+                value={supervisorCreateAgentDraft.email}
+              />
+              <TextInput
+                accessibilityLabel="סיסמה לסוכן חדש"
+                onChangeText={(value) => {
+                  setSupervisorCreateAgentDraft((current) => ({ ...current, password: value }))
+                }}
+                placeholder="סיסמה זמנית"
+                secureTextEntry
+                style={styles.input}
+                value={supervisorCreateAgentDraft.password}
+              />
+
+              <View style={styles.supervisorStatusRow}>
+                {SUPERVISOR_AGENT_ROLE_OPTIONS.map((option) => {
+                  const isSelected = supervisorCreateAgentDraft.role === option.value
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={option.value}
+                      onPress={() => {
+                        setSupervisorCreateAgentDraft((current) => ({ ...current, role: option.value }))
+                      }}
+                      style={({ pressed }) => [
+                        styles.filterChip,
+                        isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                        pressed && styles.tabButtonPressed,
+                      ]}
+                    >
+                      <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSupervisorMutating}
+                onPress={() => {
+                  void createSupervisorManagedAgent()
+                }}
+                style={({ pressed }) => [
+                  styles.primaryButtonSmallWide,
+                  (isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>יצירת חשבון סוכן</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>שיוך לקוח לסוכן</Text>
+              {assignableSupervisorAgents.length === 0 ? (
+                <Text style={styles.mutedText}>אין סוכנים פעילים זמינים לשיוך.</Text>
+              ) : (
+                <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
+                  {assignableSupervisorAgents.map((agent) => {
+                    const isSelected = agent.agentId === selectedSupervisorAgentId
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        key={agent.agentId}
+                        onPress={() => {
+                          setSelectedSupervisorAgentId(agent.agentId)
+                        }}
+                        style={({ pressed }) => [
+                          styles.filterChip,
+                          isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                          pressed && styles.tabButtonPressed,
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                          {agent.name}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </ScrollView>
+              )}
+
+              <View style={styles.settingsActionRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!canAssign || isSupervisorMutating}
+                  onPress={() => {
+                    void assignCustomerOwnership()
+                  }}
+                  style={({ pressed }) => [
+                    styles.primaryButtonSmallWide,
+                    (!canAssign || isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
+                  ]}
+                >
+                  <Text style={styles.primaryButtonText}>שיוך לסוכן נבחר</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.supervisorAssignmentList}>
+                {customerSelectionRequired ? (
+                  <Text style={styles.mutedText}>בחרו לקוח כדי לראות את השיוכים הקיימים.</Text>
+                ) : supervisorAssignments.length === 0 ? (
+                  <Text style={styles.mutedText}>ללקוח זה אין שיוכים פעילים כרגע.</Text>
+                ) : (
+                  supervisorAssignments.map((assignment) => (
+                    <View key={`${assignment.customerId}-${assignment.agentId}`} style={styles.supervisorAssignmentRow}>
+                      <View style={styles.supervisorAssignmentMeta}>
+                        <Text style={styles.supervisorAssignmentAgent}>
+                          {agentNameById.get(assignment.agentId) ?? assignment.agentId}
+                        </Text>
+                        <Text style={styles.supervisorAssignmentDate}>
+                          {renderHebrewNumericRuns(`שויך ב-${new Date(assignment.assignedAt).toLocaleString('he-IL')}`)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={isSupervisorMutating}
+                        onPress={() => {
+                          void unassignCustomerOwnership(assignment.agentId)
+                        }}
+                        style={({ pressed }) => [styles.linkButtonInline, (isSupervisorMutating || pressed) && styles.linkButtonDisabled]}
+                      >
+                        <Text style={styles.supervisorUnassignText}>הסר שיוך</Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>העברה מרוכזת בין סוכנים</Text>
+              {supervisorFieldAgents.length < 2 ? (
+                <Text style={styles.mutedText}>נדרשים לפחות שני סוכנים כדי להעביר עומס לקוחות.</Text>
+              ) : (
+                <>
+                  <View style={styles.supervisorBulkColumns}>
+                    <View style={styles.supervisorBulkColumn}>
+                      <Text style={styles.supervisorBulkLabel}>מסוכן מקור</Text>
+                      <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
+                        {supervisorFieldAgents.map((agent) => {
+                          const isSelected = agent.agentId === selectedSupervisorBulkFromAgentId
+                          return (
+                            <Pressable
+                              accessibilityRole="button"
+                              key={`bulk-from-${agent.agentId}`}
+                              onPress={() => {
+                                setSelectedSupervisorBulkFromAgentId(agent.agentId)
+                              }}
+                              style={({ pressed }) => [
+                                styles.filterChip,
+                                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                                pressed && styles.tabButtonPressed,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.filterChipText,
+                                  isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault,
+                                ]}
+                              >
+                                {agent.name}
+                              </Text>
+                            </Pressable>
+                          )
+                        })}
+                      </ScrollView>
+                    </View>
+
+                    <View style={styles.supervisorBulkColumn}>
+                      <Text style={styles.supervisorBulkLabel}>לסוכן יעד</Text>
+                      <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
+                        {bulkDestinationAgents.map((agent) => {
+                          const isSelected = agent.agentId === selectedSupervisorBulkToAgentId
+                          return (
+                            <Pressable
+                              accessibilityRole="button"
+                              key={`bulk-to-${agent.agentId}`}
+                              onPress={() => {
+                                setSelectedSupervisorBulkToAgentId(agent.agentId)
+                              }}
+                              style={({ pressed }) => [
+                                styles.filterChip,
+                                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                                pressed && styles.tabButtonPressed,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.filterChipText,
+                                  isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault,
+                                ]}
+                              >
+                                {agent.name}
+                              </Text>
+                            </Pressable>
+                          )
+                        })}
+                      </ScrollView>
+                    </View>
+                  </View>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={!canBulkReassign || isSupervisorMutating}
+                    onPress={() => {
+                      void bulkReassignSupervisorCustomersByAgent()
+                    }}
+                    style={({ pressed }) => [
+                      styles.primaryButtonSmallWide,
+                      (!canBulkReassign || isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
+                    ]}
+                  >
+                    <Text style={styles.primaryButtonText}>העברת כלל לקוחות המקור לסוכן היעד</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>עריכת פרופיל לקוח</Text>
+              <TextInput
+                accessibilityLabel="שם לקוח"
+                onChangeText={(value) => {
+                  setSupervisorProfileDraft((current) => ({ ...current, name: value }))
+                }}
+                placeholder="שם לקוח"
+                style={styles.input}
+                value={supervisorProfileDraft.name}
+              />
+              <TextInput
+                accessibilityLabel="איש קשר"
+                onChangeText={(value) => {
+                  setSupervisorProfileDraft((current) => ({ ...current, contactName: value }))
+                }}
+                placeholder="איש קשר"
+                style={styles.input}
+                value={supervisorProfileDraft.contactName}
+              />
+              <TextInput
+                accessibilityLabel="טלפון"
+                keyboardType="phone-pad"
+                onChangeText={(value) => {
+                  setSupervisorProfileDraft((current) => ({ ...current, phone: value }))
+                }}
+                placeholder="טלפון"
+                style={styles.input}
+                value={supervisorProfileDraft.phone}
+              />
+              <TextInput
+                accessibilityLabel="עיר"
+                onChangeText={(value) => {
+                  setSupervisorProfileDraft((current) => ({ ...current, city: value }))
+                }}
+                placeholder="עיר"
+                style={styles.input}
+                value={supervisorProfileDraft.city}
+              />
+              <TextInput
+                accessibilityLabel="הערות לקוח"
+                multiline
+                numberOfLines={3}
+                onChangeText={(value) => {
+                  setSupervisorProfileDraft((current) => ({ ...current, notes: value }))
+                }}
+                placeholder="הערות תפעוליות"
+                style={[styles.input, styles.supervisorNotesInput]}
+                textAlignVertical="top"
+                value={supervisorProfileDraft.notes}
+              />
+
+              <View style={styles.supervisorStatusRow}>
+                {SUPERVISOR_STATUS_OPTIONS.map((option) => {
+                  const isSelected = supervisorProfileDraft.status === option.value
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={option.value}
+                      onPress={() => {
+                        setSupervisorProfileDraft((current) => ({ ...current, status: option.value }))
+                      }}
+                      style={({ pressed }) => [
+                        styles.filterChip,
+                        isSelected ? styles.filterChipSelected : styles.filterChipDefault,
+                        pressed && styles.tabButtonPressed,
+                      ]}
+                    >
+                      <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSupervisorMutating || !selectedSupervisorCustomerId}
+                onPress={() => {
+                  void saveSupervisorCustomerProfile()
+                }}
+                style={({ pressed }) => [
+                  styles.primaryButtonSmallWide,
+                  (isSupervisorMutating || !selectedSupervisorCustomerId || pressed) && styles.primaryButtonDisabled,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>שמירת פרטי לקוח</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.panelSection}>
+              <Text style={styles.panelTitle}>יומן פעולות אחרונות</Text>
+              {isSupervisorAuditLoading ? (
+                <View style={styles.loadingState}>
+                  <ActivityIndicator />
+                  <Text style={styles.mutedText}>טוענים יומן פעולות…</Text>
+                </View>
+              ) : supervisorAuditEntries.length === 0 ? (
+                <Text style={styles.mutedText}>לא נמצאו פעולות חריגות להצגה.</Text>
+              ) : (
+                <View style={styles.supervisorAuditList}>
+                  {supervisorAuditEntries.map((entry) => (
+                    <View key={entry.id} style={styles.supervisorAuditRow}>
+                      <Text style={styles.supervisorAuditEvent}>{formatSupervisorAuditEvent(entry.eventType)}</Text>
+                      <Text style={styles.supervisorAuditMeta}>
+                        {renderHebrewNumericRuns(`${entry.actorId} · ${formatSupervisorAuditTime(entry.createdAt)}`)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </View>
+    )
+  }
+
   const renderSettingsTab = (): React.JSX.Element => (
     <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.settingsSync}>
       <View style={styles.settingsProfileCard}>
@@ -1965,12 +3282,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           imageStyle={styles.settingsAvatarImage}
         >
           <View style={styles.settingsAvatarScrim}>
-            <Text style={styles.settingsAvatarInitials}>{(profile?.name ?? 'אבי כהן').slice(0, 2)}</Text>
+            <Text style={styles.settingsAvatarInitials}>{profileDisplayName.slice(0, 2)}</Text>
           </View>
         </ImageBackground>
         <View style={styles.settingsProfileMeta}>
-          <Text style={styles.settingsProfileName}>{profile?.name ?? 'אבי כהן'}</Text>
-          <Text style={styles.settingsProfileSub}>סוכן מכירות אזורי</Text>
+          <Text style={styles.settingsProfileName}>{profileDisplayName}</Text>
+          <Text style={styles.settingsProfileSub}>{isSupervisorRole ? 'סופרווייזר מערכת' : 'סוכן מכירות אזורי'}</Text>
         </View>
       </View>
 
@@ -2083,10 +3400,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     </View>
   )
 
-  const connectionWarning = customersError ?? approvedItemsError ?? ordersError ?? homeOrdersError
-  const profileDisplayName = profile?.name ?? 'אבי כהן'
+  const connectionWarning = supervisorError ?? customersError ?? approvedItemsError ?? ordersError ?? homeOrdersError
+  const profileDisplayName = profile?.name ?? 'פרופיל לא זמין'
 
   const refreshActiveTab = useCallback(() => {
+    if (activeTab === 'supervisor') {
+      void loadSupervisorData()
+      return
+    }
+
     if (activeTab === 'orders') {
       void loadOrders()
       return
@@ -2095,8 +3417,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       void loadHomeOrdersSnapshot()
       return
     }
+
+    if (isSupervisorRole) {
+      void loadSupervisorData()
+      return
+    }
+
     void loadCustomers()
-  }, [activeTab, loadCustomers, loadHomeOrdersSnapshot, loadOrders])
+  }, [activeTab, isSupervisorRole, loadCustomers, loadHomeOrdersSnapshot, loadOrders, loadSupervisorData])
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
@@ -2152,6 +3480,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           {activeTab === 'home' ? renderDashboardTab() : null}
           {activeTab === 'customers' ? renderCustomersTab() : null}
           {activeTab === 'orders' ? renderOrdersTab() : null}
+          {activeTab === 'supervisor' ? renderSupervisorTab() : null}
           {activeTab === 'settings' ? renderSettingsTab() : null}
         </ScrollView>
       </Animated.View>
@@ -2165,7 +3494,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           },
         ]}
       >
-        {TAB_ITEMS.map((tab) => {
+        {tabItems.map((tab) => {
           const isActive = tab.id === activeTab
 
           return (
@@ -2183,6 +3512,11 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 setCatalogPage(1)
                 setMonthlyGoalDraft(String(monthlyGoalAmount))
                 setMonthlyGoalError(null)
+                setSupervisorError(null)
+                setSupervisorInfo(null)
+                if (tab.id !== 'supervisor') {
+                  setSupervisorAssignments([])
+                }
                 setActiveTab(tab.id)
               }}
               style={({ pressed }) => [styles.tabButton, isActive && styles.tabButtonActive, pressed && styles.tabButtonPressed]}
@@ -3057,6 +4391,167 @@ const styles = StyleSheet.create({
   },
   settingsGoalInput: {
     flex: 1,
+  },
+  supervisorOversightMetricsGrid: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  supervisorOversightMetricCard: {
+    flexGrow: 1,
+    minWidth: 132,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surfaceLow,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 2,
+  },
+  supervisorOversightMetricLabel: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  supervisorOversightMetricValue: {
+    color: palette.primaryContainer,
+    fontSize: scaledFont(18),
+    fontWeight: '800',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
+  },
+  supervisorOversightColumns: {
+    gap: spacing.sm,
+  },
+  supervisorOversightColumn: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surfaceLow,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  supervisorOversightList: {
+    gap: spacing.xs,
+  },
+  supervisorOversightRow: {
+    gap: 2,
+  },
+  supervisorOversightRowPrimary: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  supervisorOversightRowMeta: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  supervisorNotesInput: {
+    minHeight: 96,
+    paddingTop: 10,
+  },
+  supervisorStatusRow: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  supervisorAgentHint: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
+    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
+  },
+  supervisorDangerActionButton: {
+    backgroundColor: palette.dangerSurface,
+    borderWidth: 1,
+    borderColor: palette.danger,
+  },
+  supervisorDangerActionText: {
+    color: palette.danger,
+    fontWeight: '700',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  supervisorAssignmentList: {
+    gap: spacing.sm,
+  },
+  supervisorBulkColumns: {
+    gap: spacing.sm,
+  },
+  supervisorBulkColumn: {
+    gap: spacing.xs,
+  },
+  supervisorBulkLabel: {
+    color: palette.secondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  supervisorAssignmentRow: {
+    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: palette.outline,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: palette.surfaceLow,
+    gap: spacing.sm,
+  },
+  supervisorAssignmentMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  supervisorAssignmentAgent: {
+    color: palette.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  supervisorAssignmentDate: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
+  },
+  supervisorUnassignText: {
+    color: palette.danger,
+    fontSize: 13,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  supervisorAuditList: {
+    gap: spacing.sm,
+  },
+  supervisorAuditRow: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.outline,
+    backgroundColor: palette.surfaceLow,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 4,
+  },
+  supervisorAuditEvent: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  supervisorAuditMeta: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: NUMERIC_FONT_FAMILY,
+    fontVariant: ['tabular-nums'],
   },
   settingsProfileCard: {
     borderRadius: radius.lg,

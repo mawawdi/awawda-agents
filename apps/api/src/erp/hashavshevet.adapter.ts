@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import type { AgentCatalogItem } from '@awawda/shared-types';
 
 import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
+import { resolveHashEnvironment } from '../runtime/production-guardrails';
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
   ErpOrderCancelRequest,
@@ -76,7 +77,6 @@ const RETRYABLE_HANDOFF_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([
   ERP_ERROR_CODES.ERP_UNAVAILABLE,
   ERP_ERROR_CODES.ERP_TIMEOUT,
 ]);
-const DEFAULT_HASH_ENVIRONMENT: HashEnvironment = 'testing';
 const DEFAULT_HEALTH_PATH = '/health';
 const DEFAULT_ASSIGNED_CUSTOMERS_PATH = '/agents/{agentId}/customers';
 const DEFAULT_CATALOG_PATH = '/catalog/items';
@@ -231,6 +231,7 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
+      this.assertTestingFallbackAllowed('assigned-customers snapshot');
       return {
         source: 'hashavshevet',
         syncedAt: new Date().toISOString(),
@@ -255,6 +256,7 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
+      this.assertTestingFallbackAllowed('catalog snapshot');
       return {
         source: 'hashavshevet',
         syncedAt: new Date().toISOString(),
@@ -276,6 +278,7 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
+      this.assertTestingFallbackAllowed('recent-items snapshot');
       const now = new Date().toISOString();
       const [primaryItemId, secondaryItemId] = resolveFallbackTestingItemIds();
 
@@ -315,6 +318,7 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
+      this.assertTestingFallbackAllowed('pricing snapshot');
       const now = new Date().toISOString();
 
       return {
@@ -331,6 +335,17 @@ export class HashavshevetAdapter {
       }),
     );
     return this.mapPricingPayload(payload, customerId);
+  }
+
+  private assertTestingFallbackAllowed(surface: string): void {
+    if (this.config.environment !== 'production') {
+      return;
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_AUTH_FAILED,
+      `Testing fallback ${surface} is disabled in HASH_ENV=production. Configure live Hashavshevet credentials.`,
+    );
   }
 
   private mapAssignedCustomersPayload(payload: unknown): ErpGatewayAssignedCustomersSnapshot {
@@ -826,10 +841,37 @@ function loadHashavshevetConfig(env: NodeJS.ProcessEnv = process.env): Hashavshe
   const apiKey = resolveApiKey(environment, env);
 
   const hconnect = loadHConnectConfig(env);
+  const restEnabled = baseUrl.length > 0;
+
+  if (environment === 'production') {
+    const hasHconnectCredentials =
+      hconnect.station.length > 0 &&
+      hconnect.company.length > 0 &&
+      hconnect.netPassportId.length > 0 &&
+      hconnect.signatureToken !== null;
+
+    if (hconnect.enabled && !hasHconnectCredentials) {
+      throw new Error(
+        'HASH_ENV=production with HASH_HCONNECT_ENABLED=true requires HASH_HCONNECT_STATION, HASH_HCONNECT_COMPANY, HASH_HCONNECT_NET_PASSPORT_ID, and HASH_HCONNECT_SIGNATURE_TOKEN.',
+      );
+    }
+
+    if (!restEnabled && !(hconnect.enabled && hasHconnectCredentials)) {
+      throw new Error(
+        'HASH_ENV=production requires live Hashavshevet credentials. Configure HASH_API_URL/HASH_PROD_API_URL with key or enable HASH_HCONNECT with full credentials.',
+      );
+    }
+
+    if (restEnabled && apiKey === null && !(hconnect.enabled && hasHconnectCredentials)) {
+      throw new Error(
+        'HASH_ENV=production forbids unauthenticated Hashavshevet REST calls. Set HASH_API_KEY/HASH_PROD_API_KEY or enable HASH_HCONNECT with full credentials.',
+      );
+    }
+  }
 
   return {
     environment,
-    restEnabled: baseUrl.length > 0,
+    restEnabled,
     baseUrl,
     apiKey,
     requestTimeoutMs: resolvePositiveInteger(env.HASH_REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS),
@@ -874,11 +916,6 @@ function loadHConnectConfig(env: NodeJS.ProcessEnv): HConnectConfig {
       pricing: env.HASH_HCONNECT_REPORT_PRICING_PARAMS_JSON ?? null,
     },
   };
-}
-
-function resolveHashEnvironment(rawEnvironment: string | undefined): HashEnvironment {
-  const normalized = rawEnvironment?.trim().toLowerCase();
-  return normalized === 'production' ? 'production' : DEFAULT_HASH_ENVIRONMENT;
 }
 
 function resolveBaseUrl(environment: HashEnvironment, env: NodeJS.ProcessEnv): string {

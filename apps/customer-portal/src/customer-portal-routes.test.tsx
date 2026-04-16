@@ -140,6 +140,28 @@ describe('customer portal runtime routes', () => {
     expect(activateSession).toHaveBeenCalledWith('token-abc');
   });
 
+  it('does not use testing-assets fallback images in production runtime', async () => {
+    const runtimeGlobals = globalThis as { __CUSTOMER_PORTAL_RUNTIME_ENV__?: string };
+    const previousRuntimeEnv = runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__;
+    runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__ = 'production';
+
+    const activateSession = vi.fn(async () => activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    try {
+      renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-prod-block');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
+      });
+
+      expect(screen.queryByAltText('מוצר 2')).toBeNull();
+    } finally {
+      runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__ = previousRuntimeEnv;
+    }
+  });
+
   it('loads a recent order into cart on one click and paginates cards', async () => {
     __setPortalSessionForTests({
       sessionToken: 'session-123',

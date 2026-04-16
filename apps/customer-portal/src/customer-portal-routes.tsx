@@ -1240,6 +1240,10 @@ function formatPortalDateTime(now: Date = new Date()): string {
 }
 
 function buildTestingItemImageUrl(itemId: string): string | null {
+  if (isPortalProductionRuntime()) {
+    return null;
+  }
+
   const normalized = itemId.trim().toLowerCase();
   if (!normalized) {
     return null;
@@ -1349,6 +1353,20 @@ function resolveCatalogTitleLayout(cellDimension: number, itemName: string): Cat
 function resolvePortalApiBaseUrl(): string {
   const baseUrl = (globalThis as { __CUSTOMER_PORTAL_API_BASE_URL__?: string }).__CUSTOMER_PORTAL_API_BASE_URL__ ?? '/v1';
   return baseUrl.trim().replace(/\/+$/g, '');
+}
+
+function isPortalProductionRuntime(): boolean {
+  const explicitRuntime = (globalThis as { __CUSTOMER_PORTAL_RUNTIME_ENV__?: string }).__CUSTOMER_PORTAL_RUNTIME_ENV__;
+  const normalizedExplicitRuntime = explicitRuntime?.trim().toLowerCase();
+  if (normalizedExplicitRuntime === 'production') {
+    return true;
+  }
+
+  if (normalizedExplicitRuntime === 'testing' || normalizedExplicitRuntime === 'development') {
+    return false;
+  }
+
+  return false;
 }
 
 function DeterministicPlaceholder({

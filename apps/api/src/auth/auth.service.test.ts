@@ -7,6 +7,7 @@ import type { AuthAgentRepository, PasswordVerifier, ShiftTokenSigner } from './
 describe('AuthService', () => {
   const agentRepository: AuthAgentRepository = {
     findByPhoneOrEmail: vi.fn(),
+    findById: vi.fn(),
   };
 
   const passwordVerifier: PasswordVerifier = {
@@ -33,8 +34,10 @@ describe('AuthService', () => {
       name: 'Mona Parker',
       phone: '+972500000000',
       email: 'mona@example.com',
+      role: 'field_agent',
       passwordHash: 'argon-hash',
       isActive: true,
+      updatedAt: new Date('2026-04-16T10:00:00.000Z'),
     });
     vi.mocked(passwordVerifier.verify).mockResolvedValue(true);
     vi.mocked(tokenSigner.sign).mockReturnValue('jwt-token');
@@ -52,6 +55,7 @@ describe('AuthService', () => {
         name: 'Mona Parker',
         phone: '+972500000000',
         email: 'mona@example.com',
+        role: 'field_agent',
       },
     });
 
@@ -59,6 +63,7 @@ describe('AuthService', () => {
       {
         sub: 'agent-1',
         phone: '+972500000000',
+        role: 'field_agent',
         type: 'agent_shift',
       },
       28800,
@@ -82,14 +87,45 @@ describe('AuthService', () => {
     });
   });
 
+  it('returns supervisor role in agent profile when supervisor signs in', async () => {
+    vi.mocked(agentRepository.findByPhoneOrEmail).mockResolvedValue({
+      id: 'agent-sup-1',
+      name: 'Supervisor Salwa',
+      phone: '+972501100099',
+      email: 'supervisor.salwa@awawda.test',
+      role: 'supervisor',
+      passwordHash: 'argon-hash',
+      isActive: true,
+      updatedAt: new Date('2026-04-16T10:00:00.000Z'),
+    });
+    vi.mocked(passwordVerifier.verify).mockResolvedValue(true);
+    vi.mocked(tokenSigner.sign).mockReturnValue('jwt-token-supervisor');
+
+    await expect(
+      service.login({
+        phoneOrEmail: 'supervisor.salwa@awawda.test',
+        password: 'Password123',
+      }),
+    ).resolves.toMatchObject({
+      accessToken: 'jwt-token-supervisor',
+      expiresIn: 28800,
+      agentProfile: {
+        id: 'agent-sup-1',
+        role: 'supervisor',
+      },
+    });
+  });
+
   it('rejects invalid password with stable auth error', async () => {
     vi.mocked(agentRepository.findByPhoneOrEmail).mockResolvedValue({
       id: 'agent-1',
       name: 'Mona Parker',
       phone: '+972500000000',
       email: 'mona@example.com',
+      role: 'field_agent',
       passwordHash: 'argon-hash',
       isActive: true,
+      updatedAt: new Date('2026-04-16T10:00:00.000Z'),
     });
     vi.mocked(passwordVerifier.verify).mockResolvedValue(false);
 
@@ -113,8 +149,10 @@ describe('AuthService', () => {
       name: 'Mona Parker',
       phone: '+972500000000',
       email: 'mona@example.com',
+      role: 'field_agent',
       passwordHash: 'argon-hash',
       isActive: false,
+      updatedAt: new Date('2026-04-16T10:00:00.000Z'),
     });
 
     await expect(

@@ -5,7 +5,7 @@ import type {
   AgentMagicLinkIssueResponse,
 } from '@awawda/shared-types'
 
-export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'settings'
+export type AgentDashboardTabId = 'home' | 'customers' | 'orders' | 'supervisor' | 'settings'
 
 function toTitleCase(value: string): string {
   return value

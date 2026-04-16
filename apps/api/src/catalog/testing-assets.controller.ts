@@ -1,6 +1,7 @@
 import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { createReadStream } from 'node:fs';
 
+import { isProductionHashRuntime } from '../runtime/production-guardrails';
 import {
   getTestingCutAssetsVersion,
   type ResolvedTestingCutAsset,
@@ -17,6 +18,8 @@ export class TestingAssetsController {
     @Param('itemId') itemId: string,
     @Res() reply: { header(name: string, value: string): void; send(payload: unknown): void },
   ): Promise<void> {
+    this.assertTestingAssetsEnabled();
+
     const asset = resolveTestingCutAssetByItemId(itemId);
     if (!asset) {
       throw new NotFoundException('Testing image was not found for this item.');
@@ -31,6 +34,8 @@ export class TestingAssetsController {
     @Param('fileName') fileName: string,
     @Res() reply: { header(name: string, value: string): void; send(payload: unknown): void },
   ): Promise<void> {
+    this.assertTestingAssetsEnabled();
+
     const asset = resolveTestingCutAssetByPath(species, fileName);
     if (!asset) {
       throw new NotFoundException('Testing image was not found.');
@@ -49,5 +54,13 @@ export class TestingAssetsController {
     reply.header('Vary', 'Accept-Encoding');
     reply.header('X-Testing-Assets-Version', getTestingCutAssetsVersion());
     reply.send(createReadStream(asset.absolutePath));
+  }
+
+  private assertTestingAssetsEnabled(): void {
+    if (!isProductionHashRuntime()) {
+      return;
+    }
+
+    throw new NotFoundException('Testing assets route is disabled in HASH_ENV=production.');
   }
 }

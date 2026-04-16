@@ -37,12 +37,24 @@ enum AuditActorType {
   SYSTEM
 }
 
+enum AgentRole {
+  FIELD_AGENT
+  SUPERVISOR
+}
+
+enum CustomerProfileStatus {
+  ACTIVE
+  INACTIVE
+  ON_HOLD
+}
+
 model Agent {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String         @db.VarChar(120)
   phone         String         @unique @db.VarChar(32)
   email         String?        @unique @db.VarChar(255)
   passwordHash  String         @map("password_hash") @db.VarChar(255)
+  role          AgentRole      @default(FIELD_AGENT)
   isActive      Boolean        @default(true) @map("is_active")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -183,4 +195,21 @@ model AuditLog {
   @@index([eventType], map: "audit_logs_event_type_idx")
   @@index([createdAt], map: "audit_logs_created_at_idx")
   @@map("audit_logs")
+}
+
+model CustomerProfile {
+  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hashCustomerId String               @unique @map("hash_customer_id") @db.VarChar(128)
+  name          String                @db.VarChar(255)
+  contactName   String?               @map("contact_name") @db.VarChar(255)
+  phone         String?               @db.VarChar(32)
+  city          String?               @db.VarChar(120)
+  notes         String?               @db.Text
+  status        CustomerProfileStatus @default(ACTIVE)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status], map: "customer_profiles_status_idx")
+  @@index([city], map: "customer_profiles_city_idx")
+  @@map("customer_profiles")
 }

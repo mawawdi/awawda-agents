@@ -4,10 +4,33 @@ import { PrismaClient } from "@prisma/client"
 
 import { buildTestingCatalogItems } from "../src/catalog/data/testing-cuts-catalog"
 
-const DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/awawda?schema=public"
+const DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55432/awawda?schema=public"
 
 if (!process.env.DATABASE_URL) {
 	process.env.DATABASE_URL = DEFAULT_DATABASE_URL
+}
+
+function assertUnambiguousDatabaseUrl(databaseUrl: string): void {
+	const parsed = new URL(databaseUrl)
+	if (parsed.hostname.trim().toLowerCase() === "localhost") {
+		throw new Error(
+			'DATABASE_URL must not use "localhost". Use 127.0.0.1 with an explicit port (local infra: 55432, deploy stack: 55433).',
+		)
+	}
+}
+
+function maskDatabaseUrl(databaseUrl: string): string {
+	const parsed = new URL(databaseUrl)
+	if (parsed.password.length > 0) {
+		parsed.password = "***"
+	}
+	return parsed.toString()
+}
+
+const isProductionNodeRuntime = process.env.NODE_ENV?.trim().toLowerCase() === "production"
+const isProductionHashRuntime = process.env.HASH_ENV?.trim().toLowerCase() === "production"
+if (isProductionNodeRuntime || isProductionHashRuntime) {
+	throw new Error("seed:testing is blocked in production runtime/config. Use only in testing or local environments.")
 }
 
 const prisma = new PrismaClient()
@@ -17,10 +40,30 @@ const TEST_AGENTS: Array<{
 	phone: string
 	email: string
 	password: string
+	role: "FIELD_AGENT" | "SUPERVISOR"
 }> = [
-	{ name: "Parpar", phone: "+972500000000", email: "parpar@awawda.test", password: "Password123" },
-	{ name: "Mohammed Jabarin", phone: "+972501100001", email: "mohammed.jabarin@awawda.test", password: "Password123" },
-	{ name: "Keneret", phone: "+972501100002", email: "keneret@awawda.test", password: "Password123" },
+	{ name: "Parpar", phone: "+972500000000", email: "parpar@awawda.test", password: "Password123", role: "FIELD_AGENT" },
+	{
+		name: "Mohammed Jabarin",
+		phone: "+972501100001",
+		email: "mohammed.jabarin@awawda.test",
+		password: "Password123",
+		role: "FIELD_AGENT",
+	},
+	{
+		name: "Keneret",
+		phone: "+972501100002",
+		email: "keneret@awawda.test",
+		password: "Password123",
+		role: "FIELD_AGENT",
+	},
+	{
+		name: "Supervisor Omar",
+		phone: "+972501100099",
+		email: "omar@awawda.test",
+		password: "Password123",
+		role: "SUPERVISOR",
+	},
 ]
 
 const TEST_CUSTOMERS: string[] = [
@@ -58,12 +101,27 @@ const TEST_CUSTOMERS: string[] = [
 
 const TEST_CATALOG_ITEM_IDS: string[] = buildTestingCatalogItems().map((item) => item.itemId)
 
+const PROFILE_STATUSES = ["ACTIVE", "INACTIVE", "ON_HOLD"] as const
+
 if (TEST_CATALOG_ITEM_IDS.length === 0) {
 	throw new Error("No testing cut images were found. Expected files under apps/api/public/testing-cuts-images.")
 }
 
 function hasLatinCustomerSlug(customerId: string): boolean {
 	return /[A-Za-z]/.test(customerId.replace(/^cust-/i, ""))
+}
+
+function buildCustomerNameFromId(customerId: string): string {
+	return customerId.replace(/^cust-/, "").replaceAll("-", " ")
+}
+
+function buildCustomerContactName(customerName: string): string {
+	return `איש קשר ${customerName}`
+}
+
+function inferCityFromCustomerId(customerId: string): string {
+	const segments = customerId.replace(/^cust-/, "").split("-")
+	return segments[segments.length - 1] ?? "לא ידוע"
 }
 
 function resolveDatabaseName(databaseUrl: string): string {
@@ -132,6 +190,8 @@ async function main(): Promise<void> {
 	if (!process.env.DATABASE_URL) {
 		throw new Error("DATABASE_URL is not configured.")
 	}
+	assertUnambiguousDatabaseUrl(process.env.DATABASE_URL)
+	console.log(`Seeding testing data into ${maskDatabaseUrl(process.env.DATABASE_URL)}`)
 
 	await ensureDatabaseExists(process.env.DATABASE_URL)
 	runPrismaMigrateDeploy()
@@ -146,6 +206,7 @@ async function main(): Promise<void> {
 				name: agent.name,
 				email: agent.email,
 				passwordHash,
+				role: agent.role,
 				isActive: true,
 			},
 			create: {
@@ -153,6 +214,7 @@ async function main(): Promise<void> {
 				phone: agent.phone,
 				email: agent.email,
 				passwordHash,
+				role: agent.role,
 				isActive: true,
 			},
 			select: { id: true, name: true, email: true, phone: true },
@@ -244,6 +306,14 @@ async function main(): Promise<void> {
 		},
 	})
 
+	await prisma.customerProfile.deleteMany({
+		where: {
+			hashCustomerId: {
+				in: customerIdsToReset,
+			},
+		},
+	})
+
 	await prisma.assignment.deleteMany({
 		where: {
 			agentId: {
@@ -293,6 +363,22 @@ async function main(): Promise<void> {
 
 	await prisma.approvedItem.createMany({
 		data: approvedRows,
+		skipDuplicates: true,
+	})
+
+	await prisma.customerProfile.createMany({
+		data: TEST_CUSTOMERS.map((customerId, index) => {
+			const customerName = buildCustomerNameFromId(customerId)
+			return {
+				hashCustomerId: customerId,
+				name: customerName,
+				contactName: buildCustomerContactName(customerName),
+				phone: `+97252${(1000000 + index).toString().padStart(7, "0")}`,
+				city: inferCityFromCustomerId(customerId),
+				notes: index % 5 === 0 ? "לקוח עם עדיפות שירות גבוהה." : null,
+				status: PROFILE_STATUSES[index % PROFILE_STATUSES.length],
+			}
+		}),
 		skipDuplicates: true,
 	})
 

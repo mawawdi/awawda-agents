@@ -3,7 +3,12 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { loginAgent } from '../api/auth-client'
 import { type AgentProfile, type LoginInput } from './contracts'
 import { getAuthFailureMessage } from './errors'
-import { clearSessionToken, persistSessionToken, readSessionToken } from '../session/session-storage'
+import {
+  clearSessionToken,
+  persistSessionToken,
+  readSessionProfile,
+  readSessionToken,
+} from '../session/session-storage'
 
 type AuthState = {
   status: 'loading' | 'authenticated' | 'unauthenticated'
@@ -33,8 +38,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
       try {
         const existingToken = await readSessionToken()
         if (existingToken) {
-          setState({ status: 'authenticated', token: existingToken, profile: null, errorMessage: null })
-          return
+          const existingProfile = await readSessionProfile()
+          if (existingProfile) {
+            setState({
+              status: 'authenticated',
+              token: existingToken,
+              profile: existingProfile,
+              errorMessage: null,
+            })
+            return
+          }
+
+          await clearSessionToken()
         }
       } catch {
         await clearSessionToken()
@@ -51,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
     try {
       const result = await loginAgent(input)
-      await persistSessionToken(result.accessToken)
+      await persistSessionToken(result.accessToken, result.agentProfile)
       setState({
         status: 'authenticated',
         token: result.accessToken,

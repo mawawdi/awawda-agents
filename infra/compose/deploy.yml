@@ -20,7 +20,7 @@ services:
     networks:
       - awawda-deploy
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-55433}:5432"
 
   redis:
     image: redis:7.2.5-alpine
@@ -45,6 +45,8 @@ services:
     env_file:
       - ./deploy.env
     environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      HASH_ENV: ${HASH_ENV:-testing}
       HOST: 0.0.0.0
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-awawda}?schema=public

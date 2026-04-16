@@ -10,6 +10,7 @@ export const AGENT_PROFILE_SCHEMA = z.object({
   name: z.string().trim().min(1),
   phone: z.string().trim().min(1),
   email: z.string().trim().email().nullable(),
+  role: z.enum(['field_agent', 'supervisor']),
 })
 
 export const LOGIN_RESPONSE_SCHEMA = z.object({

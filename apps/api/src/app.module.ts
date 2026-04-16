@@ -9,6 +9,7 @@ import { LinksModule } from './links/links.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReadyModule } from './ready/ready.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { SupervisorModule } from './supervisor/supervisor.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SessionsModule } from './sessions/sessions.module';
     LinksModule,
     SessionsModule,
     OrdersModule,
+    SupervisorModule,
     ErpModule,
   ],
 })

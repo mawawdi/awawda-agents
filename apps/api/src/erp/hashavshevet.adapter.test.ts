@@ -154,6 +154,29 @@ describe.sequential('HashavshevetAdapter', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('fails fast when HASH_ENV=production has no live credentials', () => {
+    process.env.HASH_ENV = 'production';
+
+    expect(() => new HashavshevetAdapter()).toThrow(
+      'HASH_ENV=production requires live Hashavshevet credentials',
+    );
+  });
+
+  it('blocks testing fallback snapshots in HASH_ENV=production', async () => {
+    process.env.HASH_ENV = 'production';
+    process.env.HASH_HCONNECT_ENABLED = 'true';
+    process.env.HASH_HCONNECT_STATION = 'station-prod';
+    process.env.HASH_HCONNECT_COMPANY = 'company-prod';
+    process.env.HASH_HCONNECT_NET_PASSPORT_ID = '50000';
+    process.env.HASH_HCONNECT_SIGNATURE_TOKEN = 'prod-signature';
+
+    const adapter = new HashavshevetAdapter();
+    await expect(adapter.getMasterCatalog()).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_AUTH_FAILED,
+      message: expect.stringContaining('Testing fallback catalog snapshot is disabled in HASH_ENV=production'),
+    } satisfies Partial<ErpGatewayError>);
+  });
+
   it('surfaces stable ERP validation errors when response shape is invalid', async () => {
     process.env.HASH_API_URL = 'https://hash.example/api';
     vi.spyOn(globalThis, 'fetch')

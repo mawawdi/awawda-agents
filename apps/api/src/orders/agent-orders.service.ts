@@ -3,6 +3,7 @@ import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@awawda/shar
 
 import { ERP_GATEWAY, type ErpGateway } from '../erp/erp.gateway';
 import { isErpGatewayError } from '../erp/erp.errors';
+import { resolveHashEnvironment } from '../runtime/production-guardrails';
 import { AGENT_ORDERS_REPOSITORY } from './orders.constants';
 import { AgentOrderCancelUnavailableError, AgentOrderNotFoundError } from './agent-orders.errors';
 import type { AgentOrdersQuery, AgentOrdersRepository } from './agent-orders.types';
@@ -39,7 +40,7 @@ export class AgentOrdersService {
       throw new AgentOrderNotFoundError(orderId);
     }
 
-    const isTestingMode = (process.env.HASH_ENV ?? 'testing').trim().toLowerCase() !== 'production';
+    const isTestingMode = resolveHashEnvironment(process.env.HASH_ENV) !== 'production';
     if (!isTestingMode) {
       if (!this.erpGateway.cancelOrder) {
         throw new AgentOrderCancelUnavailableError();

@@ -13,6 +13,7 @@ const loginResponse = {
 		name: "יוסי כהן",
 		phone: "054-9876543",
 		email: "yossi@example.com",
+		role: "field_agent",
 	},
 }
 

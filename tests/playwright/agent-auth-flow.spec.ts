@@ -15,6 +15,7 @@ const LOGIN_RESPONSE = {
     name: 'Line Agent',
     phone: '+972500000000',
     email: 'agent@awawda.local',
+    role: 'field_agent',
   },
 }
 

@@ -138,6 +138,49 @@ Scope:
 
 ---
 
+## 4.1 Current implementation status (2026-04-16)
+
+### Implemented
+
+- **Isolation guardrails**
+  - production startup guardrails enforce `NODE_ENV=production` + `HASH_ENV=production`.
+  - testing-only paths are blocked in production (`testing-assets` and testing seed behavior).
+  - deploy templates now separate testing vs production env wiring.
+
+- **Supervisor backend APIs**
+  - `GET /v1/supervisor/agents`
+  - `POST /v1/supervisor/agents`
+  - `POST /v1/supervisor/agents/:agentId/force-logout`
+  - `GET /v1/supervisor/customers`
+  - `GET /v1/supervisor/customer-profiles`
+  - `GET /v1/supervisor/customers/:customerId/assignments`
+  - `POST /v1/supervisor/customers/:customerId/assignments`
+  - `DELETE /v1/supervisor/customers/:customerId/assignments/:agentId`
+  - `PATCH /v1/supervisor/customers/:customerId/profile`
+  - `PATCH /v1/supervisor/agents/:agentId/access`
+  - `POST /v1/supervisor/customers/bulk-reassign`
+  - `GET /v1/supervisor/audit`
+  - `GET /v1/supervisor/oversight`
+  - all privileged mutations emit audit events with actor and payload context.
+
+- **Supervisor mobile control-plane**
+  - role-gated supervisor tab is live in `agent-mobile`.
+  - supports agent creation, forced logout, customer assignment/unassignment, customer profile updates, agent access toggle, bulk reassignment, recent audit timeline viewing, and daily oversight analytics (orders, unassigned customers, ERP board, activation funnel).
+
+- **Auth guard hardening**
+  - agent JWT auth now re-checks agent state from DB on each request.
+  - deactivated agents are rejected immediately even if they still hold a previously issued token.
+
+- **Production deploy preflight gate**
+  - `pnpm deploy:up:prod` now runs `deploy:verify:prod` before compose startup.
+  - the gate hard-fails when effective production Hash config resolves to testing URL/key values or missing production credentials.
+
+### Remaining from this spec
+
+- no open MVP gaps; future work is optional nice-to-have items from section 3.
+
+---
+
 ## 5) Acceptance criteria
 
 - No production deployment can run with testing Hash configuration.

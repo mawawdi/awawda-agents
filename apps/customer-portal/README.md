@@ -26,5 +26,6 @@ The portal reads API base URL from `globalThis.__CUSTOMER_PORTAL_API_BASE_URL__`
 
 - Local/dev default: `/v1` (`public/runtime-config.js`)
 - Container deploy override: `CUSTOMER_PORTAL_API_BASE_URL` env var (in `infra/compose/deploy.env`)
+- Optional runtime guardrail: set `globalThis.__CUSTOMER_PORTAL_RUNTIME_ENV__ = "production"` to disable testing-assets image fallback URLs in production portal runtime.
 
 > Note: `GET /v1/...` browser hits on write endpoints are not valid API calls. Portal mutations are `POST` calls via the app runtime.

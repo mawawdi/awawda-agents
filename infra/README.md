@@ -18,6 +18,7 @@ Or use workspace scripts:
 - `pnpm infra:local:ps`
 - `pnpm infra:local:down`
 - `pnpm infra:local:reset`
+- `pnpm infra:local:refresh:data`
 
 ## Deploy stack (API + Customer Portal + PostgreSQL + Redis)
 
@@ -29,6 +30,7 @@ Or use workspace scripts:
 pnpm deploy:up
 pnpm deploy:up:test
 pnpm deploy:up:prod
+pnpm deploy:test
 ```
 
 4. Check service state:
@@ -43,4 +45,12 @@ pnpm deploy:ps
 pnpm deploy:down
 ```
 
-> While deploy stack is running, API traffic on `localhost:3000` uses deploy containers (API + Postgres), not your separate local-dev database process.
+To wipe deploy volumes and reseed testing data:
+
+```bash
+pnpm deploy:refresh:data
+```
+
+`pnpm deploy:test` now uses this same fresh bootstrap flow before starting mobile.
+
+> While deploy stack is running, API traffic on `localhost:3000` uses deploy containers (API + Postgres), not your separate local-dev database process. Local infra Postgres is exposed on `127.0.0.1:55432`; deploy Postgres is exposed on `127.0.0.1:55433`.

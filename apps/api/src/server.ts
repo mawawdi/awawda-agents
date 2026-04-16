@@ -5,6 +5,7 @@ import { NestFactory } from "@nestjs/core"
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify"
 
 import { AppModule } from "./app.module"
+import { assertProductionRuntimeGuardrails } from "./runtime/production-guardrails"
 
 const DEFAULT_API_BODY_LIMIT_BYTES = 1024 * 1024
 
@@ -39,6 +40,8 @@ function resolveApiBodyLimit(): number {
 }
 
 export async function createApiApp(): Promise<NestFastifyApplication> {
+	assertProductionRuntimeGuardrails()
+
 	const app = await NestFactory.create<NestFastifyApplication>(
 		AppModule,
 		new FastifyAdapter({

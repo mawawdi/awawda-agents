@@ -12,7 +12,8 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @awawda/api test` — run API tests
 - `pnpm --filter @awawda/api build` — compile TypeScript to `dist/`
 - `pnpm --filter @awawda/api prisma:migrate:deploy` — run migrations in deploy environments
-- `pnpm --filter @awawda/api seed:testing` — create DB if missing, run `prisma migrate deploy`, then seed realistic **testing-only** agents/customers/approved-items data
+- `pnpm --filter @awawda/api seed:testing` — seed local infra DB (`127.0.0.1:55432`) with realistic **testing-only** agents/customers/approved-items data
+- `pnpm --filter @awawda/api seed:testing:deploy` — seed deploy-stack DB (`127.0.0.1:55433`) from host
 
 ## Operational routes
 
@@ -26,6 +27,19 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `POST /v1/agent/customers/:customerId/magic-links` — issue secure customer magic links with hash-only token persistence
 - `POST /v1/customer/session/logout` — authenticated customer-session close to invalidate active ordering session
 - `POST /v1/customer/orders` — idempotent order submit; returns actionable `503 CUSTOMER_ORDER_ERP_UNAVAILABLE` on ERP outages
+- `GET /v1/supervisor/agents` — supervisor-only agent roster with role/activity/assignment counts
+- `POST /v1/supervisor/agents` — supervisor-only agent account creation (name/phone/email/password/role) with audit logging
+- `POST /v1/supervisor/agents/:agentId/force-logout` — supervisor-only forced logout for active JWT sessions of an agent
+- `GET /v1/supervisor/customers` — supervisor-only customer list with assignment metadata
+- `GET /v1/supervisor/customer-profiles` — supervisor-only profile list for editable customer metadata
+- `GET /v1/supervisor/customers/:customerId/assignments` — supervisor-only ownership links for a customer
+- `POST /v1/supervisor/customers/:customerId/assignments` — supervisor-only assign/reassign customer ownership to a field agent
+- `DELETE /v1/supervisor/customers/:customerId/assignments/:agentId` — supervisor-only ownership removal endpoint
+- `PATCH /v1/supervisor/customers/:customerId/profile` — supervisor-only customer profile update (name/contact/phone/city/notes/status)
+- `PATCH /v1/supervisor/agents/:agentId/access` — supervisor-only activate/deactivate agent access with audit logging
+- `POST /v1/supervisor/customers/bulk-reassign` — supervisor-only bulk reassignment from source agent to target agent
+- `GET /v1/supervisor/audit` — supervisor-only audit timeline with actor/customer/event/time filters + pagination
+- `GET /v1/supervisor/oversight` — supervisor-only daily oversight snapshot (orders by agent/customer, unassigned customers, ERP retry/failure board, activation funnel)
 
 `GET /v1/agent/auth/login` is expected to return `404 Not Found` because login is a mutation endpoint and only supports `POST`.
 
@@ -48,7 +62,8 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 
 ## Hashavshevet pull environment variables
 
-- `HASH_ENV` (optional): `testing` or `production` (`testing` default)
+- `NODE_ENV` (optional): set `production` in deploy runtime; startup now fails fast if production guardrails are violated
+- `HASH_ENV` (optional): `testing` or `production` (`testing` default). In `NODE_ENV=production`, this must be `production`.
 - `HASH_TEST_API_URL` / `HASH_TEST_API_KEY` (optional): testing endpoint credentials
 - `HASH_PROD_API_URL` / `HASH_PROD_API_KEY` (optional): production endpoint credentials
 - `HASH_API_URL` / `HASH_API_KEY` (optional): explicit override for current environment
@@ -71,6 +86,13 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `HASH_HCONNECT_HANDOFF_DOCUMENT_ID` (optional): `imovein` document id (`30` default)
 - `HASH_HCONNECT_HANDOFF_ACCOUNT_KEY` (optional): fixed account key override for handoff payloads
 
+### Production guardrails (fail-fast)
+
+- Production startup is blocked unless `HASH_ENV=production` and live Hashavshevet credentials are configured.
+- `HASH_ENV=production` blocks all testing fallback snapshots (catalog/recent/pricing/assigned-customer mock data).
+- `GET /v1/testing-assets/...` is disabled in production hash runtime.
+- `pnpm --filter @awawda/api seed:testing` is blocked when `NODE_ENV=production` or `HASH_ENV=production`.
+
 Quick switch:
 
 ```bash
@@ -84,6 +106,9 @@ Deploy with explicit Hash mode from repo root:
 pnpm deploy:up:test
 pnpm deploy:up:prod
 ```
+
+- `deploy:up:test` sets `NODE_ENV=development` + `HASH_ENV=testing`.
+- `deploy:up:prod` sets `NODE_ENV=production` + `HASH_ENV=production`.
 
 ## Readiness environment variables
 
@@ -106,6 +131,7 @@ Phase-1 domain scaffolds are in place and isolated by module:
 - `links`
 - `sessions`
 - `orders`
+- `supervisor`
 - `erp`
 
 ## Local infra dependencies (PostgreSQL + Redis)
@@ -116,7 +142,7 @@ From repo root, start local runtime dependencies:
 pnpm infra:local:up
 ```
 
-`apps/api/.env.example` points to this stack (`localhost:5432` and `localhost:6379`).
+`apps/api/.env.example` points to this stack (`127.0.0.1:55432` and `localhost:6379`).
 Use `pnpm infra:local:ps` to verify health before running API flows.
 
 ## Prisma domain schema (T06)
@@ -131,7 +157,7 @@ Run from repository root:
 
 ```bash
 docker compose -f infra/compose/local.yml up -d postgres
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/awawda?schema=public pnpm --filter @awawda/api prisma:migrate:deploy
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55432/awawda?schema=public pnpm --filter @awawda/api prisma:migrate:deploy
 ```
 
 If Docker is unavailable, reviewers can still reproduce schema parity from an empty DB model with:
@@ -158,7 +184,7 @@ pnpm --filter @awawda/api seed:testing
 
 This seeds:
 
-- realistic test agents (`Parpar`, `Mohammed Jabarin`, `Keneret`; all with password `Password123`)
+- realistic test agents (`Parpar`, `Mohammed Jabarin`, `Keneret`, `Supervisor Omar`; all with password `Password123`)
 - realistic customer assignment IDs
 - broad approved-items coverage across customers
 - fallback catalog metadata with per-cut icon/image fields (`iconEmoji`, `imageUrl`) for UI testing
@@ -168,3 +194,10 @@ This seeds:
 When `pnpm deploy:up` is running, `http://localhost:3000` is served by the containerized API and its containerized Postgres from `infra/compose/deploy.yml`.
 
 Always seed the same DB your active API process is using. Seeding a different local Postgres instance will not affect credentials/orders for the running deploy API.
+
+To avoid local-vs-deploy drift, use one of these refresh flows from repo root:
+
+```bash
+pnpm infra:local:refresh:data   # local infra + local seed
+pnpm deploy:refresh:data        # deploy stack + deploy seed
+```

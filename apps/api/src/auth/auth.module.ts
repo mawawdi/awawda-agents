@@ -14,6 +14,7 @@ import { PrismaAuthAgentRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { Argon2PasswordVerifier } from './password-verifier';
 import { JwtShiftTokenSigner } from './shift-token-signer';
+import { SupervisorAuthGuard } from './supervisor-auth.guard';
 
 @Module({
   controllers: [AuthController],
@@ -24,6 +25,7 @@ import { JwtShiftTokenSigner } from './shift-token-signer';
     Argon2PasswordVerifier,
     JwtShiftTokenSigner,
     AgentAuthGuard,
+    SupervisorAuthGuard,
     {
       provide: AUTH_CONFIG,
       useFactory: loadAuthConfig,
@@ -41,6 +43,6 @@ import { JwtShiftTokenSigner } from './shift-token-signer';
       useExisting: JwtShiftTokenSigner,
     },
   ],
-  exports: [AgentAuthGuard, AUTH_CONFIG],
+  exports: [AgentAuthGuard, SupervisorAuthGuard, AUTH_CONFIG, AUTH_AGENT_REPOSITORY],
 })
 export class AuthModule {}

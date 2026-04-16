@@ -1,8 +1,11 @@
+export type AgentRole = 'field_agent' | 'supervisor';
+
 export interface AgentProfile {
   id: string;
   name: string;
   phone: string;
   email: string | null;
+  role: AgentRole;
 }
 
 export interface AgentLoginRequest {
@@ -90,6 +93,256 @@ export interface AgentOrderCancelResponse {
   status: 'cancelled';
   canceledAt: string;
   mode: 'testing_local_delete' | 'hashavshevet';
+}
+
+export type SupervisorCustomerStatus = 'active' | 'inactive' | 'on_hold';
+
+export interface SupervisorCustomerProfile {
+  customerId: string;
+  name: string;
+  contactName: string | null;
+  phone: string | null;
+  city: string | null;
+  notes: string | null;
+  status: SupervisorCustomerStatus;
+  updatedAt: string;
+}
+
+export interface SupervisorCustomerProfileUpdateRequest {
+  name?: string;
+  contactName?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  notes?: string | null;
+  status?: SupervisorCustomerStatus;
+  reason?: string | null;
+}
+
+export type SupervisorCustomerProfileUpdateResponse = SupervisorCustomerProfile;
+
+export interface SupervisorCustomerProfileListResponse {
+  customers: SupervisorCustomerProfile[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface SupervisorAgentOverview {
+  agentId: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  role: AgentRole;
+  isActive: boolean;
+  assignmentCount: number;
+}
+
+export interface SupervisorAgentsResponse {
+  agents: SupervisorAgentOverview[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface SupervisorAgentCreateRequest {
+  name: string;
+  phone: string;
+  email?: string | null;
+  password: string;
+  role?: AgentRole;
+}
+
+export interface SupervisorAgentCreateResponse {
+  agent: SupervisorAgentOverview;
+  createdAt: string;
+}
+
+export interface SupervisorAgentAccessUpdateRequest {
+  isActive: boolean;
+  reason?: string | null;
+}
+
+export interface SupervisorAgentAccessUpdateResponse {
+  agent: SupervisorAgentOverview;
+  changed: boolean;
+  reason: string | null;
+  updatedAt: string;
+}
+
+export interface SupervisorAgentForceLogoutRequest {
+  reason?: string | null;
+}
+
+export interface SupervisorAgentForceLogoutResponse {
+  agentId: string;
+  revoked: boolean;
+  reason: string | null;
+  revokedAt: string;
+}
+
+export interface SupervisorCustomerAssignmentMetadata {
+  assignmentCount: number;
+  assignedAgentIds: string[];
+  lastAssignedAt: string | null;
+}
+
+export interface SupervisorCustomerOverview extends SupervisorCustomerProfile {
+  assignment: SupervisorCustomerAssignmentMetadata;
+}
+
+export interface SupervisorCustomersResponse {
+  customers: SupervisorCustomerOverview[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface SupervisorAgentAssignment {
+  customerId: string;
+  agentId: string;
+  assignedAt: string;
+}
+
+export interface SupervisorCustomerAssignmentsResponse {
+  customerId: string;
+  assignments: SupervisorAgentAssignment[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface SupervisorCustomerAssignAgentRequest {
+  agentId: string;
+}
+
+export interface SupervisorCustomerAssignAgentResponse {
+  customerId: string;
+  assignment: SupervisorAgentAssignment;
+  created: boolean;
+}
+
+export interface SupervisorCustomerUnassignAgentResponse {
+  customerId: string;
+  agentId: string;
+  removed: boolean;
+  removedAt: string;
+}
+
+export interface SupervisorBulkReassignRequest {
+  fromAgentId: string;
+  toAgentId: string;
+  customerIds?: string[];
+  reason?: string | null;
+}
+
+export interface SupervisorBulkReassignResponse {
+  fromAgentId: string;
+  toAgentId: string;
+  requestedCustomers: number;
+  reassignedCustomers: number;
+  skippedCustomers: number;
+  createdAssignments: number;
+  removedAssignments: number;
+  processedCustomerIds: string[];
+  generatedAt: string;
+}
+
+export type SupervisorAuditActorType = 'agent' | 'customer_session' | 'system';
+
+export interface SupervisorAuditEntry {
+  id: string;
+  actorType: SupervisorAuditActorType;
+  actorId: string;
+  eventType: string;
+  eventPayload: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface SupervisorAuditLogResponse {
+  entries: SupervisorAuditEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  generatedAt: string;
+}
+
+export interface SupervisorOversightOrdersByAgentEntry {
+  agentId: string | null;
+  agentName: string;
+  orderCount: number;
+  submittedCount: number;
+  pendingRetryCount: number;
+  failedCount: number;
+  totalAmount: number;
+}
+
+export interface SupervisorOversightOrdersByCustomerEntry {
+  customerId: string;
+  customerName: string;
+  assignedAgentId: string | null;
+  assignedAgentName: string | null;
+  orderCount: number;
+  submittedCount: number;
+  pendingRetryCount: number;
+  failedCount: number;
+  totalAmount: number;
+}
+
+export interface SupervisorOversightOrdersSummary {
+  totalOrders: number;
+  submittedCount: number;
+  pendingRetryCount: number;
+  failedCount: number;
+  totalAmount: number;
+  byAgent: SupervisorOversightOrdersByAgentEntry[];
+  byCustomer: SupervisorOversightOrdersByCustomerEntry[];
+}
+
+export interface SupervisorOversightErpSignal {
+  orderId: string;
+  orderRef: string | null;
+  customerId: string;
+  customerName: string;
+  assignedAgentId: string | null;
+  assignedAgentName: string | null;
+  status: 'pending_retry' | 'failed';
+  submittedAt: string;
+  estimatedTotal: number;
+}
+
+export interface SupervisorOversightErpBoard {
+  pendingRetryCount: number;
+  failedCount: number;
+  totalNeedingAttention: number;
+  recentSignals: SupervisorOversightErpSignal[];
+}
+
+export interface SupervisorOversightActivationFunnel {
+  magicLinksIssued: number;
+  activationAttempts: number;
+  activationSuccesses: number;
+  sessionsActivated: number;
+  ordersSubmitted: number;
+  activationSuccessRate: number;
+  linkToSessionConversionRate: number;
+  sessionToOrderConversionRate: number;
+}
+
+export interface SupervisorOversightUnassignedCustomers {
+  total: number;
+  customers: SupervisorCustomerOverview[];
+}
+
+export interface SupervisorOversightWindow {
+  startAt: string;
+  endAt: string;
+  timezone: string;
+}
+
+export interface SupervisorOversightResponse {
+  window: SupervisorOversightWindow;
+  orders: SupervisorOversightOrdersSummary;
+  unassignedCustomers: SupervisorOversightUnassignedCustomers;
+  erp: SupervisorOversightErpBoard;
+  funnel: SupervisorOversightActivationFunnel;
+  generatedAt: string;
 }
 
 export interface AgentCatalogItem {

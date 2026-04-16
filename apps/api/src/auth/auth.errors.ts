@@ -35,3 +35,27 @@ export class AgentTokenInvalidError extends HttpException {
     );
   }
 }
+
+export class AgentAccessRevokedError extends HttpException {
+  constructor() {
+    super(
+      {
+        code: 'AUTH_AGENT_ACCESS_REVOKED',
+        message: 'Agent access was revoked',
+      },
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+}
+
+export class SupervisorRoleRequiredError extends HttpException {
+  constructor() {
+    super(
+      {
+        code: 'AUTH_SUPERVISOR_REQUIRED',
+        message: 'Supervisor role is required',
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}

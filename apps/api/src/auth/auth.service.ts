@@ -41,6 +41,7 @@ export class AuthService {
       {
         sub: agent.id,
         phone: agent.phone,
+        role: agent.role,
         type: 'agent_shift',
       },
       expiresIn,
@@ -54,6 +55,7 @@ export class AuthService {
         name: agent.name,
         phone: agent.phone,
         email: agent.email,
+        role: agent.role,
       },
     };
   }
