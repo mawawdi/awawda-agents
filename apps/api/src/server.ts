@@ -18,6 +18,9 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
 	"http://127.0.0.1:3000",
 ]
 
+const CORS_ALLOWED_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+const CORS_ALLOWED_HEADERS = ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Agent-Id"]
+
 function resolveCorsAllowedOrigins(): Set<string> {
 	const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(",")
 		.map((origin) => origin.trim())
@@ -72,7 +75,10 @@ export async function createApiApp(): Promise<NestFastifyApplication> {
 
 			callback(new Error(`Origin ${origin} is not allowed by CORS`), false)
 		},
+		methods: CORS_ALLOWED_METHODS,
+		allowedHeaders: CORS_ALLOWED_HEADERS,
 		credentials: true,
+		maxAge: 600,
 	})
 
 	app.enableVersioning({

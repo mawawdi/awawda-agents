@@ -38,6 +38,8 @@ import { SupervisorCreateAgentDto } from './dto/supervisor-create-agent.dto';
 import { SupervisorForceLogoutDto } from './dto/supervisor-force-logout.dto';
 import { SupervisorUpdateAgentAccessDto } from './dto/supervisor-update-agent-access.dto';
 import { SupervisorUpdateCustomerProfileDto } from './dto/supervisor-update-customer-profile.dto';
+import { SupervisorUnassignAgentDto } from './dto/supervisor-unassign-agent.dto';
+import { SupervisorAssignmentAgentIdRequiredError } from './supervisor.errors';
 import { SupervisorService } from './supervisor.service';
 
 @Controller({ path: 'supervisor', version: '1' })
@@ -140,7 +142,28 @@ export class SupervisorController {
     @Param('customerId') customerId: string,
     @Param('agentId') agentId: string,
   ): Promise<SupervisorCustomerUnassignAgentResponse> {
-    return this.supervisorService.unassignCustomerFromAgent(supervisorAgentId, customerId, agentId);
+    return this.unassignCustomerAssignment(supervisorAgentId, customerId, agentId);
+  }
+
+  @Get('customers/:customerId/assignments/:agentId')
+  @HttpCode(200)
+  unassignCustomerFromAgentLegacyGet(
+    @Headers('x-agent-id') supervisorAgentId: string,
+    @Param('customerId') customerId: string,
+    @Param('agentId') agentId: string,
+  ): Promise<SupervisorCustomerUnassignAgentResponse> {
+    return this.unassignCustomerAssignment(supervisorAgentId, customerId, agentId);
+  }
+
+  @Delete('customers/:customerId/assignments')
+  @HttpCode(200)
+  unassignCustomerFromAgentFallback(
+    @Headers('x-agent-id') supervisorAgentId: string,
+    @Param('customerId') customerId: string,
+    @Query('agentId') queryAgentId: string | undefined,
+    @Body() body?: SupervisorUnassignAgentDto,
+  ): Promise<SupervisorCustomerUnassignAgentResponse> {
+    return this.unassignCustomerAssignment(supervisorAgentId, customerId, body?.agentId ?? queryAgentId);
   }
 
   @Patch('customers/:customerId/profile')
@@ -151,5 +174,18 @@ export class SupervisorController {
     @Body() body: SupervisorUpdateCustomerProfileDto,
   ): Promise<SupervisorCustomerProfileUpdateResponse> {
     return this.supervisorService.updateCustomerProfile(supervisorAgentId, customerId, body);
+  }
+
+  private unassignCustomerAssignment(
+    supervisorAgentId: string,
+    customerId: string,
+    agentId: string | undefined,
+  ): Promise<SupervisorCustomerUnassignAgentResponse> {
+    const normalizedAgentId = agentId?.trim();
+    if (!normalizedAgentId) {
+      throw new SupervisorAssignmentAgentIdRequiredError();
+    }
+
+    return this.supervisorService.unassignCustomerFromAgent(supervisorAgentId, customerId, normalizedAgentId);
   }
 }

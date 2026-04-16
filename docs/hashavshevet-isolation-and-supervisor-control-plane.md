@@ -156,6 +156,8 @@ Scope:
   - `GET /v1/supervisor/customers/:customerId/assignments`
   - `POST /v1/supervisor/customers/:customerId/assignments`
   - `DELETE /v1/supervisor/customers/:customerId/assignments/:agentId`
+  - `GET /v1/supervisor/customers/:customerId/assignments/:agentId` (legacy compatibility for broken clients that still send GET on unassign)
+  - `DELETE /v1/supervisor/customers/:customerId/assignments` (fallback; receives `agentId` via body or query)
   - `PATCH /v1/supervisor/customers/:customerId/profile`
   - `PATCH /v1/supervisor/agents/:agentId/access`
   - `POST /v1/supervisor/customers/bulk-reassign`

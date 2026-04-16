@@ -548,6 +548,57 @@ describe('agent customers client', () => {
     )
   })
 
+  it('unassigns supervisor customer ownership using normalized customer and agent IDs', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { unassignSupervisorCustomer } = await import('../api/agent-customers-client')
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          customerId: 'cust-alpha',
+          agentId: 'agent-2',
+          removed: true,
+          removedAt: '2026-04-16T10:18:00.000Z',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    const response = await unassignSupervisorCustomer('token-supervisor', '  cust-alpha  ', '  agent-2  ')
+
+    expect(response.removed).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/supervisor/customers/cust-alpha/assignments/agent-2'),
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer token-supervisor',
+        },
+      }),
+    )
+  })
+
+  it('falls back to localized 404 message for technical backend payloads', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+    const { unassignSupervisorCustomer } = await import('../api/agent-customers-client')
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          statusCode: 404,
+          message: 'Cannot DELETE /broken-route',
+          error: 'Not Found',
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    await expect(unassignSupervisorCustomer('token-supervisor', 'cust-alpha', 'agent-2')).rejects.toThrow(
+      'המשאב המבוקש לא נמצא.',
+    )
+  })
+
   it('updates agent access, performs bulk reassignment, and loads supervisor audit entries', async () => {
     process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
     const {

@@ -59,3 +59,15 @@ export class SupervisorAgentAlreadyExistsError extends HttpException {
     );
   }
 }
+
+export class SupervisorAssignmentAgentIdRequiredError extends HttpException {
+  constructor() {
+    super(
+      {
+        code: 'SUPERVISOR_ASSIGNMENT_AGENT_ID_REQUIRED',
+        message: 'Agent id is required to unassign customer ownership',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}

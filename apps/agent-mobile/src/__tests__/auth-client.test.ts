@@ -188,6 +188,48 @@ describe('auth client', () => {
     )
   })
 
+  it('keeps explicit request method across fallback attempts when init object is mutated', async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'http://10.0.0.25:3000'
+    const { loginAgent } = await import('../api/auth-client')
+    let secondAttemptMethod: string | undefined
+
+    vi.spyOn(globalThis, 'fetch')
+      .mockImplementationOnce(async (_url, requestInit) => {
+        if (requestInit && typeof requestInit === 'object') {
+          ;(requestInit as RequestInit).method = 'GET'
+        }
+        return new Response(JSON.stringify({ message: 'Cannot GET /v1/agent/auth/login' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      })
+      .mockImplementationOnce(async (_url, requestInit) => {
+        secondAttemptMethod = requestInit?.method
+        return new Response(
+          JSON.stringify({
+            accessToken: 'token-retry-post',
+            expiresIn: 28800,
+            agentProfile: {
+              id: 'agent-1',
+              name: 'Line Agent',
+              phone: '+972500000000',
+              email: 'agent@example.test',
+              role: 'field_agent',
+            },
+          }),
+          { status: 201, headers: { 'Content-Type': 'application/json' } },
+        )
+      })
+
+    const result = await loginAgent({
+      phoneOrEmail: 'agent@example.test',
+      password: 'Password123',
+    })
+
+    expect(result.accessToken).toBe('token-retry-post')
+    expect(secondAttemptMethod).toBe('POST')
+  })
+
   it('uses Expo Go bundle host as fallback when localhost is unreachable', async () => {
     process.env.EXPO_PUBLIC_API_BASE_URL = 'http://localhost:3000'
     process.env.EXPO_PUBLIC_EXPO_GO_HOST = '192.168.1.77'

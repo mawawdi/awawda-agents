@@ -49,7 +49,11 @@ export async function fetchWithBaseUrlFallback(
   for (const candidateBaseUrl of candidateBaseUrls) {
     checkedBaseUrls.push(candidateBaseUrl)
     try {
-      const response = await fetchWithTimeout(`${candidateBaseUrl}${path}`, init, options.timeoutMs)
+      const response = await fetchWithTimeout(
+        `${candidateBaseUrl}${path}`,
+        createAttemptRequestInit(init),
+        options.timeoutMs,
+      )
       const routeMismatchMessage = await readApiRouteMismatchMessage(response)
       if (routeMismatchMessage) {
         routeMismatchDetected = true
@@ -70,6 +74,30 @@ export async function fetchWithBaseUrlFallback(
   throw new Error(
     `לא ניתן להגיע אל ${options.requestLabel}. נבדקו הכתובות: ${checkedBaseUrls.join(', ')}. עדכנו את EXPO_PUBLIC_API_BASE_URL או EXPO_PUBLIC_EXPO_GO_HOST.`,
   )
+}
+
+function createAttemptRequestInit(init: RequestInit): RequestInit {
+  return {
+    ...init,
+    method: typeof init.method === 'string' && init.method.trim() ? init.method.trim().toUpperCase() : init.method,
+    headers: cloneHeadersInit(init.headers),
+  }
+}
+
+function cloneHeadersInit(headers: HeadersInit | undefined): HeadersInit | undefined {
+  if (!headers) {
+    return undefined
+  }
+
+  if (headers instanceof Headers) {
+    return new Headers(headers)
+  }
+
+  if (Array.isArray(headers)) {
+    return headers.map(([name, value]) => [name, value] as [string, string])
+  }
+
+  return { ...headers }
 }
 
 type LocalBaseTemplate = {

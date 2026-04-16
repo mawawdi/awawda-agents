@@ -135,6 +135,23 @@ describe('API bootstrap', () => {
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8081');
   });
 
+  it('allows CORS preflight for supervisor unassign delete route', async () => {
+    const response = await app.inject({
+      method: 'OPTIONS',
+      url: '/v1/supervisor/customers/cust-alpha/assignments/agent-field-2',
+      headers: {
+        origin: 'http://localhost:8081',
+        'access-control-request-method': 'DELETE',
+        'access-control-request-headers': 'authorization,content-type',
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8081');
+    expect(response.headers['access-control-allow-methods']).toContain('DELETE');
+    expect(response.headers['access-control-allow-headers']).toContain('Authorization');
+  });
+
   it('applies baseline security headers', async () => {
     const response = await app.inject({
       method: 'GET',

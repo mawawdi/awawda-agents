@@ -3,7 +3,6 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Easing,
   ImageBackground,
   Linking,
@@ -26,11 +25,9 @@ import type {
   SupervisorAgentOverview,
   SupervisorAuditEntry,
   SupervisorCustomerOverview,
-  SupervisorCustomerStatus,
   SupervisorOversightResponse,
 } from '@awawda/shared-types'
 
-import { buildCandidateBaseUrls } from '../api/api-base-url-fallback'
 import {
   AgentApiError,
   cancelAgentOrder,
@@ -39,7 +36,6 @@ import {
   listApprovedItems,
   listAssignedCustomers,
   assignSupervisorCustomer,
-  bulkReassignSupervisorCustomers,
   createSupervisorAgent,
   forceLogoutSupervisorAgent,
   getSupervisorOversightSnapshot,
@@ -51,7 +47,6 @@ import {
   updateSupervisorAgentAccess,
   updateSupervisorCustomerProfile,
 } from '../api/agent-customers-client'
-import { API_BASE_URL, IS_PRODUCTION_RUNTIME } from '../config/env'
 import { useAuth } from '../auth/auth-provider'
 import { palette, radius, spacing, touchTarget } from '../theme/tokens'
 import {
@@ -66,91 +61,63 @@ import {
 import {
   placeholderColor,
   placeholderImageUri,
-  resolveTestingCatalogItemName,
 } from './authenticated-home-screen.helpers'
+import {
+  CATALOG_GRID_ROWS_PER_PAGE,
+  CUSTOMER_FILTERS,
+  DEFAULT_CUSTOMER_PHONE,
+  FIELD_TAB_ITEMS,
+  ORDERS_PAGE_SIZE,
+  ORDER_DATE_FILTERS,
+  SLOW_NETWORK_THRESHOLD_MS,
+  SUPERVISOR_AGENT_ROLE_OPTIONS,
+  SUPERVISOR_STATUS_OPTIONS,
+  SUPERVISOR_TAB_ITEMS,
+  SUPERVISOR_WORKSPACE_TABS,
+  type CustomerFilterId,
+  type OrderDateFilterId,
+  type SupervisorCreateAgentDraft,
+  type SupervisorProfileDraft,
+  type SupervisorWorkspaceTabId,
+} from './authenticated-home-screen.constants'
+import { createSupervisorStyles } from './authenticated-home-screen.supervisor-styles'
+import {
+  SPECIES_BADGE_ICON_BY_SPECIES,
+  customerCityLabel,
+  estimateCatalogUnitPrice,
+  formatCurrency,
+  formatOrderDateTime,
+  formatOrderTime,
+  formatOrderUnitLabel,
+  formatRelativeLastOrder,
+  formatSupervisorAuditEvent,
+  formatSupervisorAuditTime,
+  formatSupervisorOrderStatus,
+  formatSupervisorOversightRate,
+  getCustomerStatus,
+  getSupervisorCustomerStatus,
+  humanizeCustomerName,
+  humanizeItemName,
+  inferItemSpecies,
+  isTestingImageCandidateExhausted,
+  moveToNextTestingImageCandidate,
+  resolveCatalogGridCellDimension,
+  resolveCatalogGridColumnCount,
+  resolveCatalogMetaFontSize,
+  resolveCatalogTitleLayout,
+  resolveOrderDetailLayout,
+  resolveOrderItemDisplayName,
+  resolveTestingImageUriFromCandidates,
+  scaledFont,
+  sumOrdersEstimatedTotal,
+  toDateFilterRange,
+  toLocalDayEnd,
+  toLocalDayStart,
+  toSupervisorProfileDraft,
+} from './authenticated-home-screen.utils'
 import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
-const SLOW_NETWORK_THRESHOLD_MS = 1800
-
-const FIELD_TAB_ITEMS: Array<{
-  id: AgentDashboardTabId
-  label: string
-  icon: React.ComponentProps<typeof MaterialIcons>['name']
-}> = [
-  { id: 'home', label: 'בית', icon: 'home' },
-  { id: 'customers', label: 'לקוחות', icon: 'group' },
-  { id: 'orders', label: 'הזמנות', icon: 'receipt' },
-  { id: 'settings', label: 'הגדרות', icon: 'settings' },
-]
-
-const SUPERVISOR_TAB_ITEMS: Array<{
-  id: AgentDashboardTabId
-  label: string
-  icon: React.ComponentProps<typeof MaterialIcons>['name']
-}> = [
-  { id: 'supervisor', label: 'בקרה', icon: 'admin-panel-settings' },
-  { id: 'settings', label: 'הגדרות', icon: 'settings' },
-]
-
-type CustomerFilterId = 'all' | 'active' | 'needs_action' | 'pending_link'
-
-const CUSTOMER_FILTERS: Array<{ id: CustomerFilterId; label: string }> = [
-  { id: 'all', label: 'הכל' },
-  { id: 'active', label: 'פעיל' },
-  { id: 'needs_action', label: 'דורש פעולה' },
-  { id: 'pending_link', label: 'ממתין ללינק' },
-]
-
-type OrderDateFilterId = 'all' | '7d' | '30d' | '90d'
-
-type SupervisorProfileDraft = {
-  name: string
-  contactName: string
-  phone: string
-  city: string
-  notes: string
-  status: SupervisorCustomerStatus
-}
-
-type SupervisorCreateAgentDraft = {
-  name: string
-  phone: string
-  email: string
-  password: string
-  role: 'field_agent' | 'supervisor'
-}
-
-const ORDER_DATE_FILTERS: Array<{ id: OrderDateFilterId; label: string; days?: number }> = [
-  { id: 'all', label: 'כל התקופה' },
-  { id: '7d', label: '7 ימים', days: 7 },
-  { id: '30d', label: '30 ימים', days: 30 },
-  { id: '90d', label: '90 ימים', days: 90 },
-]
-
-const SUPERVISOR_STATUS_OPTIONS: Array<{ value: SupervisorCustomerStatus; label: string }> = [
-  { value: 'active', label: 'פעיל' },
-  { value: 'inactive', label: 'לא פעיל' },
-  { value: 'on_hold', label: 'מושהה' },
-]
-
-const SUPERVISOR_AGENT_ROLE_OPTIONS: Array<{ value: 'field_agent' | 'supervisor'; label: string }> = [
-  { value: 'field_agent', label: 'סוכן שטח' },
-  { value: 'supervisor', label: 'סופרווייזר' },
-]
-
-const ORDERS_PAGE_SIZE = 6
-const TESTING_CUT_MIN_DIMENSION_PX = 512
-const CATALOG_GRID_GAP = spacing.sm
-const CATALOG_GRID_ROWS_PER_PAGE = 3
-const MOBILE_CATALOG_GRID_COLUMNS = 3
-const WIDE_CATALOG_GRID_COLUMNS = 4
-const TABLET_MIN_VIEWPORT_WIDTH = 768
-const TESTING_CUT_IMAGE_CACHE_BUSTER = 'testing-cuts-v4'
-const TESTING_IMAGE_BASE_URLS = buildCandidateBaseUrls(API_BASE_URL)
 const IS_RTL_LAYOUT = true
-const DEFAULT_CUSTOMER_PHONE = '054-000-0000'
-const BASE_VIEWPORT_WIDTH = 430
-const FONT_SCALE = Math.max(0.82, Math.min(1, Dimensions.get('window').width / BASE_VIEWPORT_WIDTH))
 const NUMERIC_FONT_FAMILY =
   Platform.select({
     web: '"Plus Jakarta Sans", system-ui, sans-serif',
@@ -159,241 +126,6 @@ const NUMERIC_FONT_FAMILY =
 const HEBREW_CHAR_PATTERN = /[\u0590-\u05FF]/
 const DIGIT_PATTERN = /\d/
 const NUMERIC_TOKEN_PATTERN = /([₪$€£]?-?\d[\d,]*(?:\.\d+)?%?)/g
-const TWO_DECIMAL_NUMBER_FORMATTER = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-type ItemSpecies = 'beef' | 'chicken' | 'lamb'
-
-const SPECIES_BADGE_ICON_BY_SPECIES: Record<ItemSpecies, React.ComponentProps<typeof MaterialCommunityIcons>['name']> = {
-  beef: 'cow',
-  chicken: 'bird',
-  lamb: 'sheep',
-}
-
-const ITEM_TOKEN_LABEL_HEBREW: Record<string, string> = {
-  arm: 'כתף',
-  back: 'גב',
-  backs: 'גבים',
-  bavette: 'באבט',
-  belly: 'בטן',
-  blade: 'בלייד',
-  boneless: 'ללא עצם',
-  breast: 'חזה',
-  ribeye: 'ריבאיי',
-  steak: 'סטייק',
-  steaks: 'סטייקים',
-  brisket: 'בריסקט',
-  tenderloin: 'פילה',
-  tenderloins: 'פילה',
-  tender: 'טנדר',
-  striploin: 'סינטה',
-  strip: 'סטריפ',
-  strips: 'סטריפים',
-  sirloin: 'סירלוין',
-  short: 'קצר',
-  ribs: 'צלעות',
-  riblets: 'צלעוניות',
-  rib: 'צלע',
-  top: 'טופ',
-  tip: 'קצה',
-  tips: 'קצוות',
-  osso: 'אוסו',
-  buco: 'בוקה',
-  picanha: 'פיקניה',
-  chops: 'צלעות',
-  chop: 'צלע',
-  cap: 'כיפה',
-  club: 'קלאב',
-  denver: 'דנבר',
-  eye: 'איי',
-  filet: 'פילה',
-  flank: 'פלאנק',
-  flanken: 'פלאנקן',
-  flat: 'פלאט',
-  game: 'ציד',
-  hanger: 'הנגר',
-  inside: 'פנימי',
-  iron: 'איירון',
-  kansas: 'קנזס',
-  knuckle: 'ברך',
-  loin: 'מותן',
-  marrow: 'מח עצם',
-  mignon: 'מיניון',
-  mock: 'מוק',
-  neck: 'צוואר',
-  necks: 'צווארים',
-  new: 'ניו',
-  onglet: 'אונגלֶה',
-  outside: 'חיצוני',
-  oxtail: 'זנב שור',
-  porterhouse: 'פורטרהאוס',
-  prime: 'פריים',
-  ranch: 'ראנץ׳',
-  rolled: 'מגולגל',
-  round: 'עגול',
-  rump: 'ראמפ',
-  schnitzel: 'שניצל',
-  skirt: 'סקירט',
-  spinalis: 'ספינליס',
-  standing: 'עומד',
-  t: 'טי',
-  tournedos: 'טורנדו',
-  tri: 'טרי',
-  tongue: 'לשון',
-  white: 'לבן',
-  shoulder: 'כתף',
-  shank: 'שוק',
-  thigh: 'ירך',
-  drumstick: 'שוק',
-  drumette: 'כנף אמצעית',
-  wing: 'כנף',
-  wingette: 'כנף אמצעית',
-  wings: 'כנפיים',
-  whole: 'שלם',
-  mince: 'טחון',
-  minced: 'טחון',
-  ground: 'טחון',
-  bones: 'עצמות',
-  bone: 'עצם',
-  burger: 'המבורגר',
-  patty: 'קציצה',
-  smoked: 'מעושן',
-  entrecote: 'אנטרקוט',
-  lamb: 'טלה',
-  chicken: 'עוף',
-  beef: 'בקר',
-}
-
-const ITEM_TOKEN_SKIP = new Set(['itm', 'item', 'in', 'of', 'on', 'the', 'for', 'to', 'and'])
-
-function getCustomerStatus(customer: AgentAssignedCustomer): { label: string; tone: 'success' | 'warning' } {
-  if (customer.approvedItemsCount === 0) {
-    return { label: 'דורש פעולה', tone: 'warning' }
-  }
-
-  return { label: 'פעיל', tone: 'success' }
-}
-
-const CITY_NAME_BY_CODE: Record<string, string> = {
-  tlv: 'תל אביב',
-  rg: 'רמת גן',
-  hz: 'הרצליה',
-  pt: 'פתח תקווה',
-  ashdod: 'אשדוד',
-  beersheva: 'באר שבע',
-  modiin: 'מודיעין',
-  raanana: 'רעננה',
-  holon: 'חולון',
-  netanya: 'נתניה',
-  hadera: 'חדרה',
-}
-
-function toTitleCase(value: string): string {
-  return value
-    .split(' ')
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ')
-}
-
-function humanizeCustomerName(customerId: string): string {
-  const cleaned = customerId.replace(/^cust-/, '').replaceAll('-', ' ').trim()
-  return toTitleCase(cleaned) || customerId
-}
-
-function customerCityLabel(customerId: string): string {
-  const cityCode = customerId.replace(/^cust-/, '').split('-')[0]
-  return CITY_NAME_BY_CODE[cityCode] ?? 'לקוח אזורי'
-}
-
-function inferItemSpecies(itemId: string): ItemSpecies | null {
-  const normalized = itemId.toLowerCase()
-  if (normalized.includes('beef')) {
-    return 'beef'
-  }
-  if (normalized.includes('chicken')) {
-    return 'chicken'
-  }
-  if (normalized.includes('lamb')) {
-    return 'lamb'
-  }
-  return null
-}
-
-function normalizeItemTokens(itemId: string): string[] {
-  return itemId
-    .toLowerCase()
-    .replace(/^itm[-_]?/, '')
-    .replace(/^item[-_]?/, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter((token) => token.length > 0 && !ITEM_TOKEN_SKIP.has(token))
-}
-
-function humanizeItemName(itemId: string): string {
-  const localizedTestingName = resolveTestingCatalogItemName(itemId)
-  if (localizedTestingName) {
-    return localizedTestingName
-  }
-
-  const species = inferItemSpecies(itemId)
-  const speciesPrefix = species ? new Set([species]) : new Set<string>()
-  const tokens = normalizeItemTokens(itemId).filter((token) => !speciesPrefix.has(token))
-
-  if (tokens.length === 0) {
-    const cleaned = itemId.replace(/^itm-/, '').replaceAll('-', ' ').replaceAll('_', ' ').trim()
-    return toTitleCase(cleaned) || itemId
-  }
-
-  const translated = tokens.map((token) => ITEM_TOKEN_LABEL_HEBREW[token] ?? token)
-  const hasHebrewTranslation = tokens.some((token) => ITEM_TOKEN_LABEL_HEBREW[token] !== undefined)
-  if (!hasHebrewTranslation) {
-    return toTitleCase(tokens.join(' ')) || itemId
-  }
-
-  return translated.join(' ')
-}
-
-function resolveOrderItemDisplayName(itemId: string, itemName: string): string {
-  const rawName = itemName.trim()
-  if (rawName && !looksLikeRawItemIdentifier(rawName, itemId)) {
-    return rawName
-  }
-
-  const localizedFromId = humanizeItemName(itemId).trim()
-  if (localizedFromId && !looksLikeRawItemIdentifier(localizedFromId, itemId)) {
-    return localizedFromId
-  }
-
-  const normalizedFromName = rawName ? humanizeItemName(rawName).trim() : ''
-  if (normalizedFromName && !looksLikeRawItemIdentifier(normalizedFromName, itemId)) {
-    return normalizedFromName
-  }
-
-  if (rawName) {
-    return rawName
-  }
-
-  return localizedFromId || itemId
-}
-
-function looksLikeRawItemIdentifier(name: string, itemId: string): boolean {
-  const normalizedName = name.trim().toLowerCase()
-  const normalizedItemId = itemId.trim().toLowerCase()
-  if (!normalizedName) {
-    return false
-  }
-
-  if (normalizedName === normalizedItemId) {
-    return true
-  }
-
-  return /^\d{1,4}$/.test(normalizedName)
-}
-
 function renderSpeciesBadge(itemId: string, size: 'default' | 'small' = 'default'): React.JSX.Element | null {
   const species = inferItemSpecies(itemId)
   if (!species) {
@@ -412,199 +144,6 @@ function renderSpeciesBadge(itemId: string, size: 'default' | 'small' = 'default
   )
 }
 
-function buildTestingItemImageUri(itemId: string, baseUrl: string): string | null {
-  if (IS_PRODUCTION_RUNTIME) {
-    return null
-  }
-
-  const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/g, '')
-  if (!normalizedBaseUrl || !itemId.trim()) {
-    return null
-  }
-
-  if (/YOUR_LAN_IP/i.test(normalizedBaseUrl)) {
-    return null
-  }
-
-  const encodedItemId = encodeURIComponent(itemId.trim().toLowerCase())
-  return `${normalizedBaseUrl}/v1/testing-assets/items/${encodedItemId}/image?v=${TESTING_CUT_IMAGE_CACHE_BUSTER}`
-}
-
-function getNextTestingImageCandidateIndex(currentIndex: number): number | null {
-  const nextIndex = currentIndex + 1
-  if (nextIndex >= TESTING_IMAGE_BASE_URLS.length) {
-    return null
-  }
-
-  return nextIndex
-}
-
-function resolveTestingImageCandidateIndex(itemId: string, map: Record<string, number>): number {
-  const index = map[itemId]
-  if (typeof index === 'number' && Number.isFinite(index)) {
-    return index
-  }
-
-  return 0
-}
-
-function resolveTestingImageUriFromCandidates(
-  itemId: string,
-  candidateIndexByItemId: Record<string, number>,
-): string | null {
-  const candidateIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
-  const baseUrl = TESTING_IMAGE_BASE_URLS[candidateIndex]
-  if (!baseUrl) {
-    return null
-  }
-
-  return buildTestingItemImageUri(itemId, baseUrl)
-}
-
-function isTestingImageCandidateExhausted(itemId: string, candidateIndexByItemId: Record<string, number>): boolean {
-  const candidateIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
-  return candidateIndex >= TESTING_IMAGE_BASE_URLS.length
-}
-
-function moveToNextTestingImageCandidate(
-  itemId: string,
-  candidateIndexByItemId: Record<string, number>,
-): Record<string, number> {
-  const currentIndex = resolveTestingImageCandidateIndex(itemId, candidateIndexByItemId)
-  const nextIndex = getNextTestingImageCandidateIndex(currentIndex)
-  if (nextIndex === null) {
-    return {
-      ...candidateIndexByItemId,
-      [itemId]: TESTING_IMAGE_BASE_URLS.length,
-    }
-  }
-
-  return {
-    ...candidateIndexByItemId,
-    [itemId]: nextIndex,
-  }
-}
-
-function resolveCatalogGridColumnCount(containerWidth: number): number {
-  const width =
-    Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : Dimensions.get('window').width
-
-  if (Platform.OS === 'web' || width >= TABLET_MIN_VIEWPORT_WIDTH) {
-    return WIDE_CATALOG_GRID_COLUMNS
-  }
-
-  return MOBILE_CATALOG_GRID_COLUMNS
-}
-
-function resolveCatalogGridCellDimension(containerWidth: number, columns: number): number {
-  if (!Number.isFinite(containerWidth) || containerWidth <= 0 || columns <= 0) {
-    return 240
-  }
-
-  const totalGap = CATALOG_GRID_GAP * Math.max(0, columns - 1)
-  const dimension = Math.floor((containerWidth - totalGap - 2) / columns)
-  return Math.max(1, Math.min(TESTING_CUT_MIN_DIMENSION_PX, dimension))
-}
-
-function resolveCatalogTitleFontSize(cellDimension: number): number {
-  if (!Number.isFinite(cellDimension) || cellDimension <= 0) {
-    return scaledFont(16)
-  }
-
-  const proportionalSize = Math.round(cellDimension * 0.065)
-  return Math.max(scaledFont(14), Math.min(scaledFont(20), proportionalSize))
-}
-
-function resolveCatalogMetaFontSize(cellDimension: number): number {
-  if (!Number.isFinite(cellDimension) || cellDimension <= 0) {
-    return scaledFont(13)
-  }
-
-  const proportionalSize = Math.round(cellDimension * 0.048)
-  return Math.max(scaledFont(12), Math.min(scaledFont(16), proportionalSize))
-}
-
-type CatalogTitleLayout = {
-  fontSize: number
-  lineHeight: number
-  maxLines: number
-  minHeight: number
-}
-
-function resolveCatalogTitleLayout(cellDimension: number, itemName: string): CatalogTitleLayout {
-  const baseFontSize = resolveCatalogTitleFontSize(cellDimension)
-  const normalizedLength = itemName.trim().length
-
-  let fontSize = baseFontSize
-  let maxLines = 2
-
-  if (normalizedLength >= 26) {
-    fontSize = Math.max(scaledFont(12), baseFontSize - 2)
-    maxLines = 3
-  } else if (normalizedLength >= 20) {
-    fontSize = Math.max(scaledFont(13), baseFontSize - 1)
-  }
-
-  const lineHeight = Math.round(fontSize * 1.24)
-  return {
-    fontSize,
-    lineHeight,
-    maxLines,
-    minHeight: lineHeight * maxLines,
-  }
-}
-
-type OrderDetailLayout = {
-  imageSize: number
-  imageRequestSize: number
-  pricingMinWidth: number
-  titleFontSize: number
-  titleLineHeight: number
-  subtitleFontSize: number
-  subtitleLineHeight: number
-  titleMaxLines: number
-}
-
-function resolveOrderDetailLayout(containerWidth: number): OrderDetailLayout {
-  const width =
-    Number.isFinite(containerWidth) && containerWidth > 0 ? containerWidth : Dimensions.get('window').width
-  const isWideViewport = Platform.OS === 'web' || width >= TABLET_MIN_VIEWPORT_WIDTH
-  const isCompactViewport = !isWideViewport && width < 390
-
-  const imageSize = isWideViewport ? 104 : isCompactViewport ? 78 : 88
-  const pricingMinWidth = isWideViewport ? 120 : isCompactViewport ? 82 : 92
-
-  const estimatedNameColumnWidth = width - spacing.md * 2 - spacing.md * 2 - imageSize - pricingMinWidth
-  const compactNameColumn = estimatedNameColumnWidth < 132
-
-  const titleFontSize = compactNameColumn ? scaledFont(12.5) : estimatedNameColumnWidth < 164 ? scaledFont(13) : scaledFont(14)
-  const titleLineHeight = Math.round(titleFontSize * 1.25)
-  const subtitleFontSize = compactNameColumn ? scaledFont(10) : scaledFont(11)
-  const subtitleLineHeight = Math.round(subtitleFontSize * 1.22)
-
-  return {
-    imageSize,
-    imageRequestSize: Math.max(128, Math.round(imageSize * 2)),
-    pricingMinWidth,
-    titleFontSize,
-    titleLineHeight,
-    subtitleFontSize,
-    subtitleLineHeight,
-    titleMaxLines: compactNameColumn ? 3 : 2,
-  }
-}
-
-function formatCurrency(value: number, currency: string): string {
-  const normalizedValue = Number.isFinite(value) ? value : 0
-  const formattedValue = TWO_DECIMAL_NUMBER_FORMATTER.format(normalizedValue)
-
-  if (currency === 'ILS') {
-    return `₪${formattedValue}`
-  }
-
-  return `${formattedValue} ${currency}`
-}
-
 function renderHebrewNumericRuns(value: string): React.ReactNode {
   if (!HEBREW_CHAR_PATTERN.test(value) || !DIGIT_PATTERN.test(value)) {
     return value
@@ -620,170 +159,6 @@ function renderHebrewNumericRuns(value: string): React.ReactNode {
       segment
     ),
   )
-}
-
-function estimateCatalogUnitPrice(itemId: string): number {
-  const hashSeed = itemId.split('').reduce((accumulator, character) => accumulator + character.charCodeAt(0), 0)
-  return 95 + (hashSeed % 9) * 17
-}
-
-function toDateFilterRange(filterId: OrderDateFilterId): { fromDate?: string; toDate?: string } {
-  if (filterId === 'all') {
-    return {}
-  }
-
-  const filter = ORDER_DATE_FILTERS.find((entry) => entry.id === filterId)
-  const days = filter?.days
-  if (!days) {
-    return {}
-  }
-
-  const today = new Date()
-  const fromDate = toLocalDayStart(today)
-  fromDate.setDate(fromDate.getDate() - days)
-  const toDate = toLocalDayEnd(today)
-
-  return {
-    fromDate: fromDate.toISOString(),
-    toDate: toDate.toISOString(),
-  }
-}
-
-function toLocalDayStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
-}
-
-function toLocalDayEnd(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
-}
-
-function sumOrdersEstimatedTotal(orders: AgentOrderCard[]): number {
-  return orders.reduce((total, order) => total + order.estimatedTotal, 0)
-}
-
-function formatRelativeLastOrder(lastOrderAt: string | null): string {
-  if (!lastOrderAt) {
-    return 'ללא הזמנה קודמת'
-  }
-
-  const parsed = Date.parse(lastOrderAt)
-  if (Number.isNaN(parsed)) {
-    return 'זמן הזמנה לא זמין'
-  }
-
-  const minutes = Math.max(1, Math.floor((Date.now() - parsed) / 60000))
-  if (minutes < 60) {
-    return `לפני ${minutes} דק׳`
-  }
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) {
-    return `לפני ${hours} שעות`
-  }
-
-  const days = Math.floor(hours / 24)
-  if (days < 14) {
-    return `לפני ${days} ימים`
-  }
-
-  const weeks = Math.floor(days / 7)
-  if (weeks < 8) {
-    return `לפני ${weeks} שבועות`
-  }
-
-  const months = Math.floor(days / 30)
-  return `לפני ${Math.max(1, months)} חודשים`
-}
-
-function formatOrderDateTime(submittedAt: string): string {
-  const parsed = Date.parse(submittedAt)
-  if (Number.isNaN(parsed)) {
-    return 'מועד הזמנה לא זמין'
-  }
-
-  const date = new Date(parsed)
-  return `${date.toLocaleDateString('he-IL')} · ${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`
-}
-
-function formatOrderTime(submittedAt: string): string {
-  const parsed = Date.parse(submittedAt)
-  if (Number.isNaN(parsed)) {
-    return 'שעה לא זמינה'
-  }
-
-  return new Date(parsed).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatOrderUnitLabel(unit: 'kg' | 'unit'): string {
-  return unit === 'kg' ? 'ק״ג' : 'יח׳'
-}
-
-function toSupervisorProfileDraft(customer: SupervisorCustomerOverview | null): SupervisorProfileDraft {
-  if (!customer) {
-    return {
-      name: '',
-      contactName: '',
-      phone: '',
-      city: '',
-      notes: '',
-      status: 'active',
-    }
-  }
-
-  return {
-    name: customer.name,
-    contactName: customer.contactName ?? '',
-    phone: customer.phone ?? '',
-    city: customer.city ?? '',
-    notes: customer.notes ?? '',
-    status: customer.status,
-  }
-}
-
-function formatSupervisorAuditEvent(eventType: string): string {
-  switch (eventType) {
-    case 'supervisor.customer_assignment.added':
-      return 'שיוך לקוח נוסף'
-    case 'supervisor.customer_assignment.removed':
-      return 'שיוך לקוח הוסר'
-    case 'supervisor.customer_assignment.bulk_reassign':
-      return 'העברה מרוכזת בוצעה'
-    case 'supervisor.customer_profile.updated':
-      return 'פרופיל לקוח עודכן'
-    case 'supervisor.agent_access.updated':
-      return 'גישה לסוכן עודכנה'
-    default:
-      return eventType
-  }
-}
-
-function formatSupervisorAuditTime(createdAt: string): string {
-  const parsed = Date.parse(createdAt)
-  if (Number.isNaN(parsed)) {
-    return 'זמן לא זמין'
-  }
-
-  return new Date(parsed).toLocaleString('he-IL')
-}
-
-function formatSupervisorOversightRate(value: number): string {
-  const normalized = Number.isFinite(value) ? Math.max(0, value) : 0
-  const rounded = Math.round(normalized * 10) / 10
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`
-}
-
-function formatSupervisorOrderStatus(status: 'submitted' | 'pending_retry' | 'failed'): string {
-  if (status === 'pending_retry') {
-    return 'ממתין לניסיון חוזר'
-  }
-  if (status === 'failed') {
-    return 'נכשל'
-  }
-  return 'נשלח'
-}
-
-function scaledFont(baseSize: number): number {
-  return Math.max(10, Math.round(baseSize * FONT_SCALE))
 }
 
 export function AuthenticatedHomeScreen(): React.JSX.Element {
@@ -842,11 +217,11 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [supervisorOversight, setSupervisorOversight] = useState<SupervisorOversightResponse | null>(null)
   const [supervisorAssignments, setSupervisorAssignments] = useState<SupervisorAgentAssignment[]>([])
   const [supervisorAuditEntries, setSupervisorAuditEntries] = useState<SupervisorAuditEntry[]>([])
+  const [supervisorCustomerSearchQuery, setSupervisorCustomerSearchQuery] = useState('')
   const [selectedSupervisorCustomerId, setSelectedSupervisorCustomerId] = useState<string | null>(null)
+  const [isSupervisorCustomerDetailOpen, setIsSupervisorCustomerDetailOpen] = useState(false)
   const [selectedSupervisorAgentId, setSelectedSupervisorAgentId] = useState<string | null>(null)
   const [selectedSupervisorAccessAgentId, setSelectedSupervisorAccessAgentId] = useState<string | null>(null)
-  const [selectedSupervisorBulkFromAgentId, setSelectedSupervisorBulkFromAgentId] = useState<string | null>(null)
-  const [selectedSupervisorBulkToAgentId, setSelectedSupervisorBulkToAgentId] = useState<string | null>(null)
   const [supervisorCreateAgentDraft, setSupervisorCreateAgentDraft] = useState<SupervisorCreateAgentDraft>({
     name: '',
     phone: '',
@@ -867,6 +242,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [isSupervisorMutating, setIsSupervisorMutating] = useState(false)
   const [supervisorError, setSupervisorError] = useState<string | null>(null)
   const [supervisorInfo, setSupervisorInfo] = useState<string | null>(null)
+  const [activeSupervisorWorkspaceTab, setActiveSupervisorWorkspaceTab] = useState<SupervisorWorkspaceTabId>('overview')
 
   const rootOpacity = useRef(new Animated.Value(1)).current
   const headerTranslateY = useRef(new Animated.Value(0)).current
@@ -935,6 +311,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setActiveTab('home')
     }
   }, [activeTab, isSupervisorRole])
+
+  useEffect(() => {
+    if (!isSupervisorRole) {
+      setActiveSupervisorWorkspaceTab('overview')
+    }
+  }, [isSupervisorRole])
 
   const beginSlowNetworkTimer = useCallback((setSlowState: (value: boolean) => void): (() => void) => {
     setSlowState(false)
@@ -1192,10 +574,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setSupervisorAssignments([])
       setSupervisorAuditEntries([])
       setSelectedSupervisorCustomerId(null)
+      setIsSupervisorCustomerDetailOpen(false)
       setSelectedSupervisorAgentId(null)
       setSelectedSupervisorAccessAgentId(null)
-      setSelectedSupervisorBulkFromAgentId(null)
-      setSelectedSupervisorBulkToAgentId(null)
       setSupervisorError('הסשן חסר. התחברו מחדש כדי להמשיך.')
       return
     }
@@ -1212,7 +593,6 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
       const fieldAgents = agentsResponse.agents.filter((agent) => agent.role === 'field_agent')
       const assignableAgents = fieldAgents.filter((agent) => agent.isActive)
-      const fallbackBulkFromAgentId = fieldAgents[0]?.agentId ?? null
       setSupervisorAgents(agentsResponse.agents)
       setSupervisorCustomers(customersResponse.customers)
       setSupervisorOversight(oversightResponse)
@@ -1237,25 +617,6 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
         return fieldAgents[0]?.agentId ?? null
       })
-      setSelectedSupervisorBulkFromAgentId((current) => {
-        if (current && fieldAgents.some((agent) => agent.agentId === current)) {
-          return current
-        }
-
-        return fallbackBulkFromAgentId
-      })
-      setSelectedSupervisorBulkToAgentId((current) => {
-        if (
-          current &&
-          assignableAgents.some(
-            (agent) => agent.agentId === current && agent.agentId !== (fallbackBulkFromAgentId ?? ''),
-          )
-        ) {
-          return current
-        }
-
-        return assignableAgents.find((agent) => agent.agentId !== (fallbackBulkFromAgentId ?? ''))?.agentId ?? null
-      })
     } catch (error) {
       setSupervisorAgents([])
       setSupervisorCustomers([])
@@ -1263,10 +624,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setSupervisorAssignments([])
       setSupervisorAuditEntries([])
       setSelectedSupervisorCustomerId(null)
+      setIsSupervisorCustomerDetailOpen(false)
       setSelectedSupervisorAgentId(null)
       setSelectedSupervisorAccessAgentId(null)
-      setSelectedSupervisorBulkFromAgentId(null)
-      setSelectedSupervisorBulkToAgentId(null)
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את נתוני הבקרה של סופרווייזר.')
     } finally {
       setIsSupervisorLoading(false)
@@ -1328,26 +688,51 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       return
     }
 
+    if (activeSupervisorWorkspaceTab !== 'audit') {
+      return
+    }
+
     void loadSupervisorAuditLog(selectedSupervisorCustomerId)
-  }, [activeTab, isSupervisorRole, loadSupervisorAuditLog, selectedSupervisorCustomerId])
+  }, [activeSupervisorWorkspaceTab, activeTab, isSupervisorRole, loadSupervisorAuditLog, selectedSupervisorCustomerId])
 
   useEffect(() => {
-    if (!selectedSupervisorBulkFromAgentId) {
-      return
+    if (!selectedSupervisorCustomerId || activeSupervisorWorkspaceTab !== 'customers') {
+      setIsSupervisorCustomerDetailOpen(false)
     }
+  }, [activeSupervisorWorkspaceTab, selectedSupervisorCustomerId])
 
-    if (
-      selectedSupervisorBulkToAgentId &&
-      selectedSupervisorBulkToAgentId !== selectedSupervisorBulkFromAgentId &&
-      assignableSupervisorAgents.some((agent) => agent.agentId === selectedSupervisorBulkToAgentId)
-    ) {
-      return
-    }
+  const refreshSupervisorWorkspaceData = useCallback(
+    async ({
+      customerId = selectedSupervisorCustomerId,
+      includeAssignments = true,
+      includeAudit = activeSupervisorWorkspaceTab === 'audit',
+    }: {
+      customerId?: string | null
+      includeAssignments?: boolean
+      includeAudit?: boolean
+    } = {}) => {
+      await loadSupervisorData()
 
-    const fallbackTarget =
-      assignableSupervisorAgents.find((agent) => agent.agentId !== selectedSupervisorBulkFromAgentId)?.agentId ?? null
-    setSelectedSupervisorBulkToAgentId(fallbackTarget)
-  }, [assignableSupervisorAgents, selectedSupervisorBulkFromAgentId, selectedSupervisorBulkToAgentId])
+      if (includeAssignments) {
+        if (customerId) {
+          await loadSupervisorAssignments(customerId)
+        } else {
+          setSupervisorAssignments([])
+        }
+      }
+
+      if (includeAudit) {
+        await loadSupervisorAuditLog(customerId ?? null)
+      }
+    },
+    [
+      activeSupervisorWorkspaceTab,
+      loadSupervisorAssignments,
+      loadSupervisorAuditLog,
+      loadSupervisorData,
+      selectedSupervisorCustomerId,
+    ],
+  )
 
   const assignCustomerOwnership = useCallback(async () => {
     if (!token || !selectedSupervisorCustomerId || !selectedSupervisorAgentId) {
@@ -1362,28 +747,23 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     try {
       const result = await assignSupervisorCustomer(token, selectedSupervisorCustomerId, selectedSupervisorAgentId)
       setSupervisorInfo(result.created ? 'שיוך הלקוח נשמר בהצלחה.' : 'הלקוח כבר משויך לסוכן זה.')
-      await Promise.all([
-        loadSupervisorData(),
-        loadSupervisorAssignments(selectedSupervisorCustomerId),
-        loadSupervisorAuditLog(selectedSupervisorCustomerId),
-      ])
+      await refreshSupervisorWorkspaceData({ customerId: selectedSupervisorCustomerId })
     } catch (error) {
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לשייך את הלקוח לסוכן.')
     } finally {
       setIsSupervisorMutating(false)
     }
   }, [
-    loadSupervisorAssignments,
-    loadSupervisorAuditLog,
-    loadSupervisorData,
+    refreshSupervisorWorkspaceData,
     selectedSupervisorAgentId,
     selectedSupervisorCustomerId,
     token,
   ])
 
   const unassignCustomerOwnership = useCallback(
-    async (agentId: string) => {
-      if (!token || !selectedSupervisorCustomerId) {
+    async (customerId: string, agentId: string) => {
+      const normalizedCustomerId = customerId.trim()
+      if (!token || !normalizedCustomerId) {
         setSupervisorError('יש לבחור לקוח לפני הסרת שיוך.')
         return
       }
@@ -1393,20 +773,16 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       setSupervisorInfo(null)
 
       try {
-        const result = await unassignSupervisorCustomer(token, selectedSupervisorCustomerId, agentId)
+        const result = await unassignSupervisorCustomer(token, normalizedCustomerId, agentId)
         setSupervisorInfo(result.removed ? 'שיוך הוסר בהצלחה.' : 'לא נמצא שיוך להסרה עבור הסוכן שנבחר.')
-        await Promise.all([
-          loadSupervisorData(),
-          loadSupervisorAssignments(selectedSupervisorCustomerId),
-          loadSupervisorAuditLog(selectedSupervisorCustomerId),
-        ])
+        await refreshSupervisorWorkspaceData({ customerId: normalizedCustomerId })
       } catch (error) {
         setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו להסיר את השיוך.')
       } finally {
         setIsSupervisorMutating(false)
       }
     },
-    [loadSupervisorAssignments, loadSupervisorAuditLog, loadSupervisorData, selectedSupervisorCustomerId, token],
+    [refreshSupervisorWorkspaceData, token],
   )
 
   const toggleSupervisorAgentAccess = useCallback(async () => {
@@ -1445,17 +821,16 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       }
 
       setSupervisorInfo(nextIsActive ? 'גישת הסוכן הופעלה מחדש.' : 'גישת הסוכן הושבתה בהצלחה.')
-      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+      await refreshSupervisorWorkspaceData({ includeAssignments: false })
     } catch (error) {
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לעדכן את גישת הסוכן.')
     } finally {
       setIsSupervisorMutating(false)
     }
   }, [
-    loadSupervisorAuditLog,
+    refreshSupervisorWorkspaceData,
     selectedSupervisorAccessAgent,
     selectedSupervisorAgentId,
-    selectedSupervisorCustomerId,
     supervisorFieldAgents,
     token,
   ])
@@ -1475,57 +850,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         reason: 'ניתוק יזום ממסך הסופרווייזר',
       })
       setSupervisorInfo(`הסשנים הפעילים של ${selectedSupervisorAccessAgent.name} נותקו.`)
-      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+      await refreshSupervisorWorkspaceData({ includeAssignments: false })
     } catch (error) {
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לנתק את הסשנים הפעילים.')
     } finally {
       setIsSupervisorMutating(false)
     }
-  }, [loadSupervisorAuditLog, selectedSupervisorAccessAgent, selectedSupervisorCustomerId, token])
-
-  const bulkReassignSupervisorCustomersByAgent = useCallback(async () => {
-    if (!token || !selectedSupervisorBulkFromAgentId || !selectedSupervisorBulkToAgentId) {
-      setSupervisorError('יש לבחור סוכן מקור וסוכן יעד לפני ביצוע העברה מרוכזת.')
-      return
-    }
-    if (selectedSupervisorBulkFromAgentId === selectedSupervisorBulkToAgentId) {
-      setSupervisorError('סוכן המקור וסוכן היעד חייבים להיות שונים.')
-      return
-    }
-
-    setIsSupervisorMutating(true)
-    setSupervisorError(null)
-    setSupervisorInfo(null)
-
-    try {
-      const result = await bulkReassignSupervisorCustomers(token, {
-        fromAgentId: selectedSupervisorBulkFromAgentId,
-        toAgentId: selectedSupervisorBulkToAgentId,
-        reason: 'איזון עומסים מהאפליקציה',
-      })
-
-      setSupervisorInfo(
-        `בוצעה העברה מרוכזת: ${result.reassignedCustomers} הועברו, ${result.skippedCustomers} דולגו.`,
-      )
-      await Promise.all([
-        loadSupervisorData(),
-        selectedSupervisorCustomerId ? loadSupervisorAssignments(selectedSupervisorCustomerId) : Promise.resolve(),
-        loadSupervisorAuditLog(selectedSupervisorCustomerId),
-      ])
-    } catch (error) {
-      setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לבצע העברה מרוכזת.')
-    } finally {
-      setIsSupervisorMutating(false)
-    }
-  }, [
-    loadSupervisorAssignments,
-    loadSupervisorAuditLog,
-    loadSupervisorData,
-    selectedSupervisorBulkFromAgentId,
-    selectedSupervisorBulkToAgentId,
-    selectedSupervisorCustomerId,
-    token,
-  ])
+  }, [refreshSupervisorWorkspaceData, selectedSupervisorAccessAgent, token])
 
   const createSupervisorManagedAgent = useCallback(async () => {
     if (!token) {
@@ -1565,13 +896,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         password: '',
       }))
 
-      await Promise.all([loadSupervisorData(), loadSupervisorAuditLog(selectedSupervisorCustomerId)])
+      await refreshSupervisorWorkspaceData({ includeAssignments: false })
     } catch (error) {
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו ליצור סוכן חדש.')
     } finally {
       setIsSupervisorMutating(false)
     }
-  }, [loadSupervisorAuditLog, loadSupervisorData, selectedSupervisorCustomerId, supervisorCreateAgentDraft, token])
+  }, [refreshSupervisorWorkspaceData, supervisorCreateAgentDraft, token])
 
   const saveSupervisorCustomerProfile = useCallback(async () => {
     if (!token || !selectedSupervisorCustomerId) {
@@ -1638,13 +969,13 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         }),
       )
       setSupervisorInfo('פרטי הלקוח עודכנו בהצלחה.')
-      await loadSupervisorAuditLog(selectedSupervisorCustomerId)
+      await refreshSupervisorWorkspaceData({ customerId: selectedSupervisorCustomerId })
     } catch (error) {
       setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לשמור את פרופיל הלקוח.')
     } finally {
       setIsSupervisorMutating(false)
     }
-  }, [loadSupervisorAuditLog, selectedSupervisorCustomer, selectedSupervisorCustomerId, supervisorProfileDraft, token])
+  }, [refreshSupervisorWorkspaceData, selectedSupervisorCustomer, selectedSupervisorCustomerId, supervisorProfileDraft, token])
 
   useEffect(() => {
     setOrdersPage(1)
@@ -1736,6 +1067,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
     return scopedCustomers.filter(matchesCustomerFilter)
   }, [customers, matchesCustomerFilter, normalizedSearchQuery])
+  const normalizedSupervisorSearchQuery = supervisorCustomerSearchQuery.trim().toLowerCase()
+  const filteredSupervisorCustomers = useMemo(() => {
+    if (!normalizedSupervisorSearchQuery) {
+      return supervisorCustomers
+    }
+
+    return supervisorCustomers.filter((customer) => {
+      const searchable = [customer.customerId, customer.name, customer.contactName ?? '', customer.phone ?? '', customer.city ?? '']
+        .join(' ')
+        .toLowerCase()
+      return searchable.includes(normalizedSupervisorSearchQuery)
+    })
+  }, [normalizedSupervisorSearchQuery, supervisorCustomers])
 
   const todaySalesTotal = useMemo(() => sumOrdersEstimatedTotal(homeOrdersToday), [homeOrdersToday])
 
@@ -1774,6 +1118,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     setSelectedCustomerId(customerId)
     setIsCustomerDetailOpen(true)
     setActiveTab('customers')
+  }, [])
+  const openSupervisorCustomerDetail = useCallback((customerId: string) => {
+    setSelectedSupervisorCustomerId(customerId)
+    setIsSupervisorCustomerDetailOpen(true)
   }, [])
 
   const openCustomerOrders = useCallback((customerId: string) => {
@@ -2047,6 +1395,59 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 <Text style={styles.customerId}>{humanizeCustomerName(customer.customerId)}</Text>
                 <Text style={styles.customerMeta}>
                   {renderHebrewNumericRuns(`הזמנה אחרונה: ${formatRelativeLastOrder(customer.lastOrderAt)}`)}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      </View>
+    )
+  }
+
+  const renderSupervisorCustomersList = (): React.JSX.Element => {
+    if (filteredSupervisorCustomers.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.mutedText}>
+            {supervisorCustomers.length === 0 ? 'אין לקוחות זמינים לניהול כרגע.' : 'לא נמצאו לקוחות שמתאימים לחיפוש.'}
+          </Text>
+        </View>
+      )
+    }
+
+    return (
+      <View style={styles.customerListSection}>
+        <View style={styles.customerGrid}>
+          {filteredSupervisorCustomers.map((customer) => {
+            const status = getSupervisorCustomerStatus(customer)
+            const subtitleParts = [customer.city, customer.phone].filter((value): value is string => Boolean(value && value.trim()))
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={customer.customerId}
+                onPress={() => {
+                  openSupervisorCustomerDetail(customer.customerId)
+                }}
+                style={({ pressed }) => [
+                  styles.customerCard,
+                  status.tone === 'success' ? styles.customerCardPrimaryBorder : styles.customerCardSecondaryBorder,
+                  pressed && styles.customerCardPressed,
+                ]}
+              >
+                <View style={styles.customerCardHeader}>
+                  <View style={styles.statusRow}>
+                    <View style={[styles.statusDot, status.tone === 'success' ? styles.statusDotSuccess : styles.statusDotWarning]} />
+                    <Text style={styles.statusText}>{status.label}</Text>
+                  </View>
+                  <Text style={styles.customerCode}>
+                    {renderHebrewNumericRuns(`${customer.assignment.assignmentCount} שיוכים`)}
+                  </Text>
+                </View>
+                <Text style={styles.customerId}>{customer.name}</Text>
+                <Text style={styles.customerMeta}>
+                  {subtitleParts.length > 0
+                    ? subtitleParts.join(' · ')
+                    : renderHebrewNumericRuns(`עודכן: ${formatSupervisorAuditTime(customer.updatedAt)}`)}
                 </Text>
               </Pressable>
             )
@@ -2636,26 +2037,36 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     const customerSelectionRequired = !selectedSupervisorCustomerId
     const canAssign = Boolean(selectedSupervisorCustomerId && selectedSupervisorAgentId)
     const canToggleAccess = Boolean(selectedSupervisorAccessAgent)
-    const canBulkReassign = Boolean(
-      selectedSupervisorBulkFromAgentId &&
-        selectedSupervisorBulkToAgentId &&
-        selectedSupervisorBulkFromAgentId !== selectedSupervisorBulkToAgentId,
-    )
     const agentNameById = new Map(supervisorAgents.map((agent) => [agent.agentId, agent.name]))
-    const bulkDestinationAgents = assignableSupervisorAgents.filter(
-      (agent) => agent.agentId !== selectedSupervisorBulkFromAgentId,
-    )
     const oversightByAgent = supervisorOversight?.orders.byAgent ?? []
     const oversightByCustomer = supervisorOversight?.orders.byCustomer ?? []
     const oversightErpSignals = supervisorOversight?.erp.recentSignals ?? []
+    const selectedCustomerLabel = selectedSupervisorCustomer?.name ?? 'לא נבחר לקוח'
 
     return (
       <View style={styles.tabSection} testID={AGENT_SCREEN_TEST_IDS.supervisorControlPlane}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>מרכז בקרה לסופרווייזר</Text>
-          <Text style={styles.sectionMeta}>
-            {renderHebrewNumericRuns(`${supervisorCustomers.length} לקוחות · ${supervisorAgents.length} סוכנים`)}
-          </Text>
+        <View style={styles.supervisorControlHeaderCard}>
+          <View style={styles.supervisorControlHeading}>
+            <View style={styles.supervisorControlIconWrap}>
+              <MaterialIcons color={palette.primaryContainer} name="admin-panel-settings" size={20} />
+            </View>
+            <View style={styles.supervisorControlHeadingText}>
+              <Text style={styles.supervisorControlTitle}>מרכז בקרה</Text>
+              <Text style={styles.supervisorControlMeta}>
+                {renderHebrewNumericRuns(`${supervisorCustomers.length} לקוחות · ${supervisorAgents.length} סוכנים`)}
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              void refreshSupervisorWorkspaceData()
+            }}
+            style={({ pressed }) => [styles.supervisorRefreshButton, pressed && styles.tabButtonPressed]}
+          >
+            <MaterialIcons color={palette.secondary} name="refresh" size={16} />
+            <Text style={styles.supervisorRefreshButtonText}>רענון</Text>
+          </Pressable>
         </View>
 
         {renderBanner(getResilienceHint(false, supervisorError), Boolean(supervisorError))}
@@ -2668,7 +2079,38 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           </View>
         ) : (
           <>
-            <View style={styles.panelSection}>
+            <View style={styles.supervisorWorkspaceTabsContainer}>
+              <View style={styles.supervisorWorkspaceTabsContent}>
+                {SUPERVISOR_WORKSPACE_TABS.map((workspaceTab) => {
+                  const isActive = workspaceTab.id === activeSupervisorWorkspaceTab
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={workspaceTab.id}
+                      onPress={() => {
+                        setActiveSupervisorWorkspaceTab(workspaceTab.id)
+                        if (workspaceTab.id !== 'customers') {
+                          setIsSupervisorCustomerDetailOpen(false)
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        styles.supervisorWorkspaceTab,
+                        isActive && styles.supervisorWorkspaceTabActive,
+                        pressed && styles.tabButtonPressed,
+                      ]}
+                    >
+                      <MaterialIcons color={isActive ? '#fff' : palette.secondary} name={workspaceTab.icon} size={16} />
+                      <Text style={[styles.supervisorWorkspaceTabLabel, isActive && styles.supervisorWorkspaceTabLabelActive]}>
+                        {workspaceTab.label}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            </View>
+
+            {activeSupervisorWorkspaceTab === 'overview' ? (
+              <View style={styles.panelSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.panelTitle}>דשבורד תפעולי יומי</Text>
                 <Text style={styles.sectionMeta}>
@@ -2791,42 +2233,47 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               ) : (
                 <Text style={styles.mutedText}>לא הצלחנו לטעון נתוני דשבורד תפעולי כרגע.</Text>
               )}
-            </View>
+              </View>
+            ) : null}
 
-            <View style={styles.panelSection}>
-              <Text style={styles.panelTitle}>בחירת לקוח לניהול</Text>
-              {supervisorCustomers.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.mutedText}>אין לקוחות זמינים לניהול כרגע.</Text>
-                </View>
-              ) : (
-                <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
-                  {supervisorCustomers.map((customer) => {
-                    const isSelected = customer.customerId === selectedSupervisorCustomerId
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={customer.customerId}
-                        onPress={() => {
-                          setSelectedSupervisorCustomerId(customer.customerId)
-                        }}
-                        style={({ pressed }) => [
-                          styles.filterChip,
-                          isSelected ? styles.filterChipSelected : styles.filterChipDefault,
-                          pressed && styles.tabButtonPressed,
-                        ]}
-                      >
-                        <Text style={[styles.filterChipText, isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault]}>
-                          {customer.name}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
-                </ScrollView>
-              )}
-            </View>
+            {activeSupervisorWorkspaceTab === 'customers' || activeSupervisorWorkspaceTab === 'agents' ? (
+                  <>
+                    {activeSupervisorWorkspaceTab === 'customers' ? (
+                      <>
+                        {!isSupervisorCustomerDetailOpen ? (
+                          <View style={styles.panelSection}>
+                            <View style={styles.sectionHeader}>
+                              <Text style={styles.panelTitle}>בחירת לקוח לניהול</Text>
+                              <Text style={styles.sectionMeta}>{renderHebrewNumericRuns(`${filteredSupervisorCustomers.length} לקוחות בתצוגה`)}</Text>
+                            </View>
+                            {renderSupervisorCustomersList()}
+                          </View>
+                        ) : (
+                          <>
+                            <Pressable
+                              accessibilityRole="button"
+                              onPress={() => {
+                                setIsSupervisorCustomerDetailOpen(false)
+                              }}
+                              style={({ pressed }) => [styles.detailBackButton, pressed && styles.primaryButtonDisabled]}
+                            >
+                              <MaterialIcons color={palette.secondary} name="arrow-forward" size={16} />
+                              <Text style={styles.detailBackButtonText}>חזרה לרשימת הלקוחות</Text>
+                            </Pressable>
+                            <View style={styles.supervisorWorkspaceInfoCard}>
+                              <MaterialIcons color={palette.secondary} name="person-pin-circle" size={18} />
+                              <Text style={styles.supervisorWorkspaceInfoText}>
+                                {renderHebrewNumericRuns(`לקוח נבחר לניהול: ${selectedCustomerLabel}`)}
+                              </Text>
+                            </View>
+                          </>
+                        )}
+                      </>
+                    ) : null}
 
-            <View style={styles.panelSection}>
+            {activeSupervisorWorkspaceTab === 'agents' ? (
+              <>
+                <View style={styles.panelSection}>
               <Text style={styles.panelTitle}>ניהול גישת סוכנים</Text>
               {supervisorFieldAgents.length === 0 ? (
                 <Text style={styles.mutedText}>לא נמצאו סוכנים לניהול גישה.</Text>
@@ -2903,9 +2350,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   </View>
                 </>
               )}
-            </View>
+                </View>
 
-            <View style={styles.panelSection}>
+                <View style={styles.panelSection}>
               <Text style={styles.panelTitle}>יצירת חשבון סוכן חדש</Text>
               <TextInput
                 accessibilityLabel="שם סוכן חדש"
@@ -2984,8 +2431,12 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               >
                 <Text style={styles.primaryButtonText}>יצירת חשבון סוכן</Text>
               </Pressable>
-            </View>
+                </View>
+              </>
+            ) : null}
 
+            {activeSupervisorWorkspaceTab === 'customers' && isSupervisorCustomerDetailOpen ? (
+              <>
             <View style={styles.panelSection}>
               <Text style={styles.panelTitle}>שיוך לקוח לסוכן</Text>
               {assignableSupervisorAgents.length === 0 ? (
@@ -3052,7 +2503,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                         accessibilityRole="button"
                         disabled={isSupervisorMutating}
                         onPress={() => {
-                          void unassignCustomerOwnership(assignment.agentId)
+                          void unassignCustomerOwnership(assignment.customerId, assignment.agentId)
                         }}
                         style={({ pressed }) => [styles.linkButtonInline, (isSupervisorMutating || pressed) && styles.linkButtonDisabled]}
                       >
@@ -3062,95 +2513,6 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   ))
                 )}
               </View>
-            </View>
-
-            <View style={styles.panelSection}>
-              <Text style={styles.panelTitle}>העברה מרוכזת בין סוכנים</Text>
-              {supervisorFieldAgents.length < 2 ? (
-                <Text style={styles.mutedText}>נדרשים לפחות שני סוכנים כדי להעביר עומס לקוחות.</Text>
-              ) : (
-                <>
-                  <View style={styles.supervisorBulkColumns}>
-                    <View style={styles.supervisorBulkColumn}>
-                      <Text style={styles.supervisorBulkLabel}>מסוכן מקור</Text>
-                      <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
-                        {supervisorFieldAgents.map((agent) => {
-                          const isSelected = agent.agentId === selectedSupervisorBulkFromAgentId
-                          return (
-                            <Pressable
-                              accessibilityRole="button"
-                              key={`bulk-from-${agent.agentId}`}
-                              onPress={() => {
-                                setSelectedSupervisorBulkFromAgentId(agent.agentId)
-                              }}
-                              style={({ pressed }) => [
-                                styles.filterChip,
-                                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
-                                pressed && styles.tabButtonPressed,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.filterChipText,
-                                  isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault,
-                                ]}
-                              >
-                                {agent.name}
-                              </Text>
-                            </Pressable>
-                          )
-                        })}
-                      </ScrollView>
-                    </View>
-
-                    <View style={styles.supervisorBulkColumn}>
-                      <Text style={styles.supervisorBulkLabel}>לסוכן יעד</Text>
-                      <ScrollView horizontal contentContainerStyle={styles.customerFilterContent} showsHorizontalScrollIndicator={false}>
-                        {bulkDestinationAgents.map((agent) => {
-                          const isSelected = agent.agentId === selectedSupervisorBulkToAgentId
-                          return (
-                            <Pressable
-                              accessibilityRole="button"
-                              key={`bulk-to-${agent.agentId}`}
-                              onPress={() => {
-                                setSelectedSupervisorBulkToAgentId(agent.agentId)
-                              }}
-                              style={({ pressed }) => [
-                                styles.filterChip,
-                                isSelected ? styles.filterChipSelected : styles.filterChipDefault,
-                                pressed && styles.tabButtonPressed,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.filterChipText,
-                                  isSelected ? styles.filterChipTextSelected : styles.filterChipTextDefault,
-                                ]}
-                              >
-                                {agent.name}
-                              </Text>
-                            </Pressable>
-                          )
-                        })}
-                      </ScrollView>
-                    </View>
-                  </View>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={!canBulkReassign || isSupervisorMutating}
-                    onPress={() => {
-                      void bulkReassignSupervisorCustomersByAgent()
-                    }}
-                    style={({ pressed }) => [
-                      styles.primaryButtonSmallWide,
-                      (!canBulkReassign || isSupervisorMutating || pressed) && styles.primaryButtonDisabled,
-                    ]}
-                  >
-                    <Text style={styles.primaryButtonText}>העברת כלל לקוחות המקור לסוכן היעד</Text>
-                  </Pressable>
-                </>
-              )}
             </View>
 
             <View style={styles.panelSection}>
@@ -3243,8 +2605,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                 <Text style={styles.primaryButtonText}>שמירת פרטי לקוח</Text>
               </Pressable>
             </View>
+                  </>
+                ) : null}
 
-            <View style={styles.panelSection}>
+              </>
+            ) : null}
+
+            {activeSupervisorWorkspaceTab === 'audit' ? (
+              <View style={styles.panelSection}>
               <Text style={styles.panelTitle}>יומן פעולות אחרונות</Text>
               {isSupervisorAuditLoading ? (
                 <View style={styles.loadingState}>
@@ -3265,7 +2633,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                   ))}
                 </View>
               )}
-            </View>
+              </View>
+            ) : null}
           </>
         )}
       </View>
@@ -3405,7 +2774,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const refreshActiveTab = useCallback(() => {
     if (activeTab === 'supervisor') {
-      void loadSupervisorData()
+      void refreshSupervisorWorkspaceData()
       return
     }
 
@@ -3419,12 +2788,19 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     if (isSupervisorRole) {
-      void loadSupervisorData()
+      void refreshSupervisorWorkspaceData()
       return
     }
 
     void loadCustomers()
-  }, [activeTab, isSupervisorRole, loadCustomers, loadHomeOrdersSnapshot, loadOrders, loadSupervisorData])
+  }, [
+    activeTab,
+    isSupervisorRole,
+    loadCustomers,
+    loadHomeOrdersSnapshot,
+    loadOrders,
+    refreshSupervisorWorkspaceData,
+  ])
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
@@ -3457,18 +2833,36 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               </Pressable>
             </View>
           ) : null}
-          {(activeTab === 'customers' && !isCustomerDetailOpen) || (activeTab === 'orders' && !selectedOrder) ? (
+          {(activeTab === 'customers' && !isCustomerDetailOpen) ||
+          (activeTab === 'orders' && !selectedOrder) ||
+          (activeTab === 'supervisor' && activeSupervisorWorkspaceTab === 'customers' && !isSupervisorCustomerDetailOpen) ? (
             <View style={styles.searchBlock}>
               <MaterialIcons color={palette.secondary} name="search" size={18} style={styles.searchIcon} />
               <TextInput
                 accessibilityLabel="חיפוש לקוחות"
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder={activeTab === 'orders' ? 'חיפוש לפי לקוח, קוד פריט או שם פריט...' : 'חיפוש לקוח...'}
-                value={activeTab === 'orders' ? ordersSearchQuery : customerSearchQuery}
+                placeholder={
+                  activeTab === 'orders'
+                    ? 'חיפוש לפי לקוח, קוד פריט או שם פריט...'
+                    : activeTab === 'supervisor'
+                      ? 'חיפוש לקוח לניהול...'
+                      : 'חיפוש לקוח...'
+                }
+                value={
+                  activeTab === 'orders'
+                    ? ordersSearchQuery
+                    : activeTab === 'supervisor'
+                      ? supervisorCustomerSearchQuery
+                      : customerSearchQuery
+                }
                 onChangeText={(value) => {
                   if (activeTab === 'orders') {
                     setOrdersSearchQuery(value)
+                    return
+                  }
+                  if (activeTab === 'supervisor') {
+                    setSupervisorCustomerSearchQuery(value)
                     return
                   }
                   setCustomerSearchQuery(value)
@@ -3503,8 +2897,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
               key={tab.id}
               onPress={() => {
                 setIsCustomerDetailOpen(false)
+                setIsSupervisorCustomerDetailOpen(false)
                 setSelectedOrderId(null)
                 setCustomerSearchQuery('')
+                setSupervisorCustomerSearchQuery('')
                 setActiveCustomerFilter('all')
                 setOrdersSearchQuery('')
                 setActiveOrderDateFilter('all')
@@ -3531,7 +2927,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   )
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: palette.background,
@@ -4392,167 +3788,6 @@ const styles = StyleSheet.create({
   settingsGoalInput: {
     flex: 1,
   },
-  supervisorOversightMetricsGrid: {
-    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  supervisorOversightMetricCard: {
-    flexGrow: 1,
-    minWidth: 132,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    backgroundColor: palette.surfaceLow,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: 2,
-  },
-  supervisorOversightMetricLabel: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  supervisorOversightMetricValue: {
-    color: palette.primaryContainer,
-    fontSize: scaledFont(18),
-    fontWeight: '800',
-    fontFamily: NUMERIC_FONT_FAMILY,
-    fontVariant: ['tabular-nums'],
-  },
-  supervisorOversightColumns: {
-    gap: spacing.sm,
-  },
-  supervisorOversightColumn: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    backgroundColor: palette.surfaceLow,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  supervisorOversightList: {
-    gap: spacing.xs,
-  },
-  supervisorOversightRow: {
-    gap: 2,
-  },
-  supervisorOversightRowPrimary: {
-    color: palette.primary,
-    fontSize: 13,
-    fontWeight: '800',
-    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
-    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
-  },
-  supervisorOversightRowMeta: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    fontFamily: NUMERIC_FONT_FAMILY,
-    fontVariant: ['tabular-nums'],
-    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
-    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
-  },
-  supervisorNotesInput: {
-    minHeight: 96,
-    paddingTop: 10,
-  },
-  supervisorStatusRow: {
-    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  supervisorAgentHint: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: IS_RTL_LAYOUT ? 'right' : 'left',
-    writingDirection: IS_RTL_LAYOUT ? 'rtl' : 'ltr',
-  },
-  supervisorDangerActionButton: {
-    backgroundColor: palette.dangerSurface,
-    borderWidth: 1,
-    borderColor: palette.danger,
-  },
-  supervisorDangerActionText: {
-    color: palette.danger,
-    fontWeight: '700',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  supervisorAssignmentList: {
-    gap: spacing.sm,
-  },
-  supervisorBulkColumns: {
-    gap: spacing.sm,
-  },
-  supervisorBulkColumn: {
-    gap: spacing.xs,
-  },
-  supervisorBulkLabel: {
-    color: palette.secondary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  supervisorAssignmentRow: {
-    flexDirection: IS_RTL_LAYOUT ? 'row-reverse' : 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: palette.outline,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: palette.surfaceLow,
-    gap: spacing.sm,
-  },
-  supervisorAssignmentMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  supervisorAssignmentAgent: {
-    color: palette.primary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  supervisorAssignmentDate: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: NUMERIC_FONT_FAMILY,
-    fontVariant: ['tabular-nums'],
-  },
-  supervisorUnassignText: {
-    color: palette.danger,
-    fontSize: 13,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  supervisorAuditList: {
-    gap: spacing.sm,
-  },
-  supervisorAuditRow: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: palette.outline,
-    backgroundColor: palette.surfaceLow,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: 4,
-  },
-  supervisorAuditEvent: {
-    color: palette.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  supervisorAuditMeta: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: NUMERIC_FONT_FAMILY,
-    fontVariant: ['tabular-nums'],
-  },
   settingsProfileCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -4870,3 +4105,12 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 })
+
+const styles = {
+  ...baseStyles,
+  ...createSupervisorStyles({
+    isRtlLayout: IS_RTL_LAYOUT,
+    numericFontFamily: NUMERIC_FONT_FAMILY,
+    scaledFont,
+  }),
+}

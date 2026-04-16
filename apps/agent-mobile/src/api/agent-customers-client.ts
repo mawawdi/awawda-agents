@@ -316,7 +316,20 @@ function parseErrorBody(payload: unknown): string | null {
   }
 
   const candidate = (payload as { message?: unknown }).message
-  return typeof candidate === 'string' && candidate.trim() ? candidate : null
+  if (typeof candidate !== 'string') {
+    return null
+  }
+
+  const normalized = candidate.trim()
+  if (!normalized) {
+    return null
+  }
+
+  if (/^Cannot (GET|POST|PUT|PATCH|DELETE)\s+/i.test(normalized)) {
+    return null
+  }
+
+  return normalized
 }
 
 export class AgentApiError extends Error {
@@ -336,7 +349,7 @@ function mapAgentApiError(status: number, payload: unknown): Error {
       : status === 403
         ? 'עדיין לא שובצתם ללקוח הזה.'
         : status === 404
-          ? 'ההזמנה המבוקשת לא נמצאה עבור החשבון שלכם.'
+          ? 'המשאב המבוקש לא נמצא.'
         : 'לא ניתן להתחבר לעואודה לשיווק בע״מ כעת. נסו שוב.'
 
   return new AgentApiError(parseErrorBody(payload) ?? fallback, status)
@@ -590,13 +603,17 @@ export async function unassignSupervisorCustomer(
   customerId: string,
   agentId: string,
 ): Promise<SupervisorCustomerUnassignAgentResponse> {
+  const normalizedCustomerId = customerId.trim()
   const normalizedAgentId = agentId.trim()
+  if (!normalizedCustomerId) {
+    throw new Error('נדרש מזהה לקוח תקין להסרת שיוך.')
+  }
   if (!normalizedAgentId) {
     throw new Error('נדרש מזהה סוכן תקין להסרת שיוך.')
   }
 
   const response = await requestAgentApi(
-    `/v1/supervisor/customers/${encodeURIComponent(customerId)}/assignments/${encodeURIComponent(normalizedAgentId)}`,
+    `/v1/supervisor/customers/${encodeURIComponent(normalizedCustomerId)}/assignments/${encodeURIComponent(normalizedAgentId)}`,
     {
       method: 'DELETE',
       headers: {

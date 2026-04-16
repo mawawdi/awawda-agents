@@ -521,6 +521,122 @@ describe('Supervisor endpoints', () => {
       removed: true,
       removedAt: '2026-04-16T11:05:00.000Z',
     });
+    expect(supervisorRepository.unassignCustomerFromAgent).toHaveBeenCalledWith({
+      supervisorAgentId: 'agent-supervisor-1',
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+    });
+  });
+
+  it('supports legacy GET unassign route for client compatibility', async () => {
+    const supervisorRepository = app.get<SupervisorRepository>(SUPERVISOR_REPOSITORY);
+    vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent').mockResolvedValue({
+      removed: true,
+      removedAt: '2026-04-16T11:06:00.000Z',
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/supervisor/customers/cust-alpha/assignments/agent-field-2',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-supervisor-1', 'supervisor')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+      removed: true,
+      removedAt: '2026-04-16T11:06:00.000Z',
+    });
+    expect(supervisorRepository.unassignCustomerFromAgent).toHaveBeenCalledWith({
+      supervisorAgentId: 'agent-supervisor-1',
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+    });
+  });
+
+  it('supports unassigning customer ownership via fallback route', async () => {
+    const supervisorRepository = app.get<SupervisorRepository>(SUPERVISOR_REPOSITORY);
+    vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent').mockResolvedValue({
+      removed: true,
+      removedAt: '2026-04-16T11:07:00.000Z',
+    });
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/v1/supervisor/customers/cust-alpha/assignments',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-supervisor-1', 'supervisor')}`,
+      },
+      payload: {
+        agentId: 'agent-field-2',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+      removed: true,
+      removedAt: '2026-04-16T11:07:00.000Z',
+    });
+    expect(supervisorRepository.unassignCustomerFromAgent).toHaveBeenCalledWith({
+      supervisorAgentId: 'agent-supervisor-1',
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+    });
+  });
+
+  it('supports unassign fallback route with query agent id', async () => {
+    const supervisorRepository = app.get<SupervisorRepository>(SUPERVISOR_REPOSITORY);
+    vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent').mockResolvedValue({
+      removed: false,
+      removedAt: '2026-04-16T11:08:00.000Z',
+    });
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/v1/supervisor/customers/cust-alpha/assignments?agentId=agent-field-2',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-supervisor-1', 'supervisor')}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+      removed: false,
+      removedAt: '2026-04-16T11:08:00.000Z',
+    });
+    expect(supervisorRepository.unassignCustomerFromAgent).toHaveBeenCalledWith({
+      supervisorAgentId: 'agent-supervisor-1',
+      customerId: 'cust-alpha',
+      agentId: 'agent-field-2',
+    });
+  });
+
+  it('returns 400 for unassign fallback route without agent id', async () => {
+    const supervisorRepository = app.get<SupervisorRepository>(SUPERVISOR_REPOSITORY);
+    const unassignSpy = vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent');
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/v1/supervisor/customers/cust-alpha/assignments',
+      headers: {
+        authorization: `Bearer ${signAgentToken('agent-supervisor-1', 'supervisor')}`,
+      },
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      code: 'SUPERVISOR_ASSIGNMENT_AGENT_ID_REQUIRED',
+      message: 'Agent id is required to unassign customer ownership',
+    });
+    expect(unassignSpy).not.toHaveBeenCalled();
   });
 
   it('updates customer profile metadata', async () => {
