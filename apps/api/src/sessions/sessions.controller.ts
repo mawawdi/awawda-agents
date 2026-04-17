@@ -45,21 +45,69 @@ export class SessionsController {
   }
 }
 
-function resolveClientIp(request: { ip?: string; headers: Record<string, string | string[] | undefined> }): string {
-  const forwardedForHeader = request.headers['x-forwarded-for'];
-  const forwardedForValue = Array.isArray(forwardedForHeader) ? forwardedForHeader[0] : forwardedForHeader;
-  if (forwardedForValue) {
-    const [firstIp] = forwardedForValue.split(',');
-    if (firstIp && firstIp.trim().length > 0) {
-      return firstIp.trim();
-    }
+export function resolveClientIp(request: {
+  ip?: string;
+  headers: Record<string, string | string[] | undefined>;
+}): string {
+  const directIp = normalizeIpValue(request.ip);
+  if (directIp === null) {
+    return readForwardedIp(request.headers) ?? readHeaderIp(request.headers['x-real-ip']) ?? 'unknown';
   }
 
-  const realIpHeader = request.headers['x-real-ip'];
-  const realIpValue = Array.isArray(realIpHeader) ? realIpHeader[0] : realIpHeader;
-  if (realIpValue && realIpValue.trim().length > 0) {
-    return realIpValue.trim();
+  if (isTrustedProxyIp(directIp)) {
+    return readForwardedIp(request.headers) ?? readHeaderIp(request.headers['x-real-ip']) ?? directIp;
   }
 
-  return request.ip ?? 'unknown';
+  return directIp;
+}
+
+function readForwardedIp(headers: Record<string, string | string[] | undefined>): string | null {
+  const forwardedForValue = readHeaderIp(headers['x-forwarded-for']);
+  if (!forwardedForValue) {
+    return null;
+  }
+
+  const [firstIp] = forwardedForValue.split(',');
+  return normalizeIpValue(firstIp);
+}
+
+function readHeaderIp(value: string | string[] | undefined): string | null {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return normalizeIpValue(candidate);
+}
+
+function normalizeIpValue(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function isTrustedProxyIp(ip: string): boolean {
+  const normalized = ip.trim().toLowerCase();
+  const unmapped = normalized.startsWith('::ffff:') ? normalized.slice('::ffff:'.length) : normalized;
+
+  if (unmapped === '::1' || unmapped === '127.0.0.1') {
+    return true;
+  }
+
+  if (isTrustedProxyIpv4(unmapped)) {
+    return true;
+  }
+
+  return unmapped.startsWith('fc') || unmapped.startsWith('fd') || unmapped.startsWith('fe80:');
+}
+
+function isTrustedProxyIpv4(ip: string): boolean {
+  const segments = ip.split('.').map((segment) => Number.parseInt(segment, 10));
+  if (segments.length !== 4 || segments.some((segment) => Number.isNaN(segment) || segment < 0 || segment > 255)) {
+    return false;
+  }
+
+  const [first, second] = segments;
+  return (
+    first === 10 ||
+    first === 127 ||
+    (first === 192 && second === 168) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 169 && second === 254)
+  );
 }

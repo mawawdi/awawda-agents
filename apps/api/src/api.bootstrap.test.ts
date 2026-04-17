@@ -152,6 +152,23 @@ describe('API bootstrap', () => {
     expect(response.headers['access-control-allow-headers']).toContain('Authorization');
   });
 
+  it('allows CORS preflight for customer order submit idempotency header', async () => {
+    const response = await app.inject({
+      method: 'OPTIONS',
+      url: '/v1/customer/orders',
+      headers: {
+        origin: 'http://localhost:8080',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'authorization,content-type,idempotency-key',
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8080');
+    expect(response.headers['access-control-allow-methods']).toContain('POST');
+    expect(response.headers['access-control-allow-headers']).toContain('Idempotency-Key');
+  });
+
   it('applies baseline security headers', async () => {
     const response = await app.inject({
       method: 'GET',

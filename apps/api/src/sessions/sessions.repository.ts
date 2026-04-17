@@ -72,30 +72,49 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
         return { kind: 'invalid' };
       }
 
-      await tx.magicLink.update({
+      const activationTransition = await tx.magicLink.updateMany({
         where: {
           id: magicLink.id,
+          status: MagicLinkStatus.ISSUED,
         },
         data: {
           status: MagicLinkStatus.ACTIVATED,
           activatedAt: now,
         },
       });
+      if (activationTransition.count === 0) {
+        return { kind: 'invalid' };
+      }
 
-      const session = await tx.session.create({
-        data: {
-          magicLinkId: magicLink.id,
-          hashCustomerId: magicLink.hashCustomerId,
-          sessionExpiresAt,
-          status: SessionStatus.ACTIVE,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          hashCustomerId: true,
-          sessionExpiresAt: true,
-        },
-      });
+      let session: {
+        id: string;
+        hashCustomerId: string;
+        sessionExpiresAt: Date;
+      } | null = null;
+      try {
+        session = await tx.session.create({
+          data: {
+            magicLinkId: magicLink.id,
+            hashCustomerId: magicLink.hashCustomerId,
+            sessionExpiresAt,
+            status: SessionStatus.ACTIVE,
+            isActive: true,
+          },
+          select: {
+            id: true,
+            hashCustomerId: true,
+            sessionExpiresAt: true,
+          },
+        });
+      } catch (error) {
+        if (isSessionMagicLinkUniqueConstraintError(error)) {
+          return { kind: 'invalid' };
+        }
+        throw error;
+      }
+      if (session === null) {
+        return { kind: 'invalid' };
+      }
 
       await tx.auditLog.createMany({
         data: [
@@ -349,6 +368,29 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
   }
 }
 
+function isSessionMagicLinkUniqueConstraintError(error: unknown): boolean {
+  if (!isObject(error) || error.code !== 'P2002') {
+    return false;
+  }
+
+  if (!isObject(error.meta)) {
+    return true;
+  }
+
+  const target = error.meta.target;
+  if (!Array.isArray(target)) {
+    return true;
+  }
+
+  return target.some(
+    (entry) => typeof entry === 'string' && (entry === 'magic_link_id' || entry === 'magicLinkId'),
+  );
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
 function normalizeAuditValue(value: string, maxLength: number): string {
   const trimmed = value.trim();
   if (trimmed.length === 0) {
@@ -378,7 +420,7 @@ function normalizeOrderComposition(
       normalizedItemId: string;
       itemName: string;
       quantity: number;
-      unit: 'kg' | 'unit';
+      unit: 'kg';
     }
   >();
 
@@ -431,8 +473,9 @@ function normalizeOrderComposition(
   };
 }
 
-function normalizeOrderLineUnit(unit: string): 'kg' | 'unit' {
-  return unit.trim().toLowerCase() === 'kg' ? 'kg' : 'unit';
+function normalizeOrderLineUnit(unit: string): 'kg' {
+  void unit;
+  return 'kg';
 }
 
 function normalizeOrderLineQuantity(quantity: string): number {

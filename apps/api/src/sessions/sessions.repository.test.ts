@@ -14,7 +14,7 @@ describe('PrismaCustomerSessionsRepository', () => {
           status: 'ISSUED',
           expiresAt: new Date('2026-04-08T12:00:00.000Z'),
         }),
-        update: vi.fn().mockResolvedValue(undefined),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       session: {
         create: vi.fn().mockResolvedValue({
@@ -44,9 +44,10 @@ describe('PrismaCustomerSessionsRepository', () => {
       customerId: 'cust-1',
       sessionExpiresAt: new Date('2026-04-08T14:00:00.000Z'),
     });
-    expect(tx.magicLink.update).toHaveBeenCalledWith({
+    expect(tx.magicLink.updateMany).toHaveBeenCalledWith({
       where: {
         id: 'ml-1',
+        status: 'ISSUED',
       },
       data: {
         status: 'ACTIVATED',
@@ -55,6 +56,75 @@ describe('PrismaCustomerSessionsRepository', () => {
     });
     expect(tx.session.create).toHaveBeenCalled();
     expect(tx.auditLog.createMany).toHaveBeenCalled();
+  });
+
+  it('returns invalid when activation token was already transitioned in a concurrent request', async () => {
+    const tx = {
+      magicLink: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'ml-1',
+          hashCustomerId: 'cust-1',
+          issuedByAgentId: 'agent-1',
+          status: 'ISSUED',
+          expiresAt: new Date('2026-04-08T12:00:00.000Z'),
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      session: {
+        create: vi.fn(),
+      },
+      auditLog: {
+        createMany: vi.fn(),
+      },
+    };
+
+    const repository = new PrismaCustomerSessionsRepository({
+      $transaction: vi.fn().mockImplementation(async (callback) => callback(tx)),
+    } as never);
+
+    const result = await repository.activateMagicToken(
+      'hashed-token',
+      new Date('2026-04-08T10:00:00.000Z'),
+      new Date('2026-04-08T14:00:00.000Z'),
+    );
+
+    expect(result).toEqual({ kind: 'invalid' });
+    expect(tx.session.create).not.toHaveBeenCalled();
+    expect(tx.auditLog.createMany).not.toHaveBeenCalled();
+  });
+
+  it('returns invalid when session create hits unique magic-link constraint race', async () => {
+    const tx = {
+      magicLink: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'ml-1',
+          hashCustomerId: 'cust-1',
+          issuedByAgentId: 'agent-1',
+          status: 'ISSUED',
+          expiresAt: new Date('2026-04-08T12:00:00.000Z'),
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      session: {
+        create: vi.fn().mockRejectedValue({ code: 'P2002', meta: { target: ['magic_link_id'] } }),
+      },
+      auditLog: {
+        createMany: vi.fn(),
+      },
+    };
+
+    const repository = new PrismaCustomerSessionsRepository({
+      $transaction: vi.fn().mockImplementation(async (callback) => callback(tx)),
+    } as never);
+
+    const result = await repository.activateMagicToken(
+      'hashed-token',
+      new Date('2026-04-08T10:00:00.000Z'),
+      new Date('2026-04-08T14:00:00.000Z'),
+    );
+
+    expect(result).toEqual({ kind: 'invalid' });
+    expect(tx.auditLog.createMany).not.toHaveBeenCalled();
   });
 
   it('marks issued expired token as expired and returns explicit expired result', async () => {
@@ -205,7 +275,7 @@ describe('PrismaCustomerSessionsRepository', () => {
             hashItemId: 'item-2',
             itemNameSnapshot: 'המבורגר',
             quantity: { toString: () => '3.000' },
-            unit: 'unit',
+            unit: 'kg',
           },
         ],
       },
@@ -216,7 +286,7 @@ describe('PrismaCustomerSessionsRepository', () => {
             hashItemId: 'item-2',
             itemNameSnapshot: 'Burger',
             quantity: { toString: () => '3.000' },
-            unit: 'unit',
+            unit: 'kg',
           },
           {
             hashItemId: 'item-1',
@@ -245,7 +315,7 @@ describe('PrismaCustomerSessionsRepository', () => {
             hashItemId: 'item-2',
             itemNameSnapshot: 'המבורגר',
             quantity: { toString: () => '3.000' },
-            unit: 'unit',
+            unit: 'kg',
           },
         ],
       },
@@ -273,19 +343,19 @@ describe('PrismaCustomerSessionsRepository', () => {
     expect(result).toEqual({
       entries: [
         {
-          compositionSignature: 'item-1:2:kg|item-2:3:unit',
+          compositionSignature: 'item-1:2:kg|item-2:3:kg',
           lines: [
             { itemId: 'item-1', itemName: 'אנטריקוט', quantity: 2, unit: 'kg' },
-            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'unit' },
+            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'kg' },
           ],
           lastOrderedAt: '2026-04-09T08:00:00.000Z',
           orderCount: 2,
         },
         {
-          compositionSignature: 'item-1:2.5:kg|item-2:3:unit',
+          compositionSignature: 'item-1:2.5:kg|item-2:3:kg',
           lines: [
             { itemId: 'item-1', itemName: 'אנטריקוט', quantity: 2.5, unit: 'kg' },
-            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'unit' },
+            { itemId: 'item-2', itemName: 'המבורגר', quantity: 3, unit: 'kg' },
           ],
           lastOrderedAt: '2026-04-07T08:00:00.000Z',
           orderCount: 1,

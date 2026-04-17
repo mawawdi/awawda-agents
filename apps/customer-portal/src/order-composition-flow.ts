@@ -4,6 +4,7 @@ export interface CustomerRecentItem {
 	itemId: string
 	name: string
 	lastOrderedAt: string
+	unit?: "kg"
 }
 
 export interface CustomerApprovedItem {
@@ -51,6 +52,7 @@ export interface OrderSectionItem {
 	itemId: string
 	name: string
 	quantity: number
+	unit: "kg"
 	unitPrice: number | null
 	currency: string | null
 	canIncrement: true
@@ -61,6 +63,7 @@ export interface CartSummaryLine {
 	itemId: string
 	name: string
 	quantity: number
+	unit: "kg"
 	lineEstimate: number | null
 	currency: string | null
 }
@@ -86,6 +89,7 @@ export interface StickySubmitBar {
 type CatalogLine = {
 	itemId: string
 	name: string
+	unit: "kg"
 	unitPrice: number | null
 	currency: string | null
 }
@@ -125,6 +129,7 @@ const ITEM_TOKEN_LABEL_HEBREW: Record<string, string> = {
 type LocalizedCatalogCut = {
 	itemId?: unknown
 	nameHe?: unknown
+	unit?: unknown
 }
 
 type LocalizedCatalogGroup = {
@@ -143,12 +148,17 @@ type LocalizedCatalogRoot = {
 	species?: unknown
 }
 
-const TESTING_CATALOG_NAME_BY_ITEM_ID = buildTestingCatalogNameByItemId(rawLocalizedCuts)
+type TestingCatalogMetadata = {
+	nameHe: string
+	unit: "kg"
+}
+
+const TESTING_CATALOG_METADATA_BY_ITEM_ID = buildTestingCatalogMetadataByItemId(rawLocalizedCuts)
 
 function deriveItemDisplayName(itemId: string): string {
 	const normalizedItemId = itemId.trim().toLowerCase()
 	if (normalizedItemId) {
-		const localizedFromCatalog = TESTING_CATALOG_NAME_BY_ITEM_ID.get(normalizedItemId)
+		const localizedFromCatalog = TESTING_CATALOG_METADATA_BY_ITEM_ID.get(normalizedItemId)?.nameHe
 		if (localizedFromCatalog) {
 			return localizedFromCatalog
 		}
@@ -255,7 +265,7 @@ export function setOrderLineQuantity(state: OrderPageState, itemId: string, quan
 		return state
 	}
 
-	const nextQuantity = Math.max(0, Math.floor(quantity))
+	const nextQuantity = normalizeQuantity(quantity)
 	const nextQuantities = getQuantityMap(state)
 	nextQuantities[itemId] = nextQuantity
 
@@ -279,7 +289,7 @@ export function decrementOrderLineQuantity(state: OrderPageState, itemId: string
 	}
 
 	const nextQuantities = getQuantityMap(state)
-	nextQuantities[itemId] = Math.max(0, (nextQuantities[itemId] ?? 0) - 1)
+	nextQuantities[itemId] = normalizeQuantity((nextQuantities[itemId] ?? 0) - 1)
 
 	return rebuildReadyState(state, nextQuantities, state.isSubmitting)
 }
@@ -311,6 +321,7 @@ function rebuildReadyState(
 		catalog.push({
 			itemId: item.itemId,
 			name: item.name,
+			unit: item.unit,
 			unitPrice: item.unitPrice,
 			currency: item.currency,
 		})
@@ -324,6 +335,7 @@ function rebuildReadyState(
 		catalog.push({
 			itemId: item.itemId,
 			name: item.name,
+			unit: item.unit,
 			unitPrice: item.unitPrice,
 			currency: item.currency,
 		})
@@ -335,6 +347,7 @@ function rebuildReadyState(
 			itemId: item.itemId,
 			name: item.name,
 			lastOrderedAt: "",
+			unit: item.unit,
 		})),
 		approvedItems: state.sections.approved.items.map((item) => ({
 			hashItemId: item.itemId,
@@ -372,6 +385,7 @@ function buildReadyState(
 			itemId: item.itemId,
 			name: resolveItemDisplayName(item.itemId, item.name),
 			quantity: quantities[item.itemId] ?? 0,
+			unit: lineById.get(item.itemId)?.unit ?? resolveItemUnit(item.itemId, item.unit),
 			unitPrice: price?.unitPrice ?? null,
 			currency: price?.currency ?? null,
 			canIncrement: true,
@@ -388,6 +402,7 @@ function buildReadyState(
 			itemId: item.hashItemId,
 			name,
 			quantity: quantities[item.hashItemId] ?? 0,
+			unit: catalogLine?.unit ?? resolveItemUnit(item.hashItemId),
 			unitPrice: price?.unitPrice ?? null,
 			currency: price?.currency ?? null,
 			canIncrement: true,
@@ -408,6 +423,7 @@ function buildReadyState(
 				itemId: line.itemId,
 				name: line.name,
 				quantity,
+				unit: line.unit,
 				lineEstimate,
 				currency: line.currency,
 			} satisfies CartSummaryLine
@@ -462,6 +478,7 @@ function buildCatalog(input: OrderCompositionInput): CatalogLine[] {
 		catalog.set(recent.itemId, {
 			itemId: recent.itemId,
 			name: resolveItemDisplayName(recent.itemId, recent.name),
+			unit: resolveItemUnit(recent.itemId, recent.unit),
 			unitPrice: price?.unitPrice ?? null,
 			currency: price?.currency ?? null,
 		})
@@ -474,12 +491,19 @@ function buildCatalog(input: OrderCompositionInput): CatalogLine[] {
 		catalog.set(approved.hashItemId, {
 			itemId: approved.hashItemId,
 			name: resolveItemDisplayName(approved.hashItemId, existing?.name ?? ""),
+			unit: existing?.unit ?? resolveItemUnit(approved.hashItemId),
 			unitPrice: price?.unitPrice ?? existing?.unitPrice ?? null,
 			currency: price?.currency ?? existing?.currency ?? null,
 		})
 	}
 
 	return [...catalog.values()]
+}
+
+function resolveItemUnit(itemId: string, preferredUnit?: "kg"): "kg" {
+	void itemId
+	void preferredUnit
+	return "kg"
 }
 
 function buildStickySubmitBar(cart: CartSummary, layout: "mobile" | "desktop", isSubmitting: boolean): StickySubmitBar {
@@ -494,14 +518,27 @@ function buildStickySubmitBar(cart: CartSummary, layout: "mobile" | "desktop", i
 		submitEnabled: hasItems && !isSubmitting,
 		summaryLabel:
 			cart.unknownPriceLineCount > 0 ? "לא ניתן לחשב סכום משוער עבור חלק מהפריטים" : `סה"כ משוער ${totalLabel}`,
-		submitLabel: isSubmitting ? "שולחים הזמנה…" : `שליחת הזמנה למפעל (${cart.totalUnits} יחידות)`,
+		submitLabel: isSubmitting ? "שולחים הזמנה…" : `שליחת הזמנה למפעל (${formatWeightQuantity(cart.totalUnits)} ק״ג)`,
 	}
 }
 
 function sanitizeQuantities(quantities: Record<string, number>): Record<string, number> {
 	return Object.fromEntries(
-		Object.entries(quantities).map(([itemId, quantity]) => [itemId, Math.max(0, Math.floor(quantity))]),
+		Object.entries(quantities).map(([itemId, quantity]) => [itemId, normalizeQuantity(quantity)]),
 	)
+}
+
+function normalizeQuantity(quantity: number): number {
+	if (!Number.isFinite(quantity)) {
+		return 0
+	}
+
+	const normalized = Math.max(0, Math.round(quantity * 1000) / 1000)
+	return Object.is(normalized, -0) ? 0 : normalized
+}
+
+function formatWeightQuantity(quantity: number): string {
+	return normalizeQuantity(quantity).toFixed(3).replace(/\.?0+$/, "")
 }
 
 function getQuantityMap(state: Extract<OrderPageState, { status: "ready" }>): Record<string, number> {
@@ -518,8 +555,8 @@ function getQuantityMap(state: Extract<OrderPageState, { status: "ready" }>): Re
 	return quantities
 }
 
-function buildTestingCatalogNameByItemId(rawCatalog: unknown): Map<string, string> {
-	const map = new Map<string, string>()
+function buildTestingCatalogMetadataByItemId(rawCatalog: unknown): Map<string, TestingCatalogMetadata> {
+	const map = new Map<string, TestingCatalogMetadata>()
 	const species = (rawCatalog as LocalizedCatalogRoot)?.species
 	if (!Array.isArray(species)) {
 		return map
@@ -550,7 +587,7 @@ function buildTestingCatalogNameByItemId(rawCatalog: unknown): Map<string, strin
 						continue
 					}
 
-					map.set(itemId, nameHe)
+					map.set(itemId, { nameHe, unit: "kg" })
 				}
 			}
 		}

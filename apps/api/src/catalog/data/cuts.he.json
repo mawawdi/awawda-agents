@@ -676,7 +676,7 @@
                   "sku": "CHICKEN-001",
                   "nameEn": "Whole roaster",
                   "nameHe": "עוף שלם לצלייה",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -684,7 +684,7 @@
                   "sku": "CHICKEN-002",
                   "nameEn": "Whole broiler / fryer",
                   "nameHe": "עוף שלם ברוילר / פרייר",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -692,7 +692,7 @@
                   "sku": "CHICKEN-003",
                   "nameEn": "Spatchcocked (butterflied)",
                   "nameHe": "עוף ספצ'קוק (פרוס לפרפר)",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -700,7 +700,7 @@
                   "sku": "CHICKEN-004",
                   "nameEn": "8-piece cut",
                   "nameHe": "חיתוך ל-8 חלקים",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -708,7 +708,7 @@
                   "sku": "CHICKEN-005",
                   "nameEn": "Cornish game hen",
                   "nameHe": "קורניש גיים הן",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -716,7 +716,7 @@
                   "sku": "CHICKEN-006",
                   "nameEn": "Whole broiler",
                   "nameHe": "עוף שלם ברוילר",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 },
                 {
@@ -724,7 +724,7 @@
                   "sku": "CHICKEN-007",
                   "nameEn": "Whole fryer",
                   "nameHe": "עוף שלם פרייר",
-                  "unit": "unit",
+                  "unit": "kg",
                   "category": "chicken"
                 }
               ]

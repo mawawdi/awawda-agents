@@ -237,7 +237,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
         itemId: string;
         itemName: string;
         quantity: number;
-        unit: 'kg' | 'unit';
+        unit: 'kg';
         lineTotal: number;
       }>;
       canCancel: boolean;
@@ -315,7 +315,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
             itemId: line.hashItemId,
             itemName: line.itemNameSnapshot,
             quantity: Number(line.quantity),
-            unit: line.unit === 'kg' ? 'kg' : 'unit',
+            unit: 'kg',
             lineTotal: Number(line.lineTotalSnapshot),
           })),
           canCancel: status !== 'failed',

@@ -88,7 +88,7 @@ const AGENT_ORDER_CARD_SCHEMA: z.ZodType<AgentOrderCard> = z.object({
       itemId: z.string().trim().min(1),
       itemName: z.string().trim().min(1),
       quantity: z.number().nonnegative(),
-      unit: z.union([z.literal('kg'), z.literal('unit')]),
+      unit: z.literal('kg'),
       lineTotal: z.number().nonnegative(),
     }),
   ),

@@ -19,7 +19,15 @@ const DEFAULT_CORS_ALLOWED_ORIGINS = [
 ]
 
 const CORS_ALLOWED_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-const CORS_ALLOWED_HEADERS = ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Agent-Id"]
+const CORS_ALLOWED_HEADERS = [
+	"Authorization",
+	"Content-Type",
+	"Accept",
+	"Origin",
+	"X-Requested-With",
+	"X-Agent-Id",
+	"Idempotency-Key",
+]
 
 function resolveCorsAllowedOrigins(): Set<string> {
 	const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(",")

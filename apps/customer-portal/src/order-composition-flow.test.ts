@@ -68,15 +68,15 @@ describe('order composition interactions and UX states', () => {
       status: 'ready',
       cart: {
         lineCount: 1,
-        totalUnits: 2,
-        estimatedTotal: 85,
+        totalUnits: 2.9,
+        estimatedTotal: 123.25,
         unknownPriceLineCount: 0,
       },
       submitBar: {
         visible: true,
         submitEnabled: true,
-        summaryLabel: 'סה"כ משוער ₪85.00',
-        submitLabel: 'שליחת הזמנה למפעל (2 יחידות)',
+        summaryLabel: 'סה"כ משוער ₪123.25',
+        submitLabel: 'שליחת הזמנה למפעל (2.9 ק״ג)',
       },
     });
 
@@ -84,8 +84,8 @@ describe('order composition interactions and UX states', () => {
     expect(incremented).toMatchObject({
       status: 'ready',
       cart: {
-        totalUnits: 3,
-        estimatedTotal: 127.5,
+        totalUnits: 3.9,
+        estimatedTotal: 165.75,
       },
     });
 
@@ -93,8 +93,8 @@ describe('order composition interactions and UX states', () => {
     expect(decremented).toMatchObject({
       status: 'ready',
       cart: {
-        totalUnits: 2,
-        estimatedTotal: 85,
+        totalUnits: 2.9,
+        estimatedTotal: 123.25,
       },
     });
   });
@@ -154,7 +154,7 @@ describe('order composition interactions and UX states', () => {
       isSubmitting: false,
       submitBar: {
         submitEnabled: true,
-        submitLabel: 'שליחת הזמנה למפעל (1 יחידות)',
+        submitLabel: 'שליחת הזמנה למפעל (1 ק״ג)',
       },
     });
   });
@@ -229,6 +229,31 @@ describe('order composition interactions and UX states', () => {
         visible: true,
         mobileOptimized: false,
         summaryLabel: 'לא ניתן לחשב סכום משוער עבור חלק מהפריטים',
+      },
+    });
+  });
+
+  it('propagates item units from composition data into cart lines', () => {
+    const ready = createOrderReadyState({
+      recentItems: [
+        {
+          itemId: 'itm-beef-001',
+          name: "צלי צ'אק איי",
+          lastOrderedAt: '2026-04-08T10:00:00.000Z',
+          unit: 'kg',
+        },
+      ],
+      approvedItems: [],
+      pricing: [{ itemId: 'itm-beef-001', unitPrice: 100, currency: 'ILS' }],
+      initialQuantities: {
+        'itm-beef-001': 2,
+      },
+    });
+
+    expect(ready).toMatchObject({
+      status: 'ready',
+      cart: {
+        lines: [{ itemId: 'itm-beef-001', unit: 'kg' }],
       },
     });
   });

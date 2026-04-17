@@ -10,7 +10,7 @@ export type ErpGatewayAssignedCustomer = {
 export type ErpOrderLine = {
   itemId: string;
   quantity: number;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
   clientUnitPrice: number;
 };
 

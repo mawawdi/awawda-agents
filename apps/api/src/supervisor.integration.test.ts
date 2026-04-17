@@ -528,12 +528,9 @@ describe('Supervisor endpoints', () => {
     });
   });
 
-  it('supports legacy GET unassign route for client compatibility', async () => {
+  it('rejects GET on unassign route to keep mutations delete-only', async () => {
     const supervisorRepository = app.get<SupervisorRepository>(SUPERVISOR_REPOSITORY);
-    vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent').mockResolvedValue({
-      removed: true,
-      removedAt: '2026-04-16T11:06:00.000Z',
-    });
+    const unassignSpy = vi.spyOn(supervisorRepository, 'unassignCustomerFromAgent');
 
     const response = await app.inject({
       method: 'GET',
@@ -543,18 +540,8 @@ describe('Supervisor endpoints', () => {
       },
     });
 
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      customerId: 'cust-alpha',
-      agentId: 'agent-field-2',
-      removed: true,
-      removedAt: '2026-04-16T11:06:00.000Z',
-    });
-    expect(supervisorRepository.unassignCustomerFromAgent).toHaveBeenCalledWith({
-      supervisorAgentId: 'agent-supervisor-1',
-      customerId: 'cust-alpha',
-      agentId: 'agent-field-2',
-    });
+    expect(response.statusCode).toBe(404);
+    expect(unassignSpy).not.toHaveBeenCalled();
   });
 
   it('supports unassigning customer ownership via fallback route', async () => {

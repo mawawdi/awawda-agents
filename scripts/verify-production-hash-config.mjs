@@ -87,7 +87,7 @@ if (hashTestApiKey && effectiveApiKey === hashTestApiKey) {
   fail('Effective Hash API key resolves to HASH_TEST_API_KEY.')
 }
 
-if (/\b(test|staging|sandbox|qa)\b/i.test(effectiveApiUrl)) {
+if (/\b(test|testing|staging|sandbox|qa|uat)\b/i.test(effectiveApiUrl)) {
   fail(`Effective Hash API URL looks non-production: "${effectiveApiUrl}".`)
 }
 

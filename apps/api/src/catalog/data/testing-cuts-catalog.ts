@@ -114,10 +114,10 @@ function validateLocalizedTestingCutsCatalog(rawCatalog: unknown): LocalizedTest
           seenItemIds.add(itemId);
 
           const unit = readRequiredString(cutEntry, 'unit');
-          if (unit !== 'kg' && unit !== 'unit') {
+          if (unit !== 'kg') {
             throw new Error(`Unsupported unit "${unit}" for item "${itemId}"`);
           }
-          const normalizedUnit: AgentCatalogItem['unit'] = unit;
+          const normalizedUnit: AgentCatalogItem['unit'] = 'kg';
 
           const category = readRequiredString(cutEntry, 'category');
           if (!isCatalogCategory(category)) {

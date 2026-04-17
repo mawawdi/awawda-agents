@@ -22,8 +22,8 @@ class CustomerOrderSubmitLineDto {
   @Min(0.001)
   quantity!: number;
 
-  @IsIn(['kg', 'unit'])
-  unit!: 'kg' | 'unit';
+  @IsIn(['kg'])
+  unit!: 'kg';
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

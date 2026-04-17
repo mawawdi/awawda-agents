@@ -61,7 +61,7 @@ export interface AgentOrderCardLine {
   itemId: string;
   itemName: string;
   quantity: number;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
   lineTotal: number;
 }
 
@@ -349,7 +349,7 @@ export interface AgentCatalogItem {
   itemId: string;
   sku: string;
   name: string;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
   isActive: boolean;
   category?: 'beef' | 'chicken' | 'lamb' | 'turkey' | 'veal' | 'offal' | 'prepared' | 'seafood';
   iconEmoji?: string;
@@ -382,13 +382,14 @@ export interface CustomerRecentItem {
   itemId: string;
   name: string;
   lastOrderedAt: string;
+  unit?: 'kg';
 }
 
 export interface CustomerRecentOrderLine {
   itemId: string;
   itemName: string;
   quantity: number;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
 }
 
 export interface CustomerRecentOrderEntry {
@@ -438,7 +439,7 @@ export type CustomerPortalDataResponse = CustomerPortalDataPayload;
 export interface CustomerOrderSubmitLine {
   itemId: string;
   quantity: number;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
   clientUnitPrice: number;
 }
 

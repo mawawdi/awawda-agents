@@ -92,6 +92,9 @@ const TESTING_FALLBACK_CATALOG_ITEM_IDS = TESTING_FALLBACK_CATALOG_ITEMS.map((it
 const TESTING_FALLBACK_CATALOG_NAME_BY_ITEM_ID = new Map(
   TESTING_FALLBACK_CATALOG_ITEMS.map((item) => [item.itemId, item.name]),
 );
+const TESTING_FALLBACK_CATALOG_UNIT_BY_ITEM_ID = new Map(
+  TESTING_FALLBACK_CATALOG_ITEMS.map((item) => [item.itemId, item.unit]),
+);
 const TESTING_FALLBACK_PRICE_LINES = TESTING_FALLBACK_CATALOG_ITEMS.map((item, index) => ({
   itemId: item.itemId,
   unitPrice: resolveTestingFallbackUnitPrice(item.itemId, index),
@@ -290,11 +293,13 @@ export class HashavshevetAdapter {
             itemId: primaryItemId,
             name: resolveFallbackTestingItemName(primaryItemId),
             lastOrderedAt: now,
+            unit: resolveFallbackTestingItemUnit(primaryItemId),
           },
           {
             itemId: secondaryItemId,
             name: resolveFallbackTestingItemName(secondaryItemId),
             lastOrderedAt: now,
+            unit: resolveFallbackTestingItemUnit(secondaryItemId),
           },
         ],
       };
@@ -410,11 +415,14 @@ export class HashavshevetAdapter {
     const now = new Date().toISOString();
     const items = mapPayloadArray(payload, ['items', 'data']).map((entry) => {
       const lastOrderedAtRaw = readOptionalString(entry, ['lastOrderedAt', 'orderedAt', 'lastPurchaseAt', 'DateF']);
+      const itemId =
+        readOptionalIdentifier(entry, ['itemId', 'id', 'ItemKey', 'itemKey']) ?? `recent-${customerId}-unknown`;
+      const unit = readOptionalString(entry, ['unit', 'uom', 'Unit']);
       return {
-        itemId:
-          readOptionalIdentifier(entry, ['itemId', 'id', 'ItemKey', 'itemKey']) ?? `recent-${customerId}-unknown`,
+        itemId,
         name: readRequiredString(entry, ['name', 'description', 'ItemName', 'itemName'], 'name'),
         lastOrderedAt: normalizeIsoTimestamp(lastOrderedAtRaw, now),
+        unit: unit ? normalizeUnit(unit) : resolveFallbackTestingItemUnit(itemId),
       };
     });
 
@@ -1135,13 +1143,9 @@ function normalizeHealthStatus(rawStatus: string | null): ErpGatewayHealth['stat
   return 'down';
 }
 
-function normalizeUnit(rawUnit: string): 'kg' | 'unit' {
-  const normalized = rawUnit.trim().toLowerCase();
-  if (normalized === 'kg' || normalized === 'kilogram' || normalized === 'kilograms') {
-    return 'kg';
-  }
-
-  return 'unit';
+function normalizeUnit(rawUnit: string): 'kg' {
+  void rawUnit;
+  return 'kg';
 }
 
 function resolveSyncedAt(payload: unknown): string {
@@ -1499,6 +1503,11 @@ function resolveFallbackTestingItemName(itemId: string): string {
   }
 
   return humanizeFallbackItemName(itemId);
+}
+
+function resolveFallbackTestingItemUnit(itemId: string): 'kg' {
+  void itemId;
+  return 'kg';
 }
 
 function humanizeFallbackItemName(itemId: string): string {

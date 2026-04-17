@@ -204,6 +204,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [ordersTotalPages, setOrdersTotalPages] = useState(1)
   const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const latestOrdersFilterSignatureRef = useRef(`${activeOrderDateFilter}|${ordersSearchQuery.trim()}`)
   const [homeOrdersToday, setHomeOrdersToday] = useState<AgentOrderCard[]>([])
   const [isHomeOrdersLoading, setIsHomeOrdersLoading] = useState(false)
   const [homeOrdersError, setHomeOrdersError] = useState<string | null>(null)
@@ -456,6 +457,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         setOrdersPage(response.totalPages)
       }
     } catch (error) {
+      if (error instanceof AgentApiError && error.status === 401) {
+        await signOut()
+        return
+      }
       setOrders([])
       setOrdersTotal(0)
       setOrdersTotalPages(1)
@@ -464,7 +469,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       clearSlowState()
       setIsOrdersLoading(false)
     }
-  }, [activeOrderDateFilter, beginSlowNetworkTimer, ordersPage, ordersSearchQuery, token])
+  }, [activeOrderDateFilter, beginSlowNetworkTimer, ordersPage, ordersSearchQuery, signOut, token])
 
   const loadOrdersInRange = useCallback(
     async (fromDate: string, toDate: string): Promise<AgentOrderCard[]> => {
@@ -477,20 +482,28 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       let totalPages = 1
 
       while (page <= totalPages) {
-        const response = await listAgentOrders(token, {
-          page,
-          pageSize: 50,
-          fromDate,
-          toDate,
-        })
-        aggregatedOrders.push(...response.orders)
-        totalPages = response.totalPages
-        page += 1
+        try {
+          const response = await listAgentOrders(token, {
+            page,
+            pageSize: 50,
+            fromDate,
+            toDate,
+          })
+          aggregatedOrders.push(...response.orders)
+          totalPages = response.totalPages
+          page += 1
+        } catch (error) {
+          if (error instanceof AgentApiError && error.status === 401) {
+            await signOut()
+            return []
+          }
+          throw error
+        }
       }
 
       return aggregatedOrders
     },
-    [token],
+    [signOut, token],
   )
 
   const loadHomeOrdersSnapshot = useCallback(async () => {
@@ -520,13 +533,17 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       )
       setMonthlySalesTotal(sumOrdersEstimatedTotal(monthOrders))
     } catch (error) {
+      if (error instanceof AgentApiError && error.status === 401) {
+        await signOut()
+        return
+      }
       setHomeOrdersToday([])
       setMonthlySalesTotal(0)
       setHomeOrdersError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את נתוני המכירות.')
     } finally {
       setIsHomeOrdersLoading(false)
     }
-  }, [loadOrdersInRange, token])
+  }, [loadOrdersInRange, signOut, token])
 
   const applyMonthlyGoal = useCallback(() => {
     const normalized = Number(monthlyGoalDraft.replace(/[^\d]/g, ''))
@@ -557,13 +574,17 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         })
         setSupervisorAuditEntries(response.entries)
       } catch (error) {
+        if (error instanceof AgentApiError && error.status === 401) {
+          await signOut()
+          return
+        }
         setSupervisorAuditEntries([])
         setSupervisorError(error instanceof Error ? error.message : 'לא הצלחנו לטעון את יומן הפעולות.')
       } finally {
         setIsSupervisorAuditLoading(false)
       }
     },
-    [token],
+    [signOut, token],
   )
 
   const loadSupervisorData = useCallback(async () => {
@@ -618,6 +639,10 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         return fieldAgents[0]?.agentId ?? null
       })
     } catch (error) {
+      if (error instanceof AgentApiError && error.status === 401) {
+        await signOut()
+        return
+      }
       setSupervisorAgents([])
       setSupervisorCustomers([])
       setSupervisorOversight(null)
@@ -631,7 +656,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     } finally {
       setIsSupervisorLoading(false)
     }
-  }, [token])
+  }, [signOut, token])
 
   const loadSupervisorAssignments = useCallback(
     async (customerId: string) => {
@@ -978,10 +1003,6 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   }, [refreshSupervisorWorkspaceData, selectedSupervisorCustomer, selectedSupervisorCustomerId, supervisorProfileDraft, token])
 
   useEffect(() => {
-    setOrdersPage(1)
-  }, [activeOrderDateFilter, ordersSearchQuery])
-
-  useEffect(() => {
     if (activeTab === 'supervisor') {
       if (isSupervisorRole) {
         void loadSupervisorData()
@@ -994,6 +1015,15 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
 
     if (activeTab === 'orders') {
+      const nextOrdersFilterSignature = `${activeOrderDateFilter}|${ordersSearchQuery.trim()}`
+      const didOrdersFilterChange = latestOrdersFilterSignatureRef.current !== nextOrdersFilterSignature
+      if (didOrdersFilterChange) {
+        latestOrdersFilterSignatureRef.current = nextOrdersFilterSignature
+        if (ordersPage !== 1) {
+          setOrdersPage(1)
+          return
+        }
+      }
       void loadOrders()
       return
     }
@@ -1006,7 +1036,17 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     if (activeTab === 'customers') {
       void loadCustomers()
     }
-  }, [activeTab, isSupervisorRole, loadCustomers, loadHomeOrdersSnapshot, loadOrders, loadSupervisorData])
+  }, [
+    activeOrderDateFilter,
+    activeTab,
+    isSupervisorRole,
+    loadCustomers,
+    loadHomeOrdersSnapshot,
+    loadOrders,
+    loadSupervisorData,
+    ordersPage,
+    ordersSearchQuery,
+  ])
 
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.customerId === selectedCustomerId) ?? null,
@@ -1523,7 +1563,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                       <Text style={styles.orderPreviewMetricValue}>{formatCurrency(line.lineTotal, order.currency)}</Text>
                     </View>
                     <View style={styles.orderPreviewMetric}>
-                      <Text style={styles.orderPreviewMetricLabel}>מחיר יחידה:</Text>
+                      <Text style={styles.orderPreviewMetricLabel}>מחיר לק״ג:</Text>
                       <Text style={styles.orderPreviewMetricValue}>{formatCurrency(unitPrice, order.currency)}</Text>
                     </View>
                   </View>
@@ -1735,7 +1775,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                               numberOfLines={1}
                               style={[styles.catalogItemMetaEnhanced, { fontSize: approvedMetaFontSize, lineHeight: approvedMetaLineHeight }]}
                             >
-                              {renderHebrewNumericRuns(`${formatCurrency(item.unitPrice, 'ILS')} / יח׳`)}
+                              {renderHebrewNumericRuns(`${formatCurrency(item.unitPrice, 'ILS')} / ק״ג`)}
                             </Text>
                           </View>
                         )
@@ -1906,7 +1946,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                     <Text style={styles.orderDetailListLineTotal}>{formatCurrency(line.lineTotal, selectedOrder.currency)}</Text>
                     <Text style={styles.orderDetailListUnitPrice}>
                       {renderHebrewNumericRuns(
-                        `${formatCurrency(line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal, selectedOrder.currency)} ליח׳`,
+                        `${formatCurrency(line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal, selectedOrder.currency)} לק״ג`,
                       )}
                     </Text>
                   </View>

@@ -130,11 +130,13 @@ describe.sequential('HashavshevetAdapter', () => {
           itemId: FALLBACK_PRIMARY_ITEM_ID,
           name: FALLBACK_PRIMARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
+          unit: FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
         },
         {
           itemId: FALLBACK_SECONDARY_ITEM_ID,
           name: FALLBACK_SECONDARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
+          unit: FALLBACK_CATALOG_ITEMS[1]?.unit ?? FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
         },
       ],
     });
@@ -271,6 +273,7 @@ describe.sequential('HashavshevetAdapter', () => {
           itemId: 'itm-2',
           name: 'Short Ribs',
           lastOrderedAt: '2026-04-25T15:30:00.000Z',
+          unit: 'kg',
         },
       ],
     });
@@ -692,11 +695,13 @@ describe.sequential('HashavshevetAdapter', () => {
           itemId: FALLBACK_PRIMARY_ITEM_ID,
           name: FALLBACK_PRIMARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
+          unit: FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
         },
         {
           itemId: FALLBACK_SECONDARY_ITEM_ID,
           name: FALLBACK_SECONDARY_ITEM_NAME,
           lastOrderedAt: '2026-05-01T10:00:00.000Z',
+          unit: FALLBACK_CATALOG_ITEMS[1]?.unit ?? FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
         },
       ],
     });

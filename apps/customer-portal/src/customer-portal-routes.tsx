@@ -51,7 +51,7 @@ type RecentOrderLine = {
   itemId: string;
   itemName: string;
   quantity: number;
-  unit: 'kg' | 'unit';
+  unit: 'kg';
 };
 
 type RecentOrderEntry = {
@@ -162,6 +162,7 @@ function ActivationRoute({
   const [searchParams] = useSearchParams();
   const token = (params.token ?? searchParams.get('token') ?? '').trim();
   const [state, setState] = useState<ActivationBootstrapState>(() => createActivationIdleState(token));
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     setState(createActivationIdleState(token));
@@ -220,7 +221,7 @@ function ActivationRoute({
         clearTimeout(timer);
       }
     };
-  }, [apiClient, navigate, token, weakNetworkThresholdMs]);
+  }, [apiClient, navigate, retryNonce, token, weakNetworkThresholdMs]);
 
   if (state.status === 'error') {
     return (
@@ -229,7 +230,14 @@ function ActivationRoute({
           <p className="portal-not-found-code">404</p>
           <h1>העמוד לא נמצא</h1>
           <p>{state.message}</p>
-          <Button onClick={() => setState(createActivationIdleState(token))} size="lg" type="button">
+          <Button
+            onClick={() => {
+              setState(createActivationIdleState(token));
+              setRetryNonce((current) => current + 1);
+            }}
+            size="lg"
+            type="button"
+          >
             נסו שוב
           </Button>
         </Card>
@@ -497,7 +505,7 @@ function OrderRoute({
       return {
         itemId: line.itemId,
         quantity: line.quantity,
-        unit: 'unit' as const,
+        unit: line.unit,
         clientUnitPrice: unitPrice,
       };
     });
@@ -654,7 +662,7 @@ function OrderRoute({
               ? 'המחיר לא זמין'
               : (
                 <>
-                  <bdi dir="ltr">{formatCurrency(item.currency, item.unitPrice)}</bdi> / יחידה
+                  <bdi dir="ltr">{formatCurrency(item.currency, item.unitPrice)}</bdi> / ק״ג
                 </>
               )}
           </p>
@@ -674,8 +682,9 @@ function OrderRoute({
               aria-label={`כמות ${itemDisplayName}`}
               className="qty-input"
               disabled={state.isSubmitting}
-              inputMode="numeric"
+              inputMode="decimal"
               onChange={(event) => updateQuantity(item.itemId, Number(event.currentTarget.value))}
+              step="0.1"
               type="number"
               value={item.quantity}
             />
@@ -741,7 +750,7 @@ function OrderRoute({
                       <span className="recent-order-line-name">{lineDisplayName}</span>
                     </span>
                     <span>
-                      <bdi dir="ltr">{line.quantity}</bdi> {line.unit === 'kg' ? 'ק״ג' : 'יח׳'}
+                      <bdi dir="ltr">{line.quantity}</bdi> ק״ג
                     </span>
                   </li>
                 );
@@ -777,7 +786,7 @@ function OrderRoute({
           <Card aria-label="סיכום הזמנה" className="summary-card">
             <h2>סיכום הזמנה</h2>
             <div className="summary-line">
-              <span>פריטים</span>
+              <span>ק״ג</span>
               <span>
                 <bdi dir="ltr">{state.cart.totalUnits}</bdi>
               </span>
@@ -800,7 +809,7 @@ function OrderRoute({
                   <li className="summary-line" key={line.itemId}>
                     <span>{resolvePortalItemDisplayName(line.itemId, line.name)}</span>
                     <span>
-                      <bdi dir="ltr">{line.quantity}</bdi> ·{' '}
+                      <bdi dir="ltr">{line.quantity}</bdi> ק״ג ·{' '}
                       {line.lineEstimate === null
                         ? 'ממתין'
                         : <bdi dir="ltr">{formatCurrency(line.currency, line.lineEstimate)}</bdi>}
@@ -1004,7 +1013,7 @@ function OrderRoute({
                       </div>
                       <div className="portal-confirmation-item-info">
                         <h3>{displayName}</h3>
-                        <p>כמות: {line.quantity}</p>
+                        <p>כמות: {line.quantity} ק״ג</p>
                       </div>
                       <div className="portal-confirmation-item-price">
                         {line.lineEstimate === null ? (
@@ -1088,8 +1097,8 @@ function normalizeRecentOrderLine(line: unknown): RecentOrderLine | null {
   return {
     itemId,
     itemName: toNonEmptyString(line.itemName) ?? '',
-    quantity: toPositiveInteger(line.quantity) ?? 1,
-    unit: line.unit === 'kg' ? 'kg' : 'unit',
+    quantity: toPositiveNumber(line.quantity) ?? 1,
+    unit: 'kg',
   };
 }
 
@@ -1185,6 +1194,15 @@ function toPositiveInteger(value: unknown): number | null {
   return normalized > 0 ? normalized : null;
 }
 
+function toPositiveNumber(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const normalized = Math.round(value * 1000) / 1000;
+  return normalized > 0 ? normalized : null;
+}
+
 function toNonNegativeInteger(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return null;
@@ -1240,7 +1258,7 @@ function formatPortalDateTime(now: Date = new Date()): string {
 }
 
 function buildTestingItemImageUrl(itemId: string): string | null {
-  if (isPortalProductionRuntime()) {
+  if (isPortalProductionRuntime() && !isLocalPortalRuntime()) {
     return null;
   }
 
@@ -1250,6 +1268,11 @@ function buildTestingItemImageUrl(itemId: string): string | null {
   }
 
   return `${PORTAL_API_BASE_URL}/testing-assets/items/${encodeURIComponent(normalized)}/image?v=${TESTING_CUT_IMAGE_CACHE_BUSTER}`;
+}
+
+function isLocalPortalRuntime(): boolean {
+  const hostname = globalThis.location?.hostname?.trim().toLowerCase();
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }
 
 function inferItemSpecies(itemId: string): ItemSpecies | null {

@@ -82,6 +82,7 @@ services:
       - ./deploy.env
     environment:
       CUSTOMER_PORTAL_API_BASE_URL: ${CUSTOMER_PORTAL_API_BASE_URL:-/v1}
+      CUSTOMER_PORTAL_RUNTIME_ENV: ${CUSTOMER_PORTAL_RUNTIME_ENV:-production}
     depends_on:
       api:
         condition: service_healthy

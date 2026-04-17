@@ -145,16 +145,6 @@ export class SupervisorController {
     return this.unassignCustomerAssignment(supervisorAgentId, customerId, agentId);
   }
 
-  @Get('customers/:customerId/assignments/:agentId')
-  @HttpCode(200)
-  unassignCustomerFromAgentLegacyGet(
-    @Headers('x-agent-id') supervisorAgentId: string,
-    @Param('customerId') customerId: string,
-    @Param('agentId') agentId: string,
-  ): Promise<SupervisorCustomerUnassignAgentResponse> {
-    return this.unassignCustomerAssignment(supervisorAgentId, customerId, agentId);
-  }
-
   @Delete('customers/:customerId/assignments')
   @HttpCode(200)
   unassignCustomerFromAgentFallback(

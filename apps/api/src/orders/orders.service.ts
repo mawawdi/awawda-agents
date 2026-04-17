@@ -41,7 +41,8 @@ export class OrdersService {
     context: SubmitOrderContext,
     request: CustomerOrderSubmitRequest,
   ): Promise<OrderSubmitReplay> {
-    const requestHash = hashRequestPayload(request);
+    const normalizedRequest = normalizeOrderSubmitRequest(request);
+    const requestHash = hashRequestPayload(normalizedRequest);
     const reservation = await this.ordersRepository.reserveIdempotencyKey({
       key: context.idempotencyKey,
       customerId: context.customerId,
@@ -88,7 +89,7 @@ export class OrdersService {
     const pricingByItemId = new Map(pricingSnapshot.lines.map((line) => [line.itemId, line]));
 
     const mismatchLines: CustomerOrderMismatchResponse['lines'] = [];
-    for (const [lineIndex, line] of request.lines.entries()) {
+    for (const [lineIndex, line] of normalizedRequest.lines.entries()) {
       const priceLine = pricingByItemId.get(line.itemId);
 
       if (!approvedItemIds.has(line.itemId) && !recentItemIds.has(line.itemId)) {
@@ -144,7 +145,7 @@ export class OrdersService {
       erpResponse = await this.erpGateway.handoffOrder({
         orderId,
         customerId: context.customerId,
-        lines: request.lines,
+        lines: normalizedRequest.lines,
         notes: request.notes,
       });
     } catch (error) {
@@ -163,7 +164,7 @@ export class OrdersService {
       throw error;
     }
 
-    const linesWithSnapshots = request.lines.map((line) => {
+    const linesWithSnapshots = normalizedRequest.lines.map((line) => {
       const unitPrice = pricingByItemId.get(line.itemId)?.unitPrice ?? line.clientUnitPrice;
       return {
         ...line,
@@ -216,6 +217,16 @@ function hashRequestPayload(request: CustomerOrderSubmitRequest): string {
   };
 
   return createHash('sha256').update(JSON.stringify(canonicalPayload)).digest('hex');
+}
+
+function normalizeOrderSubmitRequest(request: CustomerOrderSubmitRequest): CustomerOrderSubmitRequest {
+  return {
+    ...request,
+    lines: request.lines.map((line) => ({
+      ...line,
+      unit: 'kg',
+    })),
+  };
 }
 
 function resolveItemNameSnapshot(itemId: string, recentItemName: string | undefined): string {

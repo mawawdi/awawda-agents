@@ -558,8 +558,9 @@ export function formatOrderTime(submittedAt: string): string {
   return new Date(parsed).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function formatOrderUnitLabel(unit: 'kg' | 'unit'): string {
-  return unit === 'kg' ? 'ק״ג' : 'יח׳'
+export function formatOrderUnitLabel(unit: 'kg'): string {
+  void unit
+  return 'ק״ג'
 }
 
 export function toSupervisorProfileDraft(customer: SupervisorCustomerOverview | null): SupervisorProfileDraft {

@@ -23,6 +23,7 @@ const activationResponse: CustomerSessionActivateResponse = {
       itemId: 'item-1',
       name: 'אנטריקוט פרימיום',
       lastOrderedAt: '2026-04-07T10:00:00.000Z',
+      unit: 'kg',
     },
   ],
   approvedItems: [
@@ -46,27 +47,27 @@ const activationResponse: CustomerSessionActivateResponse = {
       {
         compositionSignature: 'signature-1',
         lines: [
-          { itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 2, unit: 'unit' },
-          { itemId: 'item-2', itemName: 'מוצר 2', quantity: 1, unit: 'unit' },
+          { itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 2, unit: 'kg' },
+          { itemId: 'item-2', itemName: 'מוצר 2', quantity: 1, unit: 'kg' },
         ],
         lastOrderedAt: '2026-04-08T11:00:00.000Z',
         orderCount: 4,
       },
       {
         compositionSignature: 'signature-2',
-        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 3, unit: 'unit' }],
+        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 3, unit: 'kg' }],
         lastOrderedAt: '2026-04-07T09:30:00.000Z',
         orderCount: 2,
       },
       {
         compositionSignature: 'signature-3',
-        lines: [{ itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 1, unit: 'unit' }],
+        lines: [{ itemId: 'item-1', itemName: 'אנטריקוט פרימיום', quantity: 1, unit: 'kg' }],
         lastOrderedAt: '2026-04-05T16:00:00.000Z',
         orderCount: 1,
       },
       {
         compositionSignature: 'signature-4',
-        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 2, unit: 'unit' }],
+        lines: [{ itemId: 'item-2', itemName: 'מוצר 2', quantity: 2, unit: 'kg' }],
         lastOrderedAt: '2026-04-04T12:00:00.000Z',
         orderCount: 1,
       },
@@ -143,7 +144,12 @@ describe('customer portal runtime routes', () => {
   it('does not use testing-assets fallback images in production runtime', async () => {
     const runtimeGlobals = globalThis as { __CUSTOMER_PORTAL_RUNTIME_ENV__?: string };
     const previousRuntimeEnv = runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__;
+    const previousLocation = window.location;
     runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__ = 'production';
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: new URL('https://portal.example.com/order') as unknown as Location,
+    });
 
     const activateSession = vi.fn(async () => activationResponse);
     const getPortalData = vi.fn(async () => portalDataResponse);
@@ -159,6 +165,7 @@ describe('customer portal runtime routes', () => {
       expect(screen.queryByAltText('מוצר 2')).toBeNull();
     } finally {
       runtimeGlobals.__CUSTOMER_PORTAL_RUNTIME_ENV__ = previousRuntimeEnv;
+      Object.defineProperty(window, 'location', { configurable: true, value: previousLocation });
     }
   });
 
@@ -192,7 +199,7 @@ describe('customer portal runtime routes', () => {
     expect(firstQuantity.value).toBe('2');
     expect(secondQuantity.value).toBe('1');
     expect(screen.getByTestId('sticky-submit-bar').textContent).toContain('סה"כ משוער ₪135.00');
-    expect(screen.getByTestId('sticky-submit-bar').textContent).toContain('שליחת הזמנה למפעל (3 יחידות)');
+    expect(screen.getByTestId('sticky-submit-bar').textContent).toContain('שליחת הזמנה למפעל (3 ק״ג)');
   });
 
   it('falls back gracefully when recent-orders contract fields are missing', async () => {
@@ -236,6 +243,29 @@ describe('customer portal runtime routes', () => {
     });
 
     expect(activateSession).toHaveBeenCalledWith('token-query-123');
+  });
+
+  it('retries activation from the error screen when pressing "נסו שוב"', async () => {
+    const activateSession = vi
+      .fn<PortalApiClient['activateSession']>()
+      .mockRejectedValueOnce(new PortalApiError('server', 'busy'))
+      .mockResolvedValueOnce(activationResponse);
+    const getPortalData = vi.fn(async () => portalDataResponse);
+    const submitOrder = vi.fn(async () => ({ orderId: 'order-1', orderRef: 'ORD-1', status: 'submitted' as const }));
+
+    renderWithRouter({ activateSession, getPortalData, submitOrder }, '/m/token-retry-123');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'העמוד לא נמצא' })).toBeTruthy();
+    });
+    expect(activateSession).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'נסו שוב' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('portal-heading').textContent).toContain('עואודה לשיווק בע״מ');
+    });
+    expect(activateSession).toHaveBeenCalledTimes(2);
   });
 
   it('keeps activation flow working when sessionStorage is unavailable', async () => {
@@ -302,7 +332,6 @@ describe('customer portal runtime routes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות מוצר 2' }));
 
-    expect(screen.getByText('פריטים')).toBeTruthy();
     expect(
       screen.getAllByText((_, element) => element?.textContent?.includes('סכום כולל') ?? false)
         .length,
@@ -310,8 +339,9 @@ describe('customer portal runtime routes', () => {
 
     const stickyBar = screen.getByTestId('sticky-submit-bar');
     const orderSummary = screen.getByLabelText('סיכום הזמנה');
+    expect(orderSummary.textContent).toContain('ק״ג');
     expect(stickyBar.textContent).toContain('סה"כ משוער ₪92.50');
-    expect(stickyBar.textContent).toContain('שליחת הזמנה למפעל (2 יחידות)');
+    expect(stickyBar.textContent).toContain('שליחת הזמנה למפעל (2 ק״ג)');
     expect(orderSummary.textContent).toContain('סכום ביניים₪92.50');
     expect(orderSummary.textContent).toContain('סכום כולל₪92.50');
     expect(orderSummary.textContent).not.toContain('דמי לוגיסטיקה');
@@ -393,7 +423,7 @@ describe('customer portal runtime routes', () => {
         (sessionToken: string, idempotencyKey: string, request: CustomerOrderSubmitRequest) => Promise<CustomerOrderSubmitResponse>
       >()
       .mockImplementationOnce((_token, _key, request) => {
-        expect(request.lines[0]).toMatchObject({ itemId: 'item-1', quantity: 1, unit: 'unit', clientUnitPrice: 42.5 });
+        expect(request.lines[0]).toMatchObject({ itemId: 'item-1', quantity: 1, unit: 'kg', clientUnitPrice: 42.5 });
         return submitDeferred.promise;
       })
       .mockResolvedValueOnce({
@@ -409,7 +439,7 @@ describe('customer portal runtime routes', () => {
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
-    const submitButton = screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' });
+    const submitButton = screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' });
 
     await userEvent.click(submitButton);
     expect(screen.getByRole('button', { name: 'שולחים הזמנה…' }).hasAttribute('disabled')).toBe(true);
@@ -458,7 +488,7 @@ describe('customer portal runtime routes', () => {
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
-    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('submit-error')).toBeTruthy();
@@ -466,7 +496,7 @@ describe('customer portal runtime routes', () => {
     expect(screen.getByTestId('submit-error').textContent).toContain(
       'המערכת עמוסה זמנית ולא ניתן להשלים את ההזמנה כרגע. נסו שוב בעוד דקה באמצעות "נסו לשלוח שוב".',
     );
-    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' }).hasAttribute('disabled')).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'נסו לשלוח שוב' }));
 
@@ -509,7 +539,7 @@ describe('customer portal runtime routes', () => {
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }));
-    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('screen-portal-order-success')).toBeTruthy();
@@ -522,10 +552,10 @@ describe('customer portal runtime routes', () => {
       expect(screen.queryByTestId('screen-portal-order-success')).toBeNull();
     });
 
-    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' }).hasAttribute('disabled')).toBe(false);
     expect(screen.getByRole('button', { name: 'הגדלת כמות אנטריקוט פרימיום' }).hasAttribute('disabled')).toBe(false);
 
-    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 יחידות)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'שליחת הזמנה למפעל (1 ק״ג)' }));
     await waitFor(() => {
       expect(submitOrder).toHaveBeenCalledTimes(2);
     });
