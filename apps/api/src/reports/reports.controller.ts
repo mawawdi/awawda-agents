@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
 import type {
   AgentErpAgentsResponse,
@@ -11,6 +12,8 @@ import type {
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { ReportsService } from './reports.service';
 
+@ApiTags('agent/reports')
+@ApiBearerAuth()
 @Controller({ path: 'agent/reports', version: '1' })
 @UseGuards(AgentAuthGuard)
 export class ReportsController {

@@ -2,7 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from './auth.service';
-import type { AuthAgentRepository, PasswordVerifier, ShiftTokenSigner } from './auth.types';
+import type { AuthAgentRepository, PasswordVerifier, RefreshTokenRepository, ShiftTokenSigner } from './auth.types';
 
 describe('AuthService', () => {
   const agentRepository: AuthAgentRepository = {
@@ -18,14 +18,22 @@ describe('AuthService', () => {
     sign: vi.fn(),
   };
 
+  const refreshTokenRepo: RefreshTokenRepository = {
+    createRefreshToken: vi.fn().mockResolvedValue(undefined),
+    rotateRefreshToken: vi.fn(),
+    revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
+  };
+
   const service = new AuthService(agentRepository, passwordVerifier, tokenSigner, {
     jwtSecret: 'test',
     jwtIssuer: 'test-suite',
     shiftTokenTtlSeconds: 8 * 60 * 60,
-  });
+    refreshTokenTtlSeconds: 30 * 24 * 60 * 60,
+  }, refreshTokenRepo);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(refreshTokenRepo.createRefreshToken).mockResolvedValue(undefined);
   });
 
   it('returns access token and normalized profile for valid credentials', async () => {
@@ -47,9 +55,11 @@ describe('AuthService', () => {
         phoneOrEmail: 'mona@example.com',
         password: 'correct-horse-battery-staple',
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       accessToken: 'jwt-token',
       expiresIn: 28800,
+      refreshToken: expect.any(String),
+      refreshTokenExpiresIn: expect.any(Number),
       agentProfile: {
         id: 'agent-1',
         name: 'Mona Parker',

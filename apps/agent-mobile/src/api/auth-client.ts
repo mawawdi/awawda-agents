@@ -1,4 +1,4 @@
-import { LOGIN_RESPONSE_SCHEMA, type LoginInput, type LoginResponse } from '../auth/contracts'
+import { LOGIN_RESPONSE_SCHEMA, REFRESH_RESPONSE_SCHEMA, type LoginInput, type LoginResponse, type RefreshResponse } from '../auth/contracts'
 import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
 
 const LOGIN_TIMEOUT_MS = 8000
@@ -47,4 +47,42 @@ export async function loginAgent(input: LoginInput): Promise<LoginResponse> {
   }
 
   return parsed.data
+}
+
+export async function refreshTokens(refreshToken: string): Promise<RefreshResponse | null> {
+  try {
+    const { response } = await fetchWithBaseUrlFallback(
+      '/v1/agent/auth/refresh',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      },
+      { requestLabel: 'שרת הרענון', timeoutMs: LOGIN_TIMEOUT_MS },
+    )
+    if (!response.ok) {
+      return null
+    }
+    const payload = await response.json().catch(() => null)
+    const parsed = REFRESH_RESPONSE_SCHEMA.safeParse(payload)
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
+
+export async function logoutAgent(refreshToken: string): Promise<void> {
+  try {
+    await fetchWithBaseUrlFallback(
+      '/v1/agent/auth/logout',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      },
+      { requestLabel: 'שרת הניתוק', timeoutMs: LOGIN_TIMEOUT_MS },
+    )
+  } catch {
+    // best-effort; don't block UI on logout failure
+  }
 }

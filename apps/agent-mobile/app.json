@@ -34,6 +34,7 @@
       "versionCode": 1
     },
     "extra": {
+      "sentryDsn": "",
       "eas": {
         "projectId": "ad099fde-a376-4a1b-9d54-e2e39b44a77e"
       }

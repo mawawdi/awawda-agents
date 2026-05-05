@@ -370,6 +370,7 @@ describe('Agent read endpoints', () => {
           customerId: 'cust-alpha',
           customerName: 'Alpha',
           submittedAt: '2026-04-12T09:15:00.000Z',
+          requestedDeliveryDate: null,
           status: 'submitted',
           orderStatus: 'submitted',
           estimatedTotal: 349.5,

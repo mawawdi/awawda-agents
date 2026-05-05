@@ -184,6 +184,7 @@ describe('agent customers client', () => {
               customerId: 'cust-alpha',
               customerName: 'Alpha',
               submittedAt: '2026-04-12T09:00:00.000Z',
+              requestedDeliveryDate: null,
               status: 'submitted',
               estimatedTotal: 249.5,
               currency: 'ILS',

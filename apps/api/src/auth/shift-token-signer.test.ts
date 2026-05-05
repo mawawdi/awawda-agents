@@ -9,6 +9,7 @@ describe('JwtShiftTokenSigner', () => {
       jwtSecret: 'test-secret',
       jwtIssuer: 'awawda-tests',
       shiftTokenTtlSeconds: 3600,
+      refreshTokenTtlSeconds: 2592000,
     });
 
     const token = signer.sign({ sub: 'agent-1', phone: '+972500000000', type: 'agent_shift' }, 120);

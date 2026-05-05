@@ -178,4 +178,50 @@ export class PrismaAgentCustomersRepository implements AgentCustomersRepository 
       created: false,
     };
   }
+
+  async removeApprovedItem(
+    customerId: string,
+    hashItemId: string,
+    agentId: string,
+  ): Promise<{ removed: boolean }> {
+    const existing = await this.prisma.approvedItem.findUnique({
+      where: {
+        hashCustomerId_hashItemId: {
+          hashCustomerId: customerId,
+          hashItemId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return { removed: false };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.approvedItem.delete({
+        where: {
+          hashCustomerId_hashItemId: {
+            hashCustomerId: customerId,
+            hashItemId,
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorType: AuditActorType.AGENT,
+          actorId: agentId,
+          eventType: 'approved_item.removed',
+          eventPayloadJson: {
+            approvedItemId: existing.id,
+            customerId,
+            hashItemId,
+          },
+        },
+      });
+    });
+
+    return { removed: true };
+  }
 }

@@ -14,6 +14,8 @@ describe('auth client', () => {
         JSON.stringify({
           accessToken: 'token-123',
           expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
           agentProfile: {
             id: 'agent-1',
             name: 'Line Agent',
@@ -54,6 +56,8 @@ describe('auth client', () => {
         JSON.stringify({
           accessToken: 'token-local-default',
           expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
           agentProfile: {
             id: 'agent-1',
             name: 'Line Agent',
@@ -112,6 +116,8 @@ describe('auth client', () => {
           JSON.stringify({
             accessToken: 'token-abc',
             expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
             agentProfile: {
               id: 'agent-1',
               name: 'Line Agent',
@@ -158,6 +164,8 @@ describe('auth client', () => {
           JSON.stringify({
             accessToken: 'token-route-fallback',
             expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
             agentProfile: {
               id: 'agent-1',
               name: 'Line Agent',
@@ -209,6 +217,8 @@ describe('auth client', () => {
           JSON.stringify({
             accessToken: 'token-retry-post',
             expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
             agentProfile: {
               id: 'agent-1',
               name: 'Line Agent',
@@ -242,6 +252,8 @@ describe('auth client', () => {
           JSON.stringify({
             accessToken: 'token-expogo',
             expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
             agentProfile: {
               id: 'agent-1',
               name: 'Expo Agent',
@@ -299,6 +311,8 @@ describe('auth client', () => {
         JSON.stringify({
           accessToken: 'token-typo-fixed',
           expiresIn: 28800,
+          refreshToken: 'refresh-token-mock',
+          refreshTokenExpiresIn: 2592000,
           agentProfile: {
             id: 'agent-1',
             name: 'Line Agent',

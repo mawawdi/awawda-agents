@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
 import type { AgentOrderCancelResponse, AgentOrdersResponse } from '@awawda/shared-types';
 
@@ -6,6 +7,8 @@ import { AgentOrderCancelDto } from './dto/agent-order-cancel.dto';
 import { AgentOrdersQueryDto } from './dto/agent-orders-query.dto';
 import { AgentOrdersService } from './agent-orders.service';
 
+@ApiTags('agent/orders')
+@ApiBearerAuth()
 @Controller({ path: 'agent/orders', version: '1' })
 @UseGuards(AgentAuthGuard)
 export class AgentOrdersController {

@@ -196,6 +196,7 @@ export class OrdersService {
       hashSubmittedByAgentId: agentInfo?.hashAgentId ?? null,
       lines: linesWithSnapshots,
       estimatedTotal: linesWithSnapshots.reduce((sum, line) => sum + line.lineTotalSnapshot, 0),
+      requestedDeliveryDate: normalizedRequest.requestedDeliveryDate ?? null,
       consumeSession: erpResponse.status === 'submitted',
     });
 
@@ -212,6 +213,7 @@ export class OrdersService {
 function hashRequestPayload(request: CustomerOrderSubmitRequest): string {
   const canonicalPayload = {
     notes: request.notes?.trim() ?? null,
+    requestedDeliveryDate: request.requestedDeliveryDate ?? null,
     lines: request.lines.map((line) => ({
       itemId: line.itemId,
       quantity: line.quantity,

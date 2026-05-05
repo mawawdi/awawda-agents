@@ -16,7 +16,16 @@ export interface AgentLoginRequest {
 export interface AgentLoginResponse {
   accessToken: string;
   expiresIn: number;
+  refreshToken: string;
+  refreshTokenExpiresIn: number;
   agentProfile: AgentProfile;
+}
+
+export interface AgentRefreshResponse {
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshTokenExpiresIn: number;
 }
 
 export interface AgentAssignedCustomer {
@@ -57,6 +66,12 @@ export interface AgentApprovedItemMutationResponse {
   created: boolean;
 }
 
+export interface AgentApprovedItemRemoveResponse {
+  customerId: string;
+  hashItemId: string;
+  removed: boolean;
+}
+
 export interface AgentOrderCardLine {
   itemId: string;
   itemName: string;
@@ -71,6 +86,7 @@ export interface AgentOrderCard {
   customerId: string;
   customerName: string;
   submittedAt: string;
+  requestedDeliveryDate: string | null;
   status: 'submitted' | 'pending_retry' | 'failed';
   estimatedTotal: number;
   currency: string;
@@ -446,6 +462,7 @@ export interface CustomerOrderSubmitLine {
 export interface CustomerOrderSubmitRequest {
   lines: CustomerOrderSubmitLine[];
   notes?: string;
+  requestedDeliveryDate?: string;
 }
 
 export interface CustomerOrderSubmitResponse {

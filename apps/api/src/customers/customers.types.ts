@@ -10,4 +10,9 @@ export interface AgentCustomersRepository {
     hashItemId: string,
     agentId: string,
   ): Promise<{ item: AgentApprovedItem; created: boolean }>;
+  removeApprovedItem(
+    customerId: string,
+    hashItemId: string,
+    agentId: string,
+  ): Promise<{ removed: boolean }>;
 }

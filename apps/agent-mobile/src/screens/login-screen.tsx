@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -64,12 +65,17 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
         { paddingTop: spacing.xl + Math.max(insets.top, spacing.sm), paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.sm) },
       ]}
       style={styles.container}
+      keyboardShouldPersistTaps="handled"
     >
       <Animated.View
         style={[
@@ -198,6 +204,7 @@ export function LoginScreen(): React.JSX.Element {
         </View>
       </Animated.View>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

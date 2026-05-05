@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Headers, Inject, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, Post, Res, UseGuards } from '@nestjs/common';
 import type {
   AgentApprovedItemMutationResponse,
+  AgentApprovedItemRemoveResponse,
   AgentApprovedItemsResponse,
   AgentCustomersResponse,
 } from '@awawda/shared-types';
@@ -9,6 +11,8 @@ import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { AddApprovedItemRequestDto } from './dto/add-approved-item-request.dto';
 import { CustomersService } from './customers.service';
 
+@ApiTags('agent/customers')
+@ApiBearerAuth()
 @Controller({ path: 'agent/customers', version: '1' })
 @UseGuards(AgentAuthGuard)
 export class CustomersController {
@@ -40,5 +44,15 @@ export class CustomersController {
       response.status(result.created ? 201 : 200);
       return result;
     });
+  }
+
+  @Delete(':customerId/approved-items/:hashItemId')
+  @HttpCode(200)
+  removeApprovedItem(
+    @Headers('x-agent-id') agentId: string,
+    @Param('customerId') customerId: string,
+    @Param('hashItemId') hashItemId: string,
+  ): Promise<AgentApprovedItemRemoveResponse> {
+    return this.customersService.removeApprovedItem(agentId, customerId, hashItemId);
   }
 }

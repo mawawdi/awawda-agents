@@ -6,11 +6,12 @@ import {
   AUTH_AGENT_REPOSITORY,
   AUTH_CONFIG,
   AUTH_PASSWORD_VERIFIER,
+  AUTH_REFRESH_TOKEN_REPOSITORY,
   AUTH_SHIFT_TOKEN_SIGNER,
 } from './auth.constants';
 import { AgentAuthGuard } from './agent-auth.guard';
 import { AuthController } from './auth.controller';
-import { PrismaAuthAgentRepository } from './auth.repository';
+import { PrismaAuthAgentRepository, PrismaRefreshTokenRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { Argon2PasswordVerifier } from './password-verifier';
 import { JwtShiftTokenSigner } from './shift-token-signer';
@@ -22,6 +23,7 @@ import { SupervisorAuthGuard } from './supervisor-auth.guard';
     PrismaClient,
     AuthService,
     PrismaAuthAgentRepository,
+    PrismaRefreshTokenRepository,
     Argon2PasswordVerifier,
     JwtShiftTokenSigner,
     AgentAuthGuard,
@@ -41,6 +43,10 @@ import { SupervisorAuthGuard } from './supervisor-auth.guard';
     {
       provide: AUTH_SHIFT_TOKEN_SIGNER,
       useExisting: JwtShiftTokenSigner,
+    },
+    {
+      provide: AUTH_REFRESH_TOKEN_REPOSITORY,
+      useExisting: PrismaRefreshTokenRepository,
     },
   ],
   exports: [AgentAuthGuard, SupervisorAuthGuard, AUTH_CONFIG, AUTH_AGENT_REPOSITORY],

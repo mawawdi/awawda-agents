@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Body, Controller, Headers, HttpCode, Inject, Post, Res, UseGuards } from '@nestjs/common';
 import type {
   CustomerOrderMismatchResponse,
@@ -11,6 +12,8 @@ import type { CustomerOrderErpUnavailableResponse } from './orders.errors';
 import { CustomerOrderIdempotencyKeyRequiredError } from './orders.errors';
 import { OrdersService } from './orders.service';
 
+@ApiTags('customer/orders')
+@ApiBearerAuth('customerSession')
 @Controller({ path: 'customer/orders', version: '1' })
 @UseGuards(CustomerSessionAuthGuard)
 export class OrdersController {

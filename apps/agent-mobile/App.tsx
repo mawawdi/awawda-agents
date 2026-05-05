@@ -1,4 +1,6 @@
 import React from 'react'
+import * as Sentry from '@sentry/react-native'
+import Constants from 'expo-constants'
 import { NavigationContainer } from '@react-navigation/native'
 import {
   PlusJakartaSans_400Regular,
@@ -49,6 +51,14 @@ function applyGlobalFontDefaults(): void {
 }
 
 applyGlobalFontDefaults()
+
+const sentryDsn = (Constants.expoConfig?.extra as Record<string, unknown> | undefined)?.sentryDsn
+if (typeof sentryDsn === 'string' && sentryDsn && process.env.NODE_ENV !== 'test') {
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0.2,
+  })
+}
 
 export default function App(): React.JSX.Element {
   const [fontsLoaded] = useFonts({

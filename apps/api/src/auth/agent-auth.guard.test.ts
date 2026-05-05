@@ -19,6 +19,7 @@ describe('AgentAuthGuard', () => {
     jwtSecret: 'test-secret',
     jwtIssuer: 'awawda-test',
     shiftTokenTtlSeconds: 3600,
+    refreshTokenTtlSeconds: 2592000,
   };
 
   const repository: AuthAgentRepository = {

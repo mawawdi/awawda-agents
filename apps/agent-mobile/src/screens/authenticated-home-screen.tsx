@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -32,6 +33,7 @@ import type {
 
 import {
   AgentApiError,
+  addApprovedItem,
   cancelAgentOrder,
   generateMagicLink,
   listAgentOrders,
@@ -45,6 +47,7 @@ import {
   listSupervisorAuditEntries,
   listSupervisorCustomerAssignments,
   listSupervisorCustomers,
+  removeApprovedItem,
   unassignSupervisorCustomer,
   updateSupervisorAgentAccess,
   updateSupervisorCustomerProfile,
@@ -118,6 +121,7 @@ import {
   toSupervisorProfileDraft,
 } from './authenticated-home-screen.utils'
 import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
+import { CustomerListSkeleton, OrderListSkeleton } from '../components/skeleton-loader'
 
 const IS_RTL_LAYOUT = true
 const MONTHLY_GOAL_STORAGE_KEY = 'agent:monthly_goal'
@@ -185,6 +189,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [isApprovedItemsLoading, setIsApprovedItemsLoading] = useState(false)
   const [approvedItemsError, setApprovedItemsError] = useState<string | null>(null)
   const [isApprovedItemsSlow, setIsApprovedItemsSlow] = useState(false)
+  const [removingApprovedItemId, setRemovingApprovedItemId] = useState<string | null>(null)
   const [itemImageCandidateIndexByItemId, setItemImageCandidateIndexByItemId] = useState<Record<string, number>>({})
   const [catalogPage, setCatalogPage] = useState(1)
   const [catalogGridWidth, setCatalogGridWidth] = useState(0)
@@ -410,6 +415,38 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       }
     },
     [beginSlowNetworkTimer, token],
+  )
+
+  const handleRemoveApprovedItem = useCallback(
+    async (customerId: string, hashItemId: string) => {
+      if (!token) return
+
+      setRemovingApprovedItemId(hashItemId)
+      try {
+        await removeApprovedItem(token, customerId, hashItemId)
+
+        // Guard: only apply state update if the customer hasn't changed
+        if (selectedCustomerId !== customerId) return
+
+        setApprovedItems((current) => current.filter((item) => item.hashItemId !== hashItemId))
+        setCustomers((current) =>
+          current.map((c) =>
+            c.customerId === customerId
+              ? { ...c, approvedItemsCount: Math.max(0, c.approvedItemsCount - 1) }
+              : c,
+          ),
+        )
+      } catch (error) {
+        if (error instanceof AgentApiError && error.status === 401) {
+          await signOut()
+          return
+        }
+        Alert.alert('שגיאה', error instanceof Error ? error.message : 'לא הצלחנו להסיר את הפריט.')
+      } finally {
+        setRemovingApprovedItemId(null)
+      }
+    },
+    [selectedCustomerId, signOut, token],
   )
 
   useEffect(() => {
@@ -1369,12 +1406,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
 
   const renderCustomersList = (isCompact = false): React.JSX.Element => {
     if (isCustomersLoading && customers.length === 0) {
-      return (
-        <View style={styles.loadingState}>
-          <ActivityIndicator />
-          <Text style={styles.mutedText}>טוענים את רשימת הלקוחות…</Text>
-        </View>
-      )
+      return <CustomerListSkeleton />
     }
 
     if (filteredCustomers.length === 0) {
@@ -1542,6 +1574,14 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           <Text style={styles.orderMeta}>{statusLabel}</Text>
         </View>
 
+        {order.requestedDeliveryDate ? (
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', marginTop: 2, marginBottom: 2 }}>
+            <Text style={styles.orderMeta}>
+              {renderHebrewNumericRuns(`📅 אספקה מבוקשת: ${order.requestedDeliveryDate}`)}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.orderPreviewItems}>
           {order.items.slice(0, 3).map((line, index) => {
             const unitPrice = line.quantity > 0 ? line.lineTotal / line.quantity : line.lineTotal
@@ -1623,10 +1663,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         </View>
         {renderBanner(getResilienceHint(false, homeOrdersError), Boolean(homeOrdersError))}
         {isHomeOrdersLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator />
-            <Text style={styles.mutedText}>טוענים הזמנות להיום…</Text>
-          </View>
+          <OrderListSkeleton />
         ) : homeOrdersToday.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.mutedText}>אין הזמנות שבוצעו היום.</Text>
@@ -1713,10 +1750,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
           <Text style={styles.panelTitle}>פריטים מאושרים של הלקוח</Text>
           {renderBanner(getResilienceHint(isApprovedItemsSlow, approvedItemsError), Boolean(approvedItemsError))}
           {isApprovedItemsLoading ? (
-            <View style={styles.loadingState}>
-              <ActivityIndicator />
-              <Text style={styles.mutedText}>טוענים פריטים מאושרים…</Text>
-            </View>
+            <CustomerListSkeleton />
           ) : approvedItems.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.mutedText}>אין עדיין פריטים מאושרים עבור הלקוח הזה.</Text>
@@ -1768,6 +1802,40 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
                               imageStyle={styles.catalogItemImageAsset}
                             >
                               {renderSpeciesBadge(item.hashItemId)}
+                              <Pressable
+                                accessibilityLabel="הסר פריט"
+                                accessibilityRole="button"
+                                disabled={removingApprovedItemId === item.hashItemId}
+                                onPress={() => {
+                                  const customerId = selectedCustomerId
+                                  if (!customerId) return
+                                  Alert.alert('הסרת פריט', `להסיר את "${humanizeItemName(item.hashItemId)}" מהרשימה?`, [
+                                    { text: 'ביטול', style: 'cancel' },
+                                    {
+                                      text: 'הסר',
+                                      style: 'destructive',
+                                      onPress: () => {
+                                        void handleRemoveApprovedItem(customerId, item.hashItemId)
+                                      },
+                                    },
+                                  ])
+                                }}
+                                style={({ pressed }) => [
+                                  {
+                                    position: 'absolute',
+                                    top: 4,
+                                    left: 4,
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 12,
+                                    backgroundColor: pressed || removingApprovedItemId === item.hashItemId ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.38)',
+                                    alignItems: 'center' as const,
+                                    justifyContent: 'center' as const,
+                                  },
+                                ]}
+                              >
+                                <Text style={{ color: '#fff', fontSize: 14, lineHeight: 16, fontWeight: '700' }}>✕</Text>
+                              </Pressable>
                             </ImageBackground>
                             <View style={[styles.catalogItemHeader, { minHeight: titleLayout.minHeight }]}>
                               <Text
@@ -2032,10 +2100,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         {renderBanner(getResilienceHint(isOrdersSlow, ordersError), Boolean(ordersError))}
 
         {isOrdersLoading ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator />
-            <Text style={styles.mutedText}>טוענים הזמנות…</Text>
-          </View>
+          <OrderListSkeleton />
         ) : orders.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.mutedText}>לא נמצאו הזמנות שמתאימות לפילטרים שנבחרו.</Text>
@@ -2883,6 +2948,20 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
             },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={
+                activeTab === 'supervisor'
+                  ? isSupervisorLoading
+                  : activeTab === 'orders'
+                    ? isOrdersLoading
+                    : activeTab === 'home'
+                      ? isHomeOrdersLoading
+                      : isCustomersLoading
+              }
+              onRefresh={refreshActiveTab}
+            />
+          }
         >
           <View style={[styles.brandOnlyBar, { marginTop: 0 }]}>
             <Text style={styles.brandOnlyText}>עואודה לשיווק בע״מ</Text>

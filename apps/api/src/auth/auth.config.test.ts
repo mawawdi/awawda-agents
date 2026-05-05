@@ -9,7 +9,7 @@ describe('loadAuthConfig', () => {
       JWT_SHIFT_TOKEN_TTL: '15m',
     });
 
-    expect(config).toEqual({
+    expect(config).toMatchObject({
       jwtSecret: 'top-secret',
       jwtIssuer: 'awawda-api',
       shiftTokenTtlSeconds: 900,

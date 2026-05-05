@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Req, UseGuards } from '@nestjs/common';
 import type { CustomerPortalDataResponse, CustomerSessionActivateResponse } from '@awawda/shared-types';
 
@@ -5,6 +6,7 @@ import { CustomerSessionAuthGuard } from './customer-session-auth.guard';
 import { CustomerSessionActivationDto } from './dto/customer-session-activation.dto';
 import { SessionsService } from './sessions.service';
 
+@ApiTags('customer/sessions')
 @Controller({ path: 'customer', version: '1' })
 export class SessionsController {
   constructor(@Inject(SessionsService) private readonly sessionsService: SessionsService) {}

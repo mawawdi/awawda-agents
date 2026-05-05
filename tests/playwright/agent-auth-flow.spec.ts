@@ -10,6 +10,8 @@ const VALID_CREDENTIALS = {
 const LOGIN_RESPONSE = {
   accessToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZ2VudC0wMDEiLCJ0eXBlIjoiYWdlbnRfc2hpZnQifQ.signature',
   expiresIn: 28800,
+  refreshToken: 'refresh-token-playwright-mock',
+  refreshTokenExpiresIn: 2592000,
   agentProfile: {
     id: 'agent-001',
     name: 'Line Agent',

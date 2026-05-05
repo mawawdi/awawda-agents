@@ -35,10 +35,12 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
   }
 
   const rawTtl = env.JWT_SHIFT_TOKEN_TTL?.trim() ?? '8h';
+  const rawRefreshTtl = env.JWT_REFRESH_TOKEN_TTL?.trim() ?? '30d';
 
   return {
     jwtSecret,
     jwtIssuer: env.JWT_ISSUER?.trim() || 'awawda-api',
     shiftTokenTtlSeconds: parseDurationToSeconds(rawTtl),
+    refreshTokenTtlSeconds: parseDurationToSeconds(rawRefreshTtl),
   };
 }

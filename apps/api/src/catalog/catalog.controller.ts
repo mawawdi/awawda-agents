@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Inject, Res, UseGuards } from '@nestjs/common';
 import type { AgentCatalogResponse } from '@awawda/shared-types';
 import { createHash } from 'node:crypto';
@@ -5,6 +6,8 @@ import { createHash } from 'node:crypto';
 import { AgentAuthGuard } from '../auth/agent-auth.guard';
 import { CatalogService } from './catalog.service';
 
+@ApiTags('agent/catalog')
+@ApiBearerAuth()
 @Controller({ path: 'agent/catalog', version: '1' })
 @UseGuards(AgentAuthGuard)
 export class CatalogController {

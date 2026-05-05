@@ -48,6 +48,7 @@ export type PersistOrderSubmissionInput = {
     }
   >;
   estimatedTotal: number;
+  requestedDeliveryDate: string | null;
   consumeSession: boolean;
 };
 

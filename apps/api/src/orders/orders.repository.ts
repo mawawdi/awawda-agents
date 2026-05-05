@@ -116,6 +116,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
           hashSubmittedByAgentId: input.hashSubmittedByAgentId,
           status: orderStatus,
           submittedAt,
+          requestedDeliveryDate: input.requestedDeliveryDate ? new Date(input.requestedDeliveryDate) : null,
           estimatedTotal: new Prisma.Decimal(input.estimatedTotal),
           currency: 'ILS',
           orderLines: {
@@ -232,6 +233,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
       customerId: string;
       customerName: string;
       submittedAt: string;
+      requestedDeliveryDate: string | null;
       status: 'submitted' | 'pending_retry' | 'failed';
       estimatedTotal: number;
       currency: string;
@@ -282,6 +284,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
           hashOrderRef: true,
           hashCustomerId: true,
           submittedAt: true,
+          requestedDeliveryDate: true,
           status: true,
           estimatedTotal: true,
           currency: true,
@@ -309,6 +312,9 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
           customerId: row.hashCustomerId,
           customerName: humanizeCustomerId(row.hashCustomerId),
           submittedAt: row.submittedAt.toISOString(),
+          requestedDeliveryDate: row.requestedDeliveryDate
+            ? row.requestedDeliveryDate.toISOString().slice(0, 10)
+            : null,
           status,
           orderStatus: status,
           estimatedTotal: Number(row.estimatedTotal),

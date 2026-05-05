@@ -63,8 +63,22 @@ model Agent {
   approvedItems ApprovedItem[]
   magicLinks    MagicLink[]
   submittedOrders Order[]      @relation("SubmittedByAgent")
+  refreshTokens RefreshToken[]
 
   @@map("agents")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId   String    @map("agent_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, revokedAt, expiresAt], map: "refresh_tokens_agent_active_idx")
+  @@map("refresh_tokens")
 }
 
 model Assignment {
@@ -141,6 +155,7 @@ model Order {
   hashSubmittedByAgentId  String?     @map("hash_submitted_by_agent_id") @db.VarChar(128)
   status                  OrderStatus
   submittedAt             DateTime    @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  requestedDeliveryDate   DateTime?   @map("requested_delivery_date") @db.Date
   estimatedTotal          Decimal     @map("estimated_total") @db.Decimal(14, 2)
   currency                String      @db.VarChar(3)
   customerSession         Session     @relation(fields: [customerSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)

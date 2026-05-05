@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   AgentApprovedItemMutationResponse,
+  AgentApprovedItemRemoveResponse,
   AgentApprovedItemsResponse,
   AgentCustomersResponse,
 } from '@awawda/shared-types';
@@ -65,6 +66,21 @@ export class CustomersService {
       customerId,
       item: result.item,
       created: result.created,
+    };
+  }
+
+  async removeApprovedItem(
+    agentId: string,
+    customerId: string,
+    hashItemId: string,
+  ): Promise<AgentApprovedItemRemoveResponse> {
+    await this.assertAssignedCustomer(agentId, customerId);
+    const result = await this.customersRepository.removeApprovedItem(customerId, hashItemId, agentId);
+
+    return {
+      customerId,
+      hashItemId,
+      removed: result.removed,
     };
   }
 

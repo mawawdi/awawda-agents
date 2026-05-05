@@ -286,6 +286,7 @@ function OrderRoute({
   const [approvedCatalogPage, setApprovedCatalogPage] = useState(1);
   const [successCapturedAt, setSuccessCapturedAt] = useState<string | null>(null);
   const [recentlyCopiedOrderRef, setRecentlyCopiedOrderRef] = useState<string | null>(null);
+  const [requestedDeliveryDate, setRequestedDeliveryDate] = useState<string>('');
   const session = useMemo(() => readPortalSession(), []);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
   const catalogMeasureRef = useRef<HTMLDivElement | null>(null);
@@ -530,6 +531,7 @@ function OrderRoute({
     try {
       const response = await apiClient.submitOrder(session.sessionToken, submitIdempotencyKeyRef.current, {
         lines: submitLines.filter((line): line is NonNullable<typeof line> => line !== null),
+        requestedDeliveryDate: requestedDeliveryDate || undefined,
       });
       setSuccessCapturedAt(formatPortalDateTime());
       setSubmitState(markSuccess(response.orderRef));
@@ -819,6 +821,19 @@ function OrderRoute({
               </ul>
             ) : null}
             <p className="summary-microcopy">{state.submitBar.summaryLabel}</p>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label htmlFor="requested-delivery-date" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted-foreground, #6b7280)', marginBottom: '0.25rem' }}>
+                תאריך אספקה מבוקש (אופציונלי)
+              </label>
+              <input
+                id="requested-delivery-date"
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setRequestedDeliveryDate(e.target.value)}
+                style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '0.375rem', border: '1px solid var(--border, #e5e7eb)', fontSize: '0.875rem' }}
+                type="date"
+                value={requestedDeliveryDate}
+              />
+            </div>
             <Button
               className="sticky-submit-button"
               data-testid="summary-submit-button"

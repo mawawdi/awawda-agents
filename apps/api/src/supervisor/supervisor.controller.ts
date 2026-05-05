@@ -1,3 +1,4 @@
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -42,6 +43,8 @@ import { SupervisorUnassignAgentDto } from './dto/supervisor-unassign-agent.dto'
 import { SupervisorAssignmentAgentIdRequiredError } from './supervisor.errors';
 import { SupervisorService } from './supervisor.service';
 
+@ApiTags('supervisor')
+@ApiBearerAuth()
 @Controller({ path: 'supervisor', version: '1' })
 @UseGuards(AgentAuthGuard, SupervisorAuthGuard)
 export class SupervisorController {

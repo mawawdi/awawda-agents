@@ -1,5 +1,6 @@
 import type {
   AgentApprovedItemMutationResponse,
+  AgentApprovedItemRemoveResponse,
   AgentApprovedItemsResponse,
   AgentAssignedCustomer,
   AgentCustomersResponse,
@@ -31,6 +32,7 @@ import type {
 import { z } from 'zod'
 
 import { fetchWithBaseUrlFallback } from './api-base-url-fallback'
+import { executeRefresh } from '../auth/token-refresher'
 
 const AGENT_ASSIGNED_CUSTOMER_SCHEMA: z.ZodType<AgentAssignedCustomer> = z.object({
   customerId: z.string().trim().min(1),
@@ -67,6 +69,12 @@ const AGENT_APPROVED_ITEM_MUTATION_RESPONSE_SCHEMA: z.ZodType<AgentApprovedItemM
   }),
 })
 
+const AGENT_APPROVED_ITEM_REMOVE_RESPONSE_SCHEMA: z.ZodType<AgentApprovedItemRemoveResponse> = z.object({
+  customerId: z.string().trim().min(1),
+  hashItemId: z.string().trim().min(1),
+  removed: z.boolean(),
+})
+
 const AGENT_MAGIC_LINK_RESPONSE_SCHEMA: z.ZodType<AgentMagicLinkIssueResponse> = z.object({
   linkUrl: z.string().url(),
   expiresAt: z.string().datetime(),
@@ -80,6 +88,7 @@ const AGENT_ORDER_CARD_SCHEMA: z.ZodType<AgentOrderCard> = z.object({
   customerId: z.string().trim().min(1),
   customerName: z.string().trim().min(1),
   submittedAt: z.string().datetime(),
+  requestedDeliveryDate: z.string().nullable(),
   status: z.union([z.literal('submitted'), z.literal('pending_retry'), z.literal('failed')]),
   estimatedTotal: z.number().nonnegative(),
   currency: z.string().trim().min(1),
@@ -379,6 +388,25 @@ async function requestAgentApi(path: string, init: RequestInit): Promise<Respons
     timeoutMs: 8000,
   })
 
+  // 401 interceptor: extract token from existing header, attempt silent refresh, retry once
+  if (response.status === 401) {
+    const initHeaders = init.headers as Record<string, string> | undefined
+    const authHeader = initHeaders?.['Authorization'] ?? initHeaders?.['authorization']
+    const hasBearer = authHeader?.startsWith('Bearer ')
+    if (hasBearer) {
+      const newToken = await executeRefresh()
+      if (newToken) {
+        const retryHeaders = { ...(initHeaders ?? {}), Authorization: `Bearer ${newToken}` }
+        const { response: retried } = await fetchWithBaseUrlFallback(
+          path,
+          { ...init, headers: retryHeaders },
+          { requestLabel: 'שרת ה-API', timeoutMs: 8000 },
+        )
+        return retried
+      }
+    }
+  }
+
   return response
 }
 
@@ -431,6 +459,25 @@ export async function addApprovedItem(
   })
 
   return parseValidatedResponse(response, AGENT_APPROVED_ITEM_MUTATION_RESPONSE_SCHEMA)
+}
+
+export async function removeApprovedItem(
+  accessToken: string,
+  customerId: string,
+  hashItemId: string,
+): Promise<AgentApprovedItemRemoveResponse> {
+  const response = await requestAgentApi(
+    `/v1/agent/customers/${encodeURIComponent(customerId)}/approved-items/${encodeURIComponent(hashItemId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  )
+
+  return parseValidatedResponse(response, AGENT_APPROVED_ITEM_REMOVE_RESPONSE_SCHEMA)
 }
 
 export async function generateMagicLink(

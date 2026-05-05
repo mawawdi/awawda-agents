@@ -337,6 +337,58 @@ test.describe("customer portal browser critical paths", () => {
 		await assertCriticalScreenshot(page, page.getByTestId("screen-portal-session-error"), "portal-critical-session-error.png")
 		expect(logoutCalls).toBe(1)
 	})
+
+	test("delivery date is included in order submission payload when set", async ({ page }) => {
+		await stabilizeVisuals(page)
+		let capturedPayload: Record<string, unknown> | null = null
+
+		await page.route("**/v1/customer/sessions/activate", async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify(activationResponse),
+			})
+		})
+
+		await page.route("**/v1/customer/portal-data", async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify(portalDataResponse),
+			})
+		})
+
+		await page.route("**/v1/customer/orders", async (route) => {
+			capturedPayload = route.request().postDataJSON() as Record<string, unknown>
+			await route.fulfill({
+				status: 201,
+				contentType: "application/json",
+				body: JSON.stringify({
+					orderId: "order-delivery-test",
+					orderRef: "ORD-2026-00099",
+					status: "submitted",
+				}),
+			})
+		})
+
+		await page.goto(`${portalBaseUrl}/m/delivery-date-token`)
+		await expect(page).toHaveURL(`${portalBaseUrl}/order`)
+
+		// Add an item to the cart
+		await page.getByRole("button", { name: "הגדלת כמות אנטריקוט פרימיום" }).click()
+		await expect(page.getByLabel("סיכום הזמנה")).toContainText("פריטים")
+
+		// Fill in the delivery date
+		await page.fill("#requested-delivery-date", "2026-06-15")
+
+		// Submit
+		await page.getByRole("button", { name: "שליחת הזמנה למפעל (1 יחידות)" }).click()
+		await expect(page.getByTestId("screen-portal-order-success")).toContainText("אסמכתא: ORD-2026-00099")
+
+		// Verify the delivery date was sent
+		expect(capturedPayload).not.toBeNull()
+		expect(capturedPayload?.requestedDeliveryDate).toBe("2026-06-15")
+	})
 })
 
 async function waitForServer(url: string): Promise<void> {
@@ -371,6 +423,8 @@ async function assertCriticalScreenshot(
 	locator: ReturnType<Page["locator"]>,
 	name: string,
 ): Promise<void> {
+	// Skip pixel-exact snapshots in CI — visual regression runs separately
+	if (process.env.CI) return
 	await expect(locator).toHaveScreenshot(name, {
 		animations: "disabled",
 		caret: "hide",

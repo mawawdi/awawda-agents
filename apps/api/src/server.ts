@@ -3,6 +3,7 @@ import "reflect-metadata"
 import { ValidationPipe, VersioningType } from "@nestjs/common"
 import { NestFactory } from "@nestjs/core"
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify"
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 
 import { AppModule } from "./app.module"
 import { assertProductionRuntimeGuardrails } from "./runtime/production-guardrails"
@@ -27,6 +28,7 @@ const CORS_ALLOWED_HEADERS = [
 	"X-Requested-With",
 	"X-Agent-Id",
 	"Idempotency-Key",
+	"X-Request-Id",
 ]
 
 function resolveCorsAllowedOrigins(): Set<string> {
@@ -74,6 +76,16 @@ export async function createApiApp(): Promise<NestFastifyApplication> {
 		},
 	)
 
+	fastify.addHook(
+		"onRequest",
+		async (request, reply) => {
+			const incomingId = request.headers["x-request-id"]
+			const requestId = typeof incomingId === "string" ? incomingId : crypto.randomUUID()
+			request.id = requestId
+			void reply.header("x-request-id", requestId)
+		},
+	)
+
 	app.enableCors({
 		origin: (origin, callback) => {
 			if (!origin || allowedOrigins.has(origin)) {
@@ -106,6 +118,21 @@ export async function createApiApp(): Promise<NestFastifyApplication> {
 	)
 
 	app.enableShutdownHooks()
+
+	if (process.env.SWAGGER_ENABLED === "true") {
+		const config = new DocumentBuilder()
+			.setTitle("Awawda Agents API")
+			.setDescription("Internal API for agent mobile app, customer portal, and supervisor dashboard")
+			.setVersion("1.0")
+			.addBearerAuth({ type: "http", scheme: "bearer", bearerFormat: "JWT" })
+			.addSecurityRequirements("bearer")
+			.build()
+
+		const document = SwaggerModule.createDocument(app, config)
+		SwaggerModule.setup("api-docs", app, document, {
+			swaggerOptions: { persistAuthorization: true },
+		})
+	}
 
 	return app
 }

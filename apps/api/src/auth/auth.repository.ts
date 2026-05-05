@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import type { AuthAgentRecord, AuthAgentRepository } from './auth.types';
+import type { AuthAgentRecord, AuthAgentRepository, RefreshTokenRepository } from './auth.types';
 
 @Injectable()
 export class PrismaAuthAgentRepository implements AuthAgentRepository {
@@ -84,4 +84,48 @@ function toAuthAgentRecord(
     isActive: agent.isActive,
     updatedAt: agent.updatedAt,
   };
+}
+
+@Injectable()
+export class PrismaRefreshTokenRepository implements RefreshTokenRepository {
+  constructor(@Inject(PrismaClient) private readonly prisma: PrismaClient) {}
+
+  async createRefreshToken(agentId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    await this.prisma.refreshToken.create({
+      data: { agentId, tokenHash, expiresAt },
+    });
+  }
+
+  async rotateRefreshToken(
+    tokenHash: string,
+    newTokenHash: string,
+    newExpiresAt: Date,
+  ): Promise<{ agentId: string; tokenCreatedAt: Date } | null> {
+    const now = new Date();
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.refreshToken.updateMany({
+        where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
+        data: { revokedAt: now },
+      });
+      if (updated.count === 0) {
+        return null;
+      }
+      const existing = await tx.refreshToken.findUnique({ where: { tokenHash } });
+      if (!existing) {
+        return null;
+      }
+      await tx.refreshToken.create({
+        data: { agentId: existing.agentId, tokenHash: newTokenHash, expiresAt: newExpiresAt },
+      });
+      return { agentId: existing.agentId, tokenCreatedAt: existing.createdAt };
+    });
+    return result;
+  }
+
+  async revokeRefreshToken(tokenHash: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
 }
