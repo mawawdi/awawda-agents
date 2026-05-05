@@ -7,6 +7,7 @@ import type {
   CustomerSessionValidationResult,
   CustomerSessionsRepository,
   SessionActivationResult,
+  SessionAgentInfo,
 } from './sessions.types';
 
 const RECENT_ORDERS_DEFAULT_PAGE_SIZE = 12;
@@ -364,6 +365,33 @@ export class PrismaCustomerSessionsRepository implements CustomerSessionsReposit
       sortBy: RECENT_ORDERS_SORT_ORDER,
       generatedAt: now.toISOString(),
       windowStartAt: windowStartAt.toISOString(),
+    };
+  }
+
+  async resolveSessionAgent(sessionId: string): Promise<SessionAgentInfo> {
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        magicLink: {
+          select: {
+            issuedByAgent: {
+              select: {
+                id: true,
+                hashAgentId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!session?.magicLink?.issuedByAgent) {
+      return null;
+    }
+
+    return {
+      agentId: session.magicLink.issuedByAgent.id,
+      hashAgentId: session.magicLink.issuedByAgent.hashAgentId,
     };
   }
 }

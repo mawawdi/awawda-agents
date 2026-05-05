@@ -19,6 +19,7 @@ export type ErpOrderHandoffRequest = {
   customerId: string;
   lines: ErpOrderLine[];
   notes?: string;
+  hashAgentId?: string;
 };
 
 export type ErpOrderHandoffStatus = 'submitted' | 'pending_retry' | 'failed';
@@ -75,6 +76,128 @@ export type ErpGatewayCustomerPricingSnapshot = {
   source: 'hashavshevet';
 };
 
+export type ErpGatewayVendor = {
+  vendorId: string;
+  name: string;
+  isActive: boolean;
+};
+
+export type ErpGatewayVendorsSnapshot = {
+  vendors: ErpGatewayVendor[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewaySpecialPriceLine = {
+  itemId: string;
+  itemName: string;
+  unitPrice: number;
+  currency: string;
+};
+
+export type ErpGatewaySpecialPricesIndexSnapshot = {
+  lines: ErpGatewaySpecialPriceLine[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayAgent = {
+  agentId: string;
+  name: string;
+  isActive: boolean;
+};
+
+export type ErpGatewayAgentsSnapshot = {
+  agents: ErpGatewayAgent[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayObligoEntry = {
+  customerId: string;
+  balance: number;
+  creditLimit: number;
+  currency: string;
+};
+
+export type ErpGatewayObligoSnapshot = {
+  entries: ErpGatewayObligoEntry[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayDeliveryNote = {
+  documentId: string;
+  customerId: string;
+  date: string;
+  totalAmount: number;
+  currency: string;
+};
+
+export type ErpGatewayOpenDeliveryNotesListSnapshot = {
+  notes: ErpGatewayDeliveryNote[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayOpenDeliveryNotesByCustomerSnapshot = {
+  customerId: string;
+  notes: ErpGatewayDeliveryNote[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayCustomerSpecialPricingSnapshot = {
+  customerId: string;
+  lines: ErpGatewaySpecialPriceLine[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayBalanceEntry = {
+  customerId: string;
+  balance: number;
+  currency: string;
+};
+
+export type ErpGatewayCustomerBalanceSnapshot = {
+  entries: ErpGatewayBalanceEntry[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayLedgerEntry = {
+  customerId: string;
+  documentId: string;
+  date: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  currency: string;
+};
+
+export type ErpGatewayCustomerLedgerSnapshot = {
+  customerId: string;
+  entries: ErpGatewayLedgerEntry[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
+export type ErpGatewayStockEntry = {
+  itemId: string;
+  itemName: string;
+  warehouse: string;
+  quantity: number;
+  unit: string;
+};
+
+export type ErpGatewayStockStatusSnapshot = {
+  entries: ErpGatewayStockEntry[];
+  syncedAt: string;
+  source: 'hashavshevet';
+};
+
 export interface ErpGateway {
   handoffOrder(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse>;
   cancelOrder?(request: ErpOrderCancelRequest): Promise<ErpOrderCancelResponse>;
@@ -83,4 +206,15 @@ export interface ErpGateway {
   getMasterCatalog(): Promise<ErpGatewayCatalogSnapshot>;
   getCustomerRecentItems(customerId: string): Promise<ErpGatewayCustomerRecentItemsSnapshot>;
   getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot>;
+
+  getVendors?(): Promise<ErpGatewayVendorsSnapshot>;
+  getSpecialPricesIndex?(): Promise<ErpGatewaySpecialPricesIndexSnapshot>;
+  getAgents?(): Promise<ErpGatewayAgentsSnapshot>;
+  getObligo?(): Promise<ErpGatewayObligoSnapshot>;
+  getOpenDeliveryNotesList?(): Promise<ErpGatewayOpenDeliveryNotesListSnapshot>;
+  getOpenDeliveryNotesByCustomer?(customerId: string): Promise<ErpGatewayOpenDeliveryNotesByCustomerSnapshot>;
+  getCustomerSpecialPricing?(customerId: string): Promise<ErpGatewayCustomerSpecialPricingSnapshot>;
+  getCustomerBalance?(customerId: string): Promise<ErpGatewayCustomerBalanceSnapshot>;
+  getCustomerLedger?(customerId: string): Promise<ErpGatewayCustomerLedgerSnapshot>;
+  getStockStatus?(): Promise<ErpGatewayStockStatusSnapshot>;
 }

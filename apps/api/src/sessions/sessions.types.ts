@@ -40,6 +40,11 @@ export type RecordActivationAttemptInput = {
   failureReason?: 'invalid_token' | 'expired_token';
 };
 
+export type SessionAgentInfo = {
+  agentId: string;
+  hashAgentId: string | null;
+} | null;
+
 export interface CustomerSessionsRepository {
   activateMagicToken(tokenHash: string, now: Date, sessionExpiresAt: Date): Promise<SessionActivationResult>;
   validateCustomerSession(
@@ -51,6 +56,7 @@ export interface CustomerSessionsRepository {
   recordActivationAttempt(input: RecordActivationAttemptInput): Promise<void>;
   listApprovedItems(customerId: string): Promise<CustomerApprovedItem[]>;
   listRecentOrdersFeed(customerId: string, now: Date): Promise<CustomerRecentOrdersFeed>;
+  resolveSessionAgent(sessionId: string): Promise<SessionAgentInfo>;
 }
 
 export interface CustomerSessionTokenSigner {

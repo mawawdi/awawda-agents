@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --env-file=../../infra/secrets.env --env-file=.env --import tsx --watch src/main.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/src/main.js",
     "test": "vitest run",

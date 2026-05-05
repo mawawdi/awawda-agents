@@ -17,9 +17,14 @@ coverage/
 # Deployment environment overrides
 infra/compose/deploy.env
 
+# Centralized classified secrets — never commit
+infra/secrets.env
+
 test-results/
 
 # Ignore Python cache in prompt scripts
 .github/prompts/ui-ux-pro-max/scripts/__pycache__/
 
 .venv/
+
+hash/

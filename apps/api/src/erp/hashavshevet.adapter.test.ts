@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
 
@@ -39,32 +38,6 @@ const HASH_ENV_KEYS = [
   'HASH_HCONNECT_REPORT_PRICING_PARAMS_JSON',
 ] as const;
 
-const FALLBACK_CATALOG_ITEMS = buildTestingCatalogItems();
-const [FALLBACK_PRIMARY_ITEM_ID, FALLBACK_SECONDARY_ITEM_ID] = (() => {
-  const first = FALLBACK_CATALOG_ITEMS[0]?.itemId;
-  const second = FALLBACK_CATALOG_ITEMS[1]?.itemId;
-  const primary = first ?? 'itm-beef-001';
-  const secondary = second ?? primary;
-  return [primary, secondary];
-})();
-const [FALLBACK_PRIMARY_ITEM_NAME, FALLBACK_SECONDARY_ITEM_NAME] = (() => {
-  const first = FALLBACK_CATALOG_ITEMS[0]?.name;
-  const second = FALLBACK_CATALOG_ITEMS[1]?.name;
-  const primary = first ?? fallbackNameFromItemId(FALLBACK_PRIMARY_ITEM_ID);
-  const secondary = second ?? primary;
-  return [primary, secondary];
-})();
-
-function fallbackNameFromItemId(itemId: string): string {
-  return itemId
-    .replace(/[_-]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter((word) => word.length > 0)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
 type HConnectPluginFamily = 'heshin' | 'kupain' | 'bankin' | 'itemin' | 'movein' | 'stockheaderin';
 type CapabilityInvoker = {
   invokeCapabilityPlugin(family: HConnectPluginFamily, pluginData: unknown, pluginOverride?: string): Promise<unknown>;
@@ -99,59 +72,30 @@ describe.sequential('HashavshevetAdapter', () => {
     originalEnv.clear();
   });
 
-  it('returns fallback snapshots when HASH URL is not configured', async () => {
+  it('throws ERP_NOT_IMPLEMENTED when no URL or H-Connect report is configured', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const adapter = new HashavshevetAdapter();
 
+    // getHealth still returns degraded status (no throw)
     await expect(adapter.getHealth()).resolves.toEqual({
       provider: 'hashavshevet',
       status: 'degraded',
       detail: 'Hashavshevet live pull disabled (no HASH_API_URL/HASH_*_API_URL configured).',
     });
-    await expect(adapter.getAssignedCustomers('agent-77')).resolves.toEqual({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      customers: [{ customerId: 'cust-demo-001', isActive: true }],
+
+    // Data methods throw without configuration
+    await expect(adapter.getAssignedCustomers('agent-77')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
     });
-    await expect(adapter.getMasterCatalog()).resolves.toMatchObject({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      items: expect.arrayContaining([
-        expect.objectContaining({ itemId: 'itm-beef-001' }),
-        expect.objectContaining({ itemId: 'itm-beef-064' }),
-        expect.objectContaining({ itemId: 'itm-lamb-009' }),
-      ]),
+    await expect(adapter.getMasterCatalog()).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
     });
-    await expect(adapter.getCustomerRecentItems('cust-42')).resolves.toEqual({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      items: [
-        {
-          itemId: FALLBACK_PRIMARY_ITEM_ID,
-          name: FALLBACK_PRIMARY_ITEM_NAME,
-          lastOrderedAt: '2026-05-01T10:00:00.000Z',
-          unit: FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
-        },
-        {
-          itemId: FALLBACK_SECONDARY_ITEM_ID,
-          name: FALLBACK_SECONDARY_ITEM_NAME,
-          lastOrderedAt: '2026-05-01T10:00:00.000Z',
-          unit: FALLBACK_CATALOG_ITEMS[1]?.unit ?? FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
-        },
-      ],
+    await expect(adapter.getCustomerRecentItems('cust-42')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
     });
-    const pricingSnapshot = await adapter.getCustomerPricing('cust-42');
-    expect(pricingSnapshot).toMatchObject({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      version: 'price-list-cust-42',
+    await expect(adapter.getCustomerPricing('cust-42')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
     });
-    expect(pricingSnapshot.lines).toHaveLength(FALLBACK_CATALOG_ITEMS.length);
-    expect(pricingSnapshot.lines).toEqual(expect.arrayContaining([
-      expect.objectContaining({ itemId: FALLBACK_PRIMARY_ITEM_ID, currency: 'ILS' }),
-      expect.objectContaining({ itemId: FALLBACK_SECONDARY_ITEM_ID, currency: 'ILS' }),
-    ]));
-    expect(pricingSnapshot.lines.every((line) => Number.isFinite(line.unitPrice) && line.unitPrice > 0)).toBe(true);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -164,7 +108,7 @@ describe.sequential('HashavshevetAdapter', () => {
     );
   });
 
-  it('blocks testing fallback snapshots in HASH_ENV=production', async () => {
+  it('throws ERP_NOT_IMPLEMENTED in HASH_ENV=production without report config', async () => {
     process.env.HASH_ENV = 'production';
     process.env.HASH_HCONNECT_ENABLED = 'true';
     process.env.HASH_HCONNECT_STATION = 'station-prod';
@@ -174,9 +118,8 @@ describe.sequential('HashavshevetAdapter', () => {
 
     const adapter = new HashavshevetAdapter();
     await expect(adapter.getMasterCatalog()).rejects.toMatchObject({
-      code: ERP_ERROR_CODES.ERP_AUTH_FAILED,
-      message: expect.stringContaining('Testing fallback catalog snapshot is disabled in HASH_ENV=production'),
-    } satisfies Partial<ErpGatewayError>);
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+    });
   });
 
   it('surfaces stable ERP validation errors when response shape is invalid', async () => {
@@ -658,68 +601,30 @@ describe.sequential('HashavshevetAdapter', () => {
     });
   });
 
-  it('falls back to snapshot when H-Connect enabled but report not configured AND REST is disabled', async () => {
+  it('throws ERP_NOT_IMPLEMENTED when H-Connect enabled but report not configured AND REST is disabled', async () => {
     process.env.HASH_HCONNECT_ENABLED = 'true';
     process.env.HASH_HCONNECT_ENDPOINT_URL = 'https://ws.wizground.com/api';
     process.env.HASH_HCONNECT_STATION = 'station-snapshot';
     process.env.HASH_HCONNECT_COMPANY = 'demo';
     process.env.HASH_HCONNECT_NET_PASSPORT_ID = '32222';
     process.env.HASH_HCONNECT_SIGNATURE_TOKEN = 'snapshot-secret';
-    // NOTE: No report configurations and no REST_ENABLED, should use snapshots
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const adapter = new HashavshevetAdapter();
 
-    const assignedCustomersResult = await adapter.getAssignedCustomers('agent-snap');
-    expect(assignedCustomersResult).toEqual({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      customers: [{ customerId: 'cust-demo-001', isActive: true }],
+    await expect(adapter.getAssignedCustomers('agent-snap')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+    });
+    await expect(adapter.getMasterCatalog()).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+    });
+    await expect(adapter.getCustomerRecentItems('cust-snap')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+    });
+    await expect(adapter.getCustomerPricing('cust-snap')).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
     });
 
-    const catalogResult = await adapter.getMasterCatalog();
-    expect(catalogResult).toMatchObject({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      items: expect.arrayContaining([
-        expect.objectContaining({ itemId: 'itm-beef-001' }),
-      ]),
-    });
-
-    const recentResult = await adapter.getCustomerRecentItems('cust-snap');
-    expect(recentResult).toEqual({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      items: [
-        {
-          itemId: FALLBACK_PRIMARY_ITEM_ID,
-          name: FALLBACK_PRIMARY_ITEM_NAME,
-          lastOrderedAt: '2026-05-01T10:00:00.000Z',
-          unit: FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
-        },
-        {
-          itemId: FALLBACK_SECONDARY_ITEM_ID,
-          name: FALLBACK_SECONDARY_ITEM_NAME,
-          lastOrderedAt: '2026-05-01T10:00:00.000Z',
-          unit: FALLBACK_CATALOG_ITEMS[1]?.unit ?? FALLBACK_CATALOG_ITEMS[0]?.unit ?? 'kg',
-        },
-      ],
-    });
-
-    const pricingResult = await adapter.getCustomerPricing('cust-snap');
-    expect(pricingResult).toMatchObject({
-      source: 'hashavshevet',
-      syncedAt: '2026-05-01T10:00:00.000Z',
-      version: 'price-list-cust-snap',
-    });
-    expect(pricingResult.lines).toHaveLength(FALLBACK_CATALOG_ITEMS.length);
-    expect(pricingResult.lines).toEqual(expect.arrayContaining([
-      expect.objectContaining({ itemId: FALLBACK_PRIMARY_ITEM_ID, currency: 'ILS' }),
-      expect.objectContaining({ itemId: FALLBACK_SECONDARY_ITEM_ID, currency: 'ILS' }),
-    ]));
-    expect(pricingResult.lines.every((line) => Number.isFinite(line.unitPrice) && line.unitPrice > 0)).toBe(true);
-
-    // No HTTP calls should have been made since we used snapshots
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

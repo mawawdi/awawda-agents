@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   Easing,
@@ -131,7 +132,14 @@ export function LoginScreen(): React.JSX.Element {
           <View style={styles.fieldBlock}>
             <View style={styles.passwordHeader}>
               <Text style={styles.label}>סיסמה</Text>
-              <Text style={styles.forgot}>שכחת סיסמה?</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  Alert.alert('שכחת סיסמה?', 'לאיפוס הסיסמה פנה למנהל המחוז שלך.')
+                }}
+              >
+                <Text style={styles.forgot}>שכחת סיסמה?</Text>
+              </Pressable>
             </View>
             <View style={styles.inputShell}>
               <TextInput

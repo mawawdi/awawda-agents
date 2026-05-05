@@ -140,6 +140,7 @@ export class OrdersService {
     }
 
     const orderId = randomUUID();
+    const agentInfo = await this.customerSessionsRepository.resolveSessionAgent(context.customerSessionId);
     let erpResponse: Awaited<ReturnType<ErpGateway['handoffOrder']>>;
     try {
       erpResponse = await this.erpGateway.handoffOrder({
@@ -147,6 +148,7 @@ export class OrdersService {
         customerId: context.customerId,
         lines: normalizedRequest.lines,
         notes: request.notes,
+        hashAgentId: agentInfo?.hashAgentId ?? undefined,
       });
     } catch (error) {
       if (isErpGatewayError(error)) {
@@ -190,6 +192,8 @@ export class OrdersService {
       orderRef: erpResponse.externalRef,
       status: erpResponse.status,
       submittedAt: erpResponse.acceptedAt,
+      submittedByAgentId: agentInfo?.agentId ?? null,
+      hashSubmittedByAgentId: agentInfo?.hashAgentId ?? null,
       lines: linesWithSnapshots,
       estimatedTotal: linesWithSnapshots.reduce((sum, line) => sum + line.lineTotalSnapshot, 0),
       consumeSession: erpResponse.status === 'submitted',

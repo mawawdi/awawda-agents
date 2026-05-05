@@ -112,6 +112,8 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
           customerSessionId: input.customerSessionId,
           hashCustomerId: input.customerId,
           hashOrderRef: input.orderRef,
+          submittedByAgentId: input.submittedByAgentId,
+          hashSubmittedByAgentId: input.hashSubmittedByAgentId,
           status: orderStatus,
           submittedAt,
           estimatedTotal: new Prisma.Decimal(input.estimatedTotal),

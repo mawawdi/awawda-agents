@@ -55,6 +55,10 @@ describe('Customer order submit endpoint', () => {
         createdAt: '2026-04-09T09:00:00.000Z',
       },
     ]);
+    vi.spyOn(sessionsRepository, 'resolveSessionAgent').mockResolvedValue({
+      agentId: 'agent-1',
+      hashAgentId: null,
+    });
 
     vi.spyOn(ordersRepository, 'reserveIdempotencyKey').mockResolvedValue({
       kind: 'reserved',
@@ -230,6 +234,10 @@ describe('Customer order submit endpoint', () => {
         createdAt: '2026-04-09T09:00:00.000Z',
       },
     ]);
+    vi.spyOn(sessionsRepository, 'resolveSessionAgent').mockResolvedValue({
+      agentId: 'agent-1',
+      hashAgentId: null,
+    });
 
     vi.spyOn(ordersRepository, 'reserveIdempotencyKey')
       .mockResolvedValueOnce({

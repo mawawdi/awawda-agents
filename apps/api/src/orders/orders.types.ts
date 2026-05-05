@@ -38,6 +38,8 @@ export type PersistOrderSubmissionInput = {
   orderRef: string;
   status: 'submitted' | 'pending_retry' | 'failed';
   submittedAt: string;
+  submittedByAgentId: string | null;
+  hashSubmittedByAgentId: string | null;
   lines: Array<
     CustomerOrderSubmitLine & {
       itemNameSnapshot: string;

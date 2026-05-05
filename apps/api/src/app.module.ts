@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { LinksModule } from './links/links.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReadyModule } from './ready/ready.module';
+import { ReportsModule } from './reports/reports.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SupervisorModule } from './supervisor/supervisor.module';
 
@@ -23,6 +24,7 @@ import { SupervisorModule } from './supervisor/supervisor.module';
     OrdersModule,
     SupervisorModule,
     ErpModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

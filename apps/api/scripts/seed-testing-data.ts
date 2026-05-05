@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client"
 
 import { buildTestingCatalogItems } from "../src/catalog/data/testing-cuts-catalog"
 
-const DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55432/awawda?schema=public"
+const DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:55432/awawda_test?schema=public"
 
 if (!process.env.DATABASE_URL) {
 	process.env.DATABASE_URL = DEFAULT_DATABASE_URL
@@ -41,14 +41,16 @@ const TEST_AGENTS: Array<{
 	email: string
 	password: string
 	role: "FIELD_AGENT" | "SUPERVISOR"
+	hashAgentId?: string
 }> = [
-	{ name: "Parpar", phone: "+972500000000", email: "parpar@awawda.test", password: "Password123", role: "FIELD_AGENT" },
+	{ name: "Parpar", phone: "+972500000000", email: "parpar@awawda.test", password: "Password123", role: "FIELD_AGENT", hashAgentId: "test-agent-1" },
 	{
 		name: "Mohammed Jabarin",
 		phone: "+972501100001",
 		email: "mohammed.jabarin@awawda.test",
 		password: "Password123",
 		role: "FIELD_AGENT",
+		hashAgentId: "test-agent-2",
 	},
 	{
 		name: "Keneret",
@@ -56,6 +58,7 @@ const TEST_AGENTS: Array<{
 		email: "keneret@awawda.test",
 		password: "Password123",
 		role: "FIELD_AGENT",
+		hashAgentId: "test-agent-3",
 	},
 	{
 		name: "Supervisor Omar",
@@ -191,6 +194,15 @@ async function main(): Promise<void> {
 		throw new Error("DATABASE_URL is not configured.")
 	}
 	assertUnambiguousDatabaseUrl(process.env.DATABASE_URL)
+
+	const targetDbName = resolveDatabaseName(process.env.DATABASE_URL)
+	if (targetDbName === "awawda" && !process.env.ALLOW_SEED_PRIMARY_DB) {
+		throw new Error(
+			`Refusing to seed the primary database "${targetDbName}". ` +
+				"Seed targets awawda_test by default. Set ALLOW_SEED_PRIMARY_DB=true to override.",
+		)
+	}
+
 	console.log(`Seeding testing data into ${maskDatabaseUrl(process.env.DATABASE_URL)}`)
 
 	await ensureDatabaseExists(process.env.DATABASE_URL)
@@ -208,6 +220,7 @@ async function main(): Promise<void> {
 				passwordHash,
 				role: agent.role,
 				isActive: true,
+				hashAgentId: agent.hashAgentId ?? null,
 			},
 			create: {
 				name: agent.name,
@@ -216,6 +229,7 @@ async function main(): Promise<void> {
 				passwordHash,
 				role: agent.role,
 				isActive: true,
+				hashAgentId: agent.hashAgentId ?? null,
 			},
 			select: { id: true, name: true, email: true, phone: true },
 		})

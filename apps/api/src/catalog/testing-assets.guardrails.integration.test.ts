@@ -9,6 +9,7 @@ describe('testing-assets production guardrails', () => {
   const originalHashProdApiUrl = process.env.HASH_PROD_API_URL;
   const originalHashProdApiKey = process.env.HASH_PROD_API_KEY;
   const originalJwtSecret = process.env.JWT_SECRET;
+  const originalHconnectEnabled = process.env.HASH_HCONNECT_ENABLED;
 
   afterEach(() => {
     restoreEnv('NODE_ENV', originalNodeEnv);
@@ -16,6 +17,7 @@ describe('testing-assets production guardrails', () => {
     restoreEnv('HASH_PROD_API_URL', originalHashProdApiUrl);
     restoreEnv('HASH_PROD_API_KEY', originalHashProdApiKey);
     restoreEnv('JWT_SECRET', originalJwtSecret);
+    restoreEnv('HASH_HCONNECT_ENABLED', originalHconnectEnabled);
   });
 
   it('serves testing-assets routes in testing mode', async () => {
@@ -44,6 +46,7 @@ describe('testing-assets production guardrails', () => {
     process.env.HASH_ENV = 'production';
     process.env.HASH_PROD_API_URL = 'https://hash.prod.example/api';
     process.env.HASH_PROD_API_KEY = 'prod-secret';
+    process.env.HASH_HCONNECT_ENABLED = 'false';
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
 
     const app = await createAndInitApp();

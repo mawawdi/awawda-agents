@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   ImageBackground,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
+import * as SecureStore from 'expo-secure-store'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type {
   AgentApprovedItem,
@@ -118,6 +120,7 @@ import {
 import { AGENT_SCREEN_TEST_IDS } from './agent-screen-ids'
 
 const IS_RTL_LAYOUT = true
+const MONTHLY_GOAL_STORAGE_KEY = 'agent:monthly_goal'
 const NUMERIC_FONT_FAMILY =
   Platform.select({
     web: '"Plus Jakarta Sans", system-ui, sans-serif',
@@ -212,6 +215,16 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
   const [monthlyGoalAmount, setMonthlyGoalAmount] = useState(120_000)
   const [monthlyGoalDraft, setMonthlyGoalDraft] = useState('120000')
   const [monthlyGoalError, setMonthlyGoalError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void SecureStore.getItemAsync(MONTHLY_GOAL_STORAGE_KEY).then((stored) => {
+      const value = Number(stored)
+      if (stored && Number.isFinite(value) && value > 0) {
+        setMonthlyGoalAmount(value)
+        setMonthlyGoalDraft(String(value))
+      }
+    })
+  }, [])
 
   const [supervisorAgents, setSupervisorAgents] = useState<SupervisorAgentOverview[]>([])
   const [supervisorCustomers, setSupervisorCustomers] = useState<SupervisorCustomerOverview[]>([])
@@ -555,6 +568,7 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     setMonthlyGoalAmount(normalized)
     setMonthlyGoalDraft(String(normalized))
     setMonthlyGoalError(null)
+    void SecureStore.setItemAsync(MONTHLY_GOAL_STORAGE_KEY, String(normalized))
   }, [monthlyGoalDraft])
 
   const loadSupervisorAuditLog = useCallback(
@@ -2707,7 +2721,9 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         </View>
         <View style={styles.settingsMetricCard}>
           <Text style={styles.catalogMetricLabel}>סנכרון ERP</Text>
-          <Text style={styles.catalogMetricValue}>94%</Text>
+          <Text style={[styles.catalogMetricValue, customersError ?? approvedItemsError ? { color: palette.danger } : null]}>
+            {customersError ?? approvedItemsError ? 'שגיאה' : isCustomersSlow || isApprovedItemsSlow ? 'אטי' : 'תקין'}
+          </Text>
         </View>
       </View>
 
@@ -2735,14 +2751,26 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.panelSection}>
-        <Pressable accessibilityRole="button" style={styles.settingsMenuRow}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.settingsMenuRow}
+          onPress={() => {
+            Alert.alert('עריכת פרופיל', 'לעדכון פרטי הפרופיל פנה למנהל המחוז שלך.')
+          }}
+        >
           <View style={styles.settingsMenuLeading}>
             <MaterialIcons color={palette.textMuted} name="person" size={16} />
             <Text style={styles.settingsMenuLabel}>עריכת פרופיל</Text>
           </View>
           <MaterialIcons color={palette.outline} name="chevron-left" size={18} />
         </Pressable>
-        <Pressable accessibilityRole="button" style={styles.settingsMenuRow}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.settingsMenuRow}
+          onPress={() => {
+            Alert.alert('הגדרות התראות', 'הגדרות התראות מתקדמות יהיו זמינות בגרסה הבאה.')
+          }}
+        >
           <View style={styles.settingsMenuLeading}>
             <MaterialIcons color={palette.textMuted} name="notifications-active" size={16} />
             <Text style={styles.settingsMenuLabel}>הגדרות התראות</Text>

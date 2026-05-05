@@ -1,15 +1,17 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BMaxXmlAdapter } from './bmax-xml.adapter';
 import { CompositeErpGateway } from './composite-erp.gateway';
 import { ERP_ERROR_CODES, ErpGatewayError } from './erp.errors';
 import { ERP_GATEWAY } from './erp.gateway';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
+import { TestingErpAdapter } from './testing-erp.adapter';
 import { createApiApp } from '../server';
 
 describe('ERP module', () => {
   const originalJwtSecret = process.env.JWT_SECRET;
   const originalJwtShiftTokenTtl = process.env.JWT_SHIFT_TOKEN_TTL;
+  const originalHashEnv = process.env.HASH_ENV;
 
   beforeAll(() => {
     process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
@@ -28,18 +30,49 @@ describe('ERP module', () => {
     } else {
       process.env.JWT_SHIFT_TOKEN_TTL = originalJwtShiftTokenTtl;
     }
+
+    if (originalHashEnv === undefined) {
+      delete process.env.HASH_ENV;
+    } else {
+      process.env.HASH_ENV = originalHashEnv;
+    }
   });
 
-  it('provides the ERP gateway abstraction token', async () => {
+  it('routes to TestingErpAdapter in testing mode (default)', async () => {
+    delete process.env.HASH_ENV;
     const app = await createApiApp();
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
     const gateway = app.get(ERP_GATEWAY);
+    expect(gateway).toBeInstanceOf(TestingErpAdapter);
 
+    await app.close();
+  });
+
+  it('routes to CompositeErpGateway when HASH_ENV=production', async () => {
+    process.env.HASH_ENV = 'production';
+    process.env.HASH_HCONNECT_ENABLED = 'true';
+    process.env.HASH_HCONNECT_STATION = 'station-prod';
+    process.env.HASH_HCONNECT_COMPANY = 'company-prod';
+    process.env.HASH_HCONNECT_NET_PASSPORT_ID = '50000';
+    process.env.HASH_HCONNECT_SIGNATURE_TOKEN = 'prod-signature';
+
+    const app = await createApiApp();
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    const gateway = app.get(ERP_GATEWAY);
     expect(gateway).toBeInstanceOf(CompositeErpGateway);
 
     await app.close();
+
+    delete process.env.HASH_ENV;
+    delete process.env.HASH_HCONNECT_ENABLED;
+    delete process.env.HASH_HCONNECT_STATION;
+    delete process.env.HASH_HCONNECT_COMPANY;
+    delete process.env.HASH_HCONNECT_NET_PASSPORT_ID;
+    delete process.env.HASH_HCONNECT_SIGNATURE_TOKEN;
   });
 
   it('falls back to B-MAX XML when Hashavshevet is unavailable', async () => {

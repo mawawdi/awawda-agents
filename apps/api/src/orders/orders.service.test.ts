@@ -61,6 +61,7 @@ describe('OrdersService', () => {
         },
       ]),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -156,6 +157,7 @@ describe('OrdersService', () => {
         },
       ]),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -231,6 +233,7 @@ describe('OrdersService', () => {
       recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn().mockResolvedValue([]),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -297,6 +300,7 @@ describe('OrdersService', () => {
       recordActivationAttempt: vi.fn(),
       listApprovedItems: vi.fn(),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const ordersRepository: OrdersRepository = {
@@ -366,6 +370,7 @@ describe('OrdersService', () => {
         recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn(),
         listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
       },
       {
         reserveIdempotencyKey: vi.fn().mockResolvedValue({ kind: 'conflict' }),
@@ -419,6 +424,7 @@ describe('OrdersService', () => {
         recordActivationAttempt: vi.fn(),
         listApprovedItems: vi.fn().mockResolvedValue([]),
         listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
       },
       {
         reserveIdempotencyKey: vi.fn().mockResolvedValue({

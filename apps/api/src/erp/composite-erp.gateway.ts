@@ -12,6 +12,16 @@ import type {
   ErpGatewayHealth,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
+  ErpGatewayVendorsSnapshot,
+  ErpGatewaySpecialPricesIndexSnapshot,
+  ErpGatewayAgentsSnapshot,
+  ErpGatewayObligoSnapshot,
+  ErpGatewayOpenDeliveryNotesListSnapshot,
+  ErpGatewayOpenDeliveryNotesByCustomerSnapshot,
+  ErpGatewayCustomerSpecialPricingSnapshot,
+  ErpGatewayCustomerBalanceSnapshot,
+  ErpGatewayCustomerLedgerSnapshot,
+  ErpGatewayStockStatusSnapshot,
 } from './erp.gateway';
 import { BMaxXmlAdapter } from './bmax-xml.adapter';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
@@ -70,6 +80,46 @@ export class CompositeErpGateway implements ErpGateway {
 
   async getCustomerPricing(customerId: string): Promise<ErpGatewayCustomerPricingSnapshot> {
     return this.hashavshevetAdapter.getCustomerPricing(customerId);
+  }
+
+  async getVendors(): Promise<ErpGatewayVendorsSnapshot> {
+    return this.hashavshevetAdapter.getVendors();
+  }
+
+  async getSpecialPricesIndex(): Promise<ErpGatewaySpecialPricesIndexSnapshot> {
+    return this.hashavshevetAdapter.getSpecialPricesIndex();
+  }
+
+  async getAgents(): Promise<ErpGatewayAgentsSnapshot> {
+    return this.hashavshevetAdapter.getAgents();
+  }
+
+  async getObligo(): Promise<ErpGatewayObligoSnapshot> {
+    return this.hashavshevetAdapter.getObligo();
+  }
+
+  async getOpenDeliveryNotesList(): Promise<ErpGatewayOpenDeliveryNotesListSnapshot> {
+    return this.hashavshevetAdapter.getOpenDeliveryNotesList();
+  }
+
+  async getOpenDeliveryNotesByCustomer(customerId: string): Promise<ErpGatewayOpenDeliveryNotesByCustomerSnapshot> {
+    return this.hashavshevetAdapter.getOpenDeliveryNotesByCustomer(customerId);
+  }
+
+  async getCustomerSpecialPricing(customerId: string): Promise<ErpGatewayCustomerSpecialPricingSnapshot> {
+    return this.hashavshevetAdapter.getCustomerSpecialPricing(customerId);
+  }
+
+  async getCustomerBalance(customerId: string): Promise<ErpGatewayCustomerBalanceSnapshot> {
+    return this.hashavshevetAdapter.getCustomerBalance(customerId);
+  }
+
+  async getCustomerLedger(customerId: string): Promise<ErpGatewayCustomerLedgerSnapshot> {
+    return this.hashavshevetAdapter.getCustomerLedger(customerId);
+  }
+
+  async getStockStatus(): Promise<ErpGatewayStockStatusSnapshot> {
+    return this.hashavshevetAdapter.getStockStatus();
   }
 
   private toStableHandoffResponse(response: ErpOrderHandoffResponse): ErpOrderHandoffResponse {

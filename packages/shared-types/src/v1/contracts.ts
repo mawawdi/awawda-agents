@@ -466,3 +466,136 @@ export interface CustomerOrderMismatchResponse {
   code: 'ORDER_LINES_MISMATCH';
   lines: CustomerOrderMismatchLine[];
 }
+
+// ── Agent ERP Report Types ──────────────────────────────────────────
+
+export interface AgentObligoEntry {
+  customerId: string;
+  balance: number;
+  creditLimit: number;
+  currency: string;
+}
+
+export interface AgentObligoResponse {
+  entries: AgentObligoEntry[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentDeliveryNote {
+  documentId: string;
+  customerId: string;
+  date: string;
+  totalAmount: number;
+  currency: string;
+}
+
+export interface AgentOpenDeliveryNotesResponse {
+  notes: AgentDeliveryNote[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentVendor {
+  vendorId: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface AgentVendorsResponse {
+  vendors: AgentVendor[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentErpAgent {
+  agentId: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface AgentErpAgentsResponse {
+  agents: AgentErpAgent[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentStockEntry {
+  itemId: string;
+  itemName: string;
+  warehouse: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface AgentStockStatusResponse {
+  entries: AgentStockEntry[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentSpecialPriceLine {
+  itemId: string;
+  itemName: string;
+  unitPrice: number;
+  currency: string;
+}
+
+export interface AgentSpecialPricesResponse {
+  lines: AgentSpecialPriceLine[];
+  total: number;
+  generatedAt: string;
+}
+
+// ── Agent Customer-Scoped ERP Report Types ──────────────────────────
+
+export interface AgentCustomerBalanceEntry {
+  customerId: string;
+  balance: number;
+  currency: string;
+}
+
+export interface AgentCustomerBalanceResponse {
+  customerId: string;
+  entries: AgentCustomerBalanceEntry[];
+  generatedAt: string;
+}
+
+export interface AgentCustomerLedgerEntry {
+  customerId: string;
+  documentId: string;
+  date: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  currency: string;
+}
+
+export interface AgentCustomerLedgerResponse {
+  customerId: string;
+  entries: AgentCustomerLedgerEntry[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentCustomerDeliveryNotesResponse {
+  customerId: string;
+  notes: AgentDeliveryNote[];
+  total: number;
+  generatedAt: string;
+}
+
+export interface AgentCustomerSpecialPricingLine {
+  itemId: string;
+  itemName: string;
+  unitPrice: number;
+  currency: string;
+}
+
+export interface AgentCustomerSpecialPricingResponse {
+  customerId: string;
+  lines: AgentCustomerSpecialPricingLine[];
+  total: number;
+  generatedAt: string;
+}

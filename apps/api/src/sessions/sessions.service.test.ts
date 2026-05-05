@@ -40,6 +40,7 @@ describe('SessionsService', () => {
         generatedAt: '2026-04-07T11:00:00.000Z',
         windowStartAt: '2025-04-07T11:00:00.000Z',
       }),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
     const signer: CustomerSessionTokenSigner = {
       sign: vi.fn().mockReturnValue('signed-session-token'),
@@ -142,6 +143,7 @@ describe('SessionsService', () => {
         recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
         listApprovedItems: vi.fn(),
         listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
       },
       { sign: vi.fn() },
       { customerSessionTtlSeconds: 7200, activationRateLimitBurst: 5, activationRateLimitWindowSeconds: 60 },
@@ -170,6 +172,7 @@ describe('SessionsService', () => {
         recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
         listApprovedItems: vi.fn(),
         listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
       },
       { sign: vi.fn() },
       { customerSessionTtlSeconds: 7200, activationRateLimitBurst: 5, activationRateLimitWindowSeconds: 60 },
@@ -197,6 +200,7 @@ describe('SessionsService', () => {
       recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
       listApprovedItems: vi.fn(),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const service = new SessionsService(
@@ -234,6 +238,7 @@ describe('SessionsService', () => {
       recordActivationAttempt: vi.fn().mockResolvedValue(undefined),
       listApprovedItems: vi.fn(),
       listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
     };
 
     const service = new SessionsService(

@@ -12,6 +12,7 @@ import { ActivityIndicator, Platform, Text, TextInput, View } from 'react-native
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuthProvider } from './src/auth/auth-provider'
+import { ErrorBoundary } from './src/components/error-boundary'
 import { RootNavigator } from './src/navigation/root-navigator'
 import { palette } from './src/theme/tokens'
 
@@ -69,12 +70,14 @@ export default function App(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   )
 }

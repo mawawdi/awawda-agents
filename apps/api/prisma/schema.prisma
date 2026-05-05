@@ -54,6 +54,7 @@ model Agent {
   phone         String         @unique @db.VarChar(32)
   email         String?        @unique @db.VarChar(255)
   passwordHash  String         @map("password_hash") @db.VarChar(255)
+  hashAgentId   String?        @unique @map("hash_agent_id") @db.VarChar(128)
   role          AgentRole      @default(FIELD_AGENT)
   isActive      Boolean        @default(true) @map("is_active")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -61,6 +62,7 @@ model Agent {
   assignments   Assignment[]
   approvedItems ApprovedItem[]
   magicLinks    MagicLink[]
+  submittedOrders Order[]      @relation("SubmittedByAgent")
 
   @@map("agents")
 }
@@ -131,20 +133,24 @@ model Session {
 }
 
 model Order {
-  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customerSessionId String      @map("customer_session_id") @db.Uuid
-  hashCustomerId    String      @map("hash_customer_id") @db.VarChar(128)
-  hashOrderRef      String?     @unique @map("hash_order_ref") @db.VarChar(128)
-  status            OrderStatus
-  submittedAt       DateTime    @default(now()) @map("submitted_at") @db.Timestamptz(3)
-  estimatedTotal    Decimal     @map("estimated_total") @db.Decimal(14, 2)
-  currency          String      @db.VarChar(3)
-  customerSession   Session     @relation(fields: [customerSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  orderLines        OrderLine[]
+  id                      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerSessionId       String      @map("customer_session_id") @db.Uuid
+  hashCustomerId          String      @map("hash_customer_id") @db.VarChar(128)
+  hashOrderRef            String?     @unique @map("hash_order_ref") @db.VarChar(128)
+  submittedByAgentId      String?     @map("submitted_by_agent_id") @db.Uuid
+  hashSubmittedByAgentId  String?     @map("hash_submitted_by_agent_id") @db.VarChar(128)
+  status                  OrderStatus
+  submittedAt             DateTime    @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  estimatedTotal          Decimal     @map("estimated_total") @db.Decimal(14, 2)
+  currency                String      @db.VarChar(3)
+  customerSession         Session     @relation(fields: [customerSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  submittedByAgent        Agent?      @relation("SubmittedByAgent", fields: [submittedByAgentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  orderLines              OrderLine[]
 
   @@index([customerSessionId], map: "orders_customer_session_id_idx")
   @@index([hashCustomerId], map: "orders_hash_customer_id_idx")
   @@index([status], map: "orders_status_idx")
+  @@index([submittedByAgentId], map: "orders_submitted_by_agent_id_idx")
   @@map("orders")
 }
 

@@ -3,17 +3,26 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { AgentCatalogItem } from '@awawda/shared-types';
 
-import { buildTestingCatalogItems } from '../catalog/data/testing-cuts-catalog';
 import { resolveHashEnvironment } from '../runtime/production-guardrails';
 import { ERP_ERROR_CODES, ErpGatewayError, type ErpErrorCode } from './erp.errors';
 import type {
   ErpOrderCancelRequest,
   ErpOrderCancelResponse,
   ErpGatewayAssignedCustomersSnapshot,
+  ErpGatewayAgentsSnapshot,
   ErpGatewayCatalogSnapshot,
+  ErpGatewayCustomerBalanceSnapshot,
+  ErpGatewayCustomerLedgerSnapshot,
   ErpGatewayCustomerPricingSnapshot,
   ErpGatewayCustomerRecentItemsSnapshot,
+  ErpGatewayCustomerSpecialPricingSnapshot,
   ErpGatewayHealth,
+  ErpGatewayObligoSnapshot,
+  ErpGatewayOpenDeliveryNotesByCustomerSnapshot,
+  ErpGatewayOpenDeliveryNotesListSnapshot,
+  ErpGatewaySpecialPricesIndexSnapshot,
+  ErpGatewayStockStatusSnapshot,
+  ErpGatewayVendorsSnapshot,
   ErpOrderHandoffRequest,
   ErpOrderHandoffResponse,
 } from './erp.gateway';
@@ -44,12 +53,32 @@ type HConnectConfig = {
     catalog: string | null;
     recentItems: string | null;
     pricing: string | null;
+    obligo: string | null;
+    openDeliveryNotesList: string | null;
+    vendors: string | null;
+    specialPricesIndex: string | null;
+    agents: string | null;
+    openDeliveryNotesByCustomer: string | null;
+    customerSpecialPricing: string | null;
+    customerBalance: string | null;
+    customerLedger: string | null;
+    stockStatus: string | null;
   };
   reportParamsTemplates: {
     assignedCustomers: HConnectReportParamsTemplate;
     catalog: HConnectReportParamsTemplate;
     recentItems: HConnectReportParamsTemplate;
     pricing: HConnectReportParamsTemplate;
+    obligo: HConnectReportParamsTemplate;
+    openDeliveryNotesList: HConnectReportParamsTemplate;
+    vendors: HConnectReportParamsTemplate;
+    specialPricesIndex: HConnectReportParamsTemplate;
+    agents: HConnectReportParamsTemplate;
+    openDeliveryNotesByCustomer: HConnectReportParamsTemplate;
+    customerSpecialPricing: HConnectReportParamsTemplate;
+    customerBalance: HConnectReportParamsTemplate;
+    customerLedger: HConnectReportParamsTemplate;
+    stockStatus: HConnectReportParamsTemplate;
   };
 };
 
@@ -87,19 +116,6 @@ const DEFAULT_HCONNECT_ENDPOINT_URL = 'https://ws.wizground.com/api';
 const REPORTS_PLUGIN = 'reports';
 const DEFAULT_HANDOFF_PLUGIN = 'imovein';
 const DEFAULT_HANDOFF_DOCUMENT_ID = '30';
-const TESTING_FALLBACK_CATALOG_ITEMS = buildTestingCatalogItems();
-const TESTING_FALLBACK_CATALOG_ITEM_IDS = TESTING_FALLBACK_CATALOG_ITEMS.map((item) => item.itemId);
-const TESTING_FALLBACK_CATALOG_NAME_BY_ITEM_ID = new Map(
-  TESTING_FALLBACK_CATALOG_ITEMS.map((item) => [item.itemId, item.name]),
-);
-const TESTING_FALLBACK_CATALOG_UNIT_BY_ITEM_ID = new Map(
-  TESTING_FALLBACK_CATALOG_ITEMS.map((item) => [item.itemId, item.unit]),
-);
-const TESTING_FALLBACK_PRICE_LINES = TESTING_FALLBACK_CATALOG_ITEMS.map((item, index) => ({
-  itemId: item.itemId,
-  unitPrice: resolveTestingFallbackUnitPrice(item.itemId, index),
-  currency: 'ILS',
-}));
 const HCONNECT_DEFAULT_PLUGIN_BY_FAMILY: Record<HConnectPluginFamily, string> = {
   heshin: 'iheshin',
   kupain: 'ikupain',
@@ -234,17 +250,10 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
-      this.assertTestingFallbackAllowed('assigned-customers snapshot');
-      return {
-        source: 'hashavshevet',
-        syncedAt: new Date().toISOString(),
-        customers: [
-          {
-            customerId: 'cust-demo-001',
-            isActive: true,
-          },
-        ],
-      };
+      throw new ErpGatewayError(
+        ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+        'Assigned customers report is not configured. Set HASH_HCONNECT_REPORT_ASSIGNED_CUSTOMERS or enable REST.',
+      );
     }
 
     const payload = await this.fetchJson(this.resolveEndpoint(this.config.assignedCustomersPath, { agentId }));
@@ -259,12 +268,10 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
-      this.assertTestingFallbackAllowed('catalog snapshot');
-      return {
-        source: 'hashavshevet',
-        syncedAt: new Date().toISOString(),
-        items: buildTestingCatalogItems(),
-      };
+      throw new ErpGatewayError(
+        ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+        'Catalog report is not configured. Set HASH_HCONNECT_REPORT_CATALOG or enable REST.',
+      );
     }
 
     const payload = await this.fetchJson(this.resolveEndpoint(this.config.catalogPath));
@@ -281,28 +288,10 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
-      this.assertTestingFallbackAllowed('recent-items snapshot');
-      const now = new Date().toISOString();
-      const [primaryItemId, secondaryItemId] = resolveFallbackTestingItemIds();
-
-      return {
-        source: 'hashavshevet',
-        syncedAt: now,
-        items: [
-          {
-            itemId: primaryItemId,
-            name: resolveFallbackTestingItemName(primaryItemId),
-            lastOrderedAt: now,
-            unit: resolveFallbackTestingItemUnit(primaryItemId),
-          },
-          {
-            itemId: secondaryItemId,
-            name: resolveFallbackTestingItemName(secondaryItemId),
-            lastOrderedAt: now,
-            unit: resolveFallbackTestingItemUnit(secondaryItemId),
-          },
-        ],
-      };
+      throw new ErpGatewayError(
+        ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+        'Recent items report is not configured. Set HASH_HCONNECT_REPORT_RECENT_ITEMS or enable REST.',
+      );
     }
 
     const payload = await this.fetchJson(
@@ -323,15 +312,10 @@ export class HashavshevetAdapter {
     }
 
     if (!this.config.restEnabled) {
-      this.assertTestingFallbackAllowed('pricing snapshot');
-      const now = new Date().toISOString();
-
-      return {
-        source: 'hashavshevet',
-        syncedAt: now,
-        version: `price-list-${customerId}`,
-        lines: TESTING_FALLBACK_PRICE_LINES,
-      };
+      throw new ErpGatewayError(
+        ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+        'Pricing report is not configured. Set HASH_HCONNECT_REPORT_PRICING or enable REST.',
+      );
     }
 
     const payload = await this.fetchJson(
@@ -342,14 +326,141 @@ export class HashavshevetAdapter {
     return this.mapPricingPayload(payload, customerId);
   }
 
-  private assertTestingFallbackAllowed(surface: string): void {
-    if (this.config.environment !== 'production') {
-      return;
+  async getVendors(): Promise<ErpGatewayVendorsSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.vendors;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'vendors', {});
+      return this.mapVendorsPayload(payload);
     }
 
     throw new ErpGatewayError(
-      ERP_ERROR_CODES.ERP_AUTH_FAILED,
-      `Testing fallback ${surface} is disabled in HASH_ENV=production. Configure live Hashavshevet credentials.`,
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Vendors report is not configured. Set HASH_HCONNECT_REPORT_VENDORS.',
+    );
+  }
+
+  async getSpecialPricesIndex(): Promise<ErpGatewaySpecialPricesIndexSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.specialPricesIndex;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'specialPricesIndex', {});
+      return this.mapSpecialPricesIndexPayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Special prices index report is not configured. Set HASH_HCONNECT_REPORT_SPECIAL_PRICES_INDEX.',
+    );
+  }
+
+  async getAgents(): Promise<ErpGatewayAgentsSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.agents;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'agents', {});
+      return this.mapAgentsPayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Agents report is not configured. Set HASH_HCONNECT_REPORT_AGENTS.',
+    );
+  }
+
+  async getObligo(): Promise<ErpGatewayObligoSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.obligo;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'obligo', {});
+      return this.mapObligoPayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Obligo report is not configured. Set HASH_HCONNECT_REPORT_OBLIGO.',
+    );
+  }
+
+  async getOpenDeliveryNotesList(): Promise<ErpGatewayOpenDeliveryNotesListSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.openDeliveryNotesList;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'openDeliveryNotesList', {});
+      return this.mapOpenDeliveryNotesListPayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Open delivery notes list report is not configured. Set HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_LIST.',
+    );
+  }
+
+  async getOpenDeliveryNotesByCustomer(customerId: string): Promise<ErpGatewayOpenDeliveryNotesByCustomerSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.openDeliveryNotesByCustomer;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'openDeliveryNotesByCustomer', {
+        customerId,
+      });
+      return this.mapOpenDeliveryNotesByCustomerPayload(payload, customerId);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Open delivery notes by customer report is not configured. Set HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_BY_CUSTOMER.',
+    );
+  }
+
+  async getCustomerSpecialPricing(customerId: string): Promise<ErpGatewayCustomerSpecialPricingSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.customerSpecialPricing;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'customerSpecialPricing', {
+        customerId,
+      });
+      return this.mapCustomerSpecialPricingPayload(payload, customerId);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Customer special pricing report is not configured. Set HASH_HCONNECT_REPORT_CUSTOMER_SPECIAL_PRICING.',
+    );
+  }
+
+  async getCustomerBalance(customerId: string): Promise<ErpGatewayCustomerBalanceSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.customerBalance;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'customerBalance', {
+        customerId,
+      });
+      return this.mapCustomerBalancePayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Customer balance report is not configured. Set HASH_HCONNECT_REPORT_CUSTOMER_BALANCE.',
+    );
+  }
+
+  async getCustomerLedger(customerId: string): Promise<ErpGatewayCustomerLedgerSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.customerLedger;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'customerLedger', {
+        customerId,
+      });
+      return this.mapCustomerLedgerPayload(payload, customerId);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Customer ledger report is not configured. Set HASH_HCONNECT_REPORT_CUSTOMER_LEDGER.',
+    );
+  }
+
+  async getStockStatus(): Promise<ErpGatewayStockStatusSnapshot> {
+    const reportEncrypted = this.config.hconnect.reports.stockStatus;
+    if (this.config.hconnect.enabled && reportEncrypted) {
+      const payload = await this.fetchHConnectReportData(reportEncrypted, 'stockStatus', {});
+      return this.mapStockStatusPayload(payload);
+    }
+
+    throw new ErpGatewayError(
+      ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
+      'Stock status report is not configured. Set HASH_HCONNECT_REPORT_STOCK_STATUS.',
     );
   }
 
@@ -422,7 +533,7 @@ export class HashavshevetAdapter {
         itemId,
         name: readRequiredString(entry, ['name', 'description', 'ItemName', 'itemName'], 'name'),
         lastOrderedAt: normalizeIsoTimestamp(lastOrderedAtRaw, now),
-        unit: unit ? normalizeUnit(unit) : resolveFallbackTestingItemUnit(itemId),
+        unit: unit ? normalizeUnit(unit) : 'kg',
       };
     });
 
@@ -452,6 +563,154 @@ export class HashavshevetAdapter {
     };
   }
 
+  private mapVendorsPayload(payload: unknown): ErpGatewayVendorsSnapshot {
+    const entries = mapPayloadArrayLoose(payload, ['vendors', 'data']);
+    const vendors = entries.flatMap((entry) => {
+      const vendorId = readOptionalIdentifier(entry, [
+        'vendorId',
+        'id',
+        'AccountKey',
+        'accountKey',
+        'supplierCode',
+        'SupplierKey',
+      ]);
+      if (!vendorId) return [];
+      return [
+        {
+          vendorId,
+          name: readOptionalString(entry, ['name', 'vendorName', 'AccountName', 'accountName', 'SupplierName']) ?? '',
+          isActive: readOptionalBoolean(entry, ['isActive', 'active', 'enabled']) ?? true,
+        },
+      ];
+    });
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), vendors };
+  }
+
+  private mapSpecialPricesIndexPayload(payload: unknown): ErpGatewaySpecialPricesIndexSnapshot {
+    const lines = mapPayloadArray(payload, ['lines', 'data', 'prices']).map((entry) => ({
+      itemId: readRequiredString(entry, ['itemId', 'id', 'ItemKey', 'itemKey'], 'itemId'),
+      itemName: readOptionalString(entry, ['itemName', 'name', 'ItemName', 'description']) ?? '',
+      unitPrice: readRequiredNumber(entry, ['unitPrice', 'price', 'netPrice', 'Price1', 'specialPrice'], 'unitPrice'),
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), lines };
+  }
+
+  private mapAgentsPayload(payload: unknown): ErpGatewayAgentsSnapshot {
+    const entries = mapPayloadArrayLoose(payload, ['agents', 'data']);
+    const agents = entries.flatMap((entry) => {
+      const agentId = readOptionalIdentifier(entry, [
+        'agentId',
+        'id',
+        'AgentKey',
+        'agentKey',
+        'AccountKey',
+        'accountKey',
+      ]);
+      if (!agentId) return [];
+      return [
+        {
+          agentId,
+          name: readOptionalString(entry, ['name', 'agentName', 'AgentName', 'AccountName', 'accountName']) ?? '',
+          isActive: readOptionalBoolean(entry, ['isActive', 'active', 'enabled']) ?? true,
+        },
+      ];
+    });
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), agents };
+  }
+
+  private mapObligoPayload(payload: unknown): ErpGatewayObligoSnapshot {
+    const entries = mapPayloadArray(payload, ['entries', 'data', 'obligo']).map((entry) => ({
+      customerId: readRequiredString(entry, ['customerId', 'id', 'AccountKey', 'accountKey', 'customerCode'], 'customerId'),
+      balance: readRequiredNumber(entry, ['balance', 'totalBalance', 'Balance', 'amount'], 'balance'),
+      creditLimit: readOptionalNumber(entry, ['creditLimit', 'CreditLimit', 'limit']) ?? 0,
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), entries };
+  }
+
+  private mapOpenDeliveryNotesListPayload(payload: unknown): ErpGatewayOpenDeliveryNotesListSnapshot {
+    const notes = mapPayloadArray(payload, ['notes', 'data', 'documents']).map((entry) => ({
+      documentId: readRequiredString(entry, ['documentId', 'id', 'DocumentID', 'docNumber', 'Reference'], 'documentId'),
+      customerId: readOptionalString(entry, ['customerId', 'AccountKey', 'accountKey', 'customerCode']) ?? '',
+      date: readOptionalString(entry, ['date', 'DateF', 'documentDate', 'Date']) ?? '',
+      totalAmount: readOptionalNumber(entry, ['totalAmount', 'total', 'Total', 'amount', 'Amount']) ?? 0,
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), notes };
+  }
+
+  private mapOpenDeliveryNotesByCustomerPayload(
+    payload: unknown,
+    customerId: string,
+  ): ErpGatewayOpenDeliveryNotesByCustomerSnapshot {
+    const notes = mapPayloadArray(payload, ['notes', 'data', 'documents']).map((entry) => ({
+      documentId: readRequiredString(entry, ['documentId', 'id', 'DocumentID', 'docNumber', 'Reference'], 'documentId'),
+      customerId: readOptionalString(entry, ['customerId', 'AccountKey', 'accountKey', 'customerCode']) ?? customerId,
+      date: readOptionalString(entry, ['date', 'DateF', 'documentDate', 'Date']) ?? '',
+      totalAmount: readOptionalNumber(entry, ['totalAmount', 'total', 'Total', 'amount', 'Amount']) ?? 0,
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), customerId, notes };
+  }
+
+  private mapCustomerSpecialPricingPayload(
+    payload: unknown,
+    customerId: string,
+  ): ErpGatewayCustomerSpecialPricingSnapshot {
+    const lines = mapPayloadArray(payload, ['lines', 'data', 'prices']).map((entry) => ({
+      itemId: readRequiredString(entry, ['itemId', 'id', 'ItemKey', 'itemKey'], 'itemId'),
+      itemName: readOptionalString(entry, ['itemName', 'name', 'ItemName', 'description']) ?? '',
+      unitPrice: readRequiredNumber(entry, ['unitPrice', 'price', 'netPrice', 'Price1', 'specialPrice'], 'unitPrice'),
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), customerId, lines };
+  }
+
+  private mapCustomerBalancePayload(payload: unknown): ErpGatewayCustomerBalanceSnapshot {
+    const entries = mapPayloadArray(payload, ['entries', 'data', 'balances']).map((entry) => ({
+      customerId: readRequiredString(entry, ['customerId', 'id', 'AccountKey', 'accountKey', 'customerCode'], 'customerId'),
+      balance: readRequiredNumber(entry, ['balance', 'totalBalance', 'Balance', 'amount'], 'balance'),
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), entries };
+  }
+
+  private mapCustomerLedgerPayload(payload: unknown, customerId: string): ErpGatewayCustomerLedgerSnapshot {
+    const entries = mapPayloadArray(payload, ['entries', 'data', 'transactions']).map((entry) => ({
+      customerId: readOptionalString(entry, ['customerId', 'AccountKey', 'accountKey']) ?? customerId,
+      documentId: readOptionalString(entry, ['documentId', 'DocumentID', 'docNumber', 'Reference']) ?? '',
+      date: readOptionalString(entry, ['date', 'DateF', 'transactionDate', 'Date']) ?? '',
+      description: readOptionalString(entry, ['description', 'Details', 'details', 'Memo', 'memo']) ?? '',
+      debit: readOptionalNumber(entry, ['debit', 'Debit', 'debitAmount']) ?? 0,
+      credit: readOptionalNumber(entry, ['credit', 'Credit', 'creditAmount']) ?? 0,
+      balance: readOptionalNumber(entry, ['balance', 'Balance', 'runningBalance']) ?? 0,
+      currency: readOptionalString(entry, ['currency', 'Currency']) ?? 'ILS',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), customerId, entries };
+  }
+
+  private mapStockStatusPayload(payload: unknown): ErpGatewayStockStatusSnapshot {
+    const entries = mapPayloadArray(payload, ['entries', 'data', 'stock', 'items']).map((entry) => ({
+      itemId: readRequiredString(entry, ['itemId', 'id', 'ItemKey', 'itemKey'], 'itemId'),
+      itemName: readOptionalString(entry, ['itemName', 'name', 'ItemName', 'description']) ?? '',
+      warehouse: readOptionalString(entry, ['warehouse', 'Warehouse', 'warehouseCode', 'WarehouseKey']) ?? '',
+      quantity: readRequiredNumber(entry, ['quantity', 'Quantity', 'qty', 'balance', 'Balance', 'stock'], 'quantity'),
+      unit: readOptionalString(entry, ['unit', 'uom', 'Unit']) ?? 'unit',
+    }));
+
+    return { source: 'hashavshevet', syncedAt: resolveSyncedAt(payload), entries };
+  }
+
   private async handoffOrderViaHConnect(request: ErpOrderHandoffRequest): Promise<ErpOrderHandoffResponse> {
     const plugin = this.config.hconnect.handoffPlugin.trim().toLowerCase();
     if (plugin !== HCONNECT_DEFAULT_PLUGIN_BY_FAMILY.movein) {
@@ -473,6 +732,7 @@ export class HashavshevetAdapter {
       quantity: line.quantity.toFixed(3),
       price: line.clientUnitPrice.toFixed(2),
       remarks: request.notes ?? '',
+      ...(request.hashAgentId ? { agentId: request.hashAgentId } : {}),
     }));
 
     const payload = await this.invokeCapabilityPlugin('movein', pluginData, plugin);
@@ -633,7 +893,15 @@ export class HashavshevetAdapter {
       return buildDefaultParamData(vars.agentId);
     }
 
-    if ((reportKey === 'recentItems' || reportKey === 'pricing') && vars.customerId) {
+    if (
+      (reportKey === 'recentItems' ||
+        reportKey === 'pricing' ||
+        reportKey === 'openDeliveryNotesByCustomer' ||
+        reportKey === 'customerSpecialPricing' ||
+        reportKey === 'customerBalance' ||
+        reportKey === 'customerLedger') &&
+      vars.customerId
+    ) {
       return buildDefaultParamData(vars.customerId);
     }
 
@@ -916,12 +1184,32 @@ function loadHConnectConfig(env: NodeJS.ProcessEnv): HConnectConfig {
       catalog: env.HASH_HCONNECT_REPORT_CATALOG?.trim() || null,
       recentItems: env.HASH_HCONNECT_REPORT_RECENT_ITEMS?.trim() || null,
       pricing: env.HASH_HCONNECT_REPORT_PRICING?.trim() || null,
+      obligo: env.HASH_HCONNECT_REPORT_OBLIGO?.trim() || null,
+      openDeliveryNotesList: env.HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_LIST?.trim() || null,
+      vendors: env.HASH_HCONNECT_REPORT_VENDORS?.trim() || null,
+      specialPricesIndex: env.HASH_HCONNECT_REPORT_SPECIAL_PRICES_INDEX?.trim() || null,
+      agents: env.HASH_HCONNECT_REPORT_AGENTS?.trim() || null,
+      openDeliveryNotesByCustomer: env.HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_BY_CUSTOMER?.trim() || null,
+      customerSpecialPricing: env.HASH_HCONNECT_REPORT_CUSTOMER_SPECIAL_PRICING?.trim() || null,
+      customerBalance: env.HASH_HCONNECT_REPORT_CUSTOMER_BALANCE?.trim() || null,
+      customerLedger: env.HASH_HCONNECT_REPORT_CUSTOMER_LEDGER?.trim() || null,
+      stockStatus: env.HASH_HCONNECT_REPORT_STOCK_STATUS?.trim() || null,
     },
     reportParamsTemplates: {
       assignedCustomers: env.HASH_HCONNECT_REPORT_ASSIGNED_CUSTOMERS_PARAMS_JSON ?? null,
       catalog: env.HASH_HCONNECT_REPORT_CATALOG_PARAMS_JSON ?? null,
       recentItems: env.HASH_HCONNECT_REPORT_RECENT_ITEMS_PARAMS_JSON ?? null,
       pricing: env.HASH_HCONNECT_REPORT_PRICING_PARAMS_JSON ?? null,
+      obligo: env.HASH_HCONNECT_REPORT_OBLIGO_PARAMS_JSON ?? null,
+      openDeliveryNotesList: env.HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_LIST_PARAMS_JSON ?? null,
+      vendors: env.HASH_HCONNECT_REPORT_VENDORS_PARAMS_JSON ?? null,
+      specialPricesIndex: env.HASH_HCONNECT_REPORT_SPECIAL_PRICES_INDEX_PARAMS_JSON ?? null,
+      agents: env.HASH_HCONNECT_REPORT_AGENTS_PARAMS_JSON ?? null,
+      openDeliveryNotesByCustomer: env.HASH_HCONNECT_REPORT_OPEN_DELIVERY_NOTES_BY_CUSTOMER_PARAMS_JSON ?? null,
+      customerSpecialPricing: env.HASH_HCONNECT_REPORT_CUSTOMER_SPECIAL_PRICING_PARAMS_JSON ?? null,
+      customerBalance: env.HASH_HCONNECT_REPORT_CUSTOMER_BALANCE_PARAMS_JSON ?? null,
+      customerLedger: env.HASH_HCONNECT_REPORT_CUSTOMER_LEDGER_PARAMS_JSON ?? null,
+      stockStatus: env.HASH_HCONNECT_REPORT_STOCK_STATUS_PARAMS_JSON ?? null,
     },
   };
 }
@@ -1476,6 +1764,24 @@ function readRequiredNumber(record: Record<string, unknown>, keys: string[], lab
   );
 }
 
+function readOptionalNumber(record: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const candidate = record[key];
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate;
+    }
+
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
 function interpolatePath(pathTemplate: string, params: Record<string, string>): string {
   return pathTemplate.replace(/\{([^}]+)\}/g, (_match, key: string) => {
     const value = params[key];
@@ -1488,42 +1794,4 @@ function interpolatePath(pathTemplate: string, params: Record<string, string>): 
 
     return encodeURIComponent(value);
   });
-}
-
-function resolveFallbackTestingItemIds(): [string, string] {
-  const primary = TESTING_FALLBACK_CATALOG_ITEM_IDS[0] ?? 'itm-beef-001';
-  const secondary = TESTING_FALLBACK_CATALOG_ITEM_IDS[1] ?? primary;
-  return [primary, secondary];
-}
-
-function resolveFallbackTestingItemName(itemId: string): string {
-  const localized = TESTING_FALLBACK_CATALOG_NAME_BY_ITEM_ID.get(itemId);
-  if (localized) {
-    return localized;
-  }
-
-  return humanizeFallbackItemName(itemId);
-}
-
-function resolveFallbackTestingItemUnit(itemId: string): 'kg' {
-  void itemId;
-  return 'kg';
-}
-
-function humanizeFallbackItemName(itemId: string): string {
-  const words = itemId
-    .replace(/[_-]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter((word) => word.length > 0)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
-
-  return words.join(' ');
-}
-
-function resolveTestingFallbackUnitPrice(itemId: string, index: number): number {
-  const hash = [...itemId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const shekels = 45 + (hash % 155);
-  const cents = (index % 10) / 10;
-  return Number((shekels + cents).toFixed(2));
 }
