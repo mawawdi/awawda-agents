@@ -14,17 +14,17 @@
 **The interesting part:** I wrote almost none of this by hand. I built the orchestration system that did.
 
 ### 🔎 For reviewers (60‑second tour)
+
 - 🤖 **[How this was built →](#-how-this-was-built-an-autonomous-agent-squad)** — the multi‑agent engineering system (the part worth your time)
 - 🧠 **[My role →](#-my-role)** — what I designed vs. what the agents produced
 - 🏗️ **[Architecture →](docs/Architecture.md)** · 📋 **[Product spec →](docs/PRD.md)**
-- 🎬 **Demo video:** _add your Loom/YouTube link here_
 
 ---
 
 ## Screens
 
-| Agent app — customer dashboard | Customer portal — catalog | Customer portal — checkout |
-| :---: | :---: | :---: |
+|                         Agent app — customer dashboard                         |                              Customer portal — catalog                               |                             Customer portal — checkout                              |
+| :----------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------: |
 | <img src="blueprints/agent_dashboard_hebrew_updated/screen.png" width="240" /> | <img src="blueprints/customer_order_portal_catalog_hebrew/screen.png" width="240" /> | <img src="blueprints/customer_checkout_web_portal_hebrew/screen.png" width="240" /> |
 
 _RTL Hebrew UI, mobile‑first, following the in‑house **"Artisanal Ledger"** design system ([`docs/DESIGN.md`](docs/DESIGN.md))._
@@ -35,22 +35,22 @@ _RTL Hebrew UI, mobile‑first, following the in‑house **"Artisanal Ledger"** 
 
 Instead of writing the code directly, I built a **multi‑agent engineering team** — eight role‑specialized agents running on `gpt-5.3-codex`, each with its own charter, coordinated by a lead and gated by an automated reviewer. They pick up GitHub Issues, plan, implement, test, review, and ship.
 
-| Agent | Role | Owns |
-| --- | --- | --- |
-| **Ripley** | Lead / architect | Scope, sequencing, cross‑cutting review, final decisions |
-| **Parker** | Backend dev | NestJS modules, Prisma schema, auth/sessions, ERP integration |
-| **Dallas** | Frontend dev | React Native screens, portal pages, forms, UX flows |
-| **Lambert** | Tester | Unit/integration/E2E suites, edge cases, regression coverage |
-| **Ash** | DevOps | CI/CD, Docker, compose stacks, deployment hardening |
-| **Bishop** | Reviewer | Quality gate on Parker/Dallas output — approve, reject, or reassign |
-| **Scribe** | Session logger | Background decision/orchestration logs (never blocks) |
-| **Ralph** | Work monitor | Circuit breaker — watches for stuck/looping work |
+| Agent       | Role             | Owns                                                                |
+| ----------- | ---------------- | ------------------------------------------------------------------- |
+| **Ripley**  | Lead / architect | Scope, sequencing, cross‑cutting review, final decisions            |
+| **Parker**  | Backend dev      | NestJS modules, Prisma schema, auth/sessions, ERP integration       |
+| **Dallas**  | Frontend dev     | React Native screens, portal pages, forms, UX flows                 |
+| **Lambert** | Tester           | Unit/integration/E2E suites, edge cases, regression coverage        |
+| **Ash**     | DevOps           | CI/CD, Docker, compose stacks, deployment hardening                 |
+| **Bishop**  | Reviewer         | Quality gate on Parker/Dallas output — approve, reject, or reassign |
+| **Scribe**  | Session logger   | Background decision/orchestration logs (never blocks)               |
+| **Ralph**   | Work monitor     | Circuit breaker — watches for stuck/looping work                    |
 
 **How the system actually runs:**
 
 - **Issue‑driven routing.** A GitHub Issue labeled `squad` lands in the lead's inbox; the lead triages it and assigns a `squad:{member}` label. A GitHub Action ([`.github/workflows/squad-issue-assign.yml`](.github/workflows/squad-issue-assign.yml)) reads the roster and dispatches the work to that agent. Eleven `squad-*` workflows automate triage, label enforcement, CI, preview, promote, release, and heartbeat.
 - **Reviewer gates, not vibes.** Backend and frontend output doesn't merge until **Bishop** approves; everything else is reviewed by **Ripley**. Rejections bounce back with reasons.
-- **Ceremonies.** A **design review** auto‑fires *before* any task touching shared systems (agree on interfaces/contracts first); a **retrospective** auto‑fires *after* any build failure, test failure, or reviewer rejection (root‑cause, then action items). See [`.squad/ceremonies.md`](.squad/ceremonies.md).
+- **Ceremonies.** A **design review** auto‑fires _before_ any task touching shared systems (agree on interfaces/contracts first); a **retrospective** auto‑fires _after_ any build failure, test failure, or reviewer rejection (root‑cause, then action items). See [`.squad/ceremonies.md`](.squad/ceremonies.md).
 - **Durable memory.** Architecture decisions ([`.squad/decisions.md`](.squad/decisions.md)) and per‑agent orchestration logs ([`.squad/orchestration-log/`](.squad/orchestration-log/)) give the squad a shared, persistent record across sessions.
 - **Parallelism with ownership boundaries.** The routing table ([`.squad/routing.md`](.squad/routing.md)) lets the lead fan out independent work across agents at once while keeping clear domain ownership.
 
@@ -73,14 +73,14 @@ This repo is, in effect, two projects in one: a shipped B2B product, and the **a
 
 ## What's in the box
 
-| Component | Path | Stack |
-| --- | --- | --- |
-| **Agent mobile app** | `apps/agent-mobile` | React Native + Expo, React Navigation, Expo SecureStore, Zod |
-| **Customer portal** | `apps/customer-portal` | Vite + React, React Router, RTL (Hebrew) |
-| **Backend API** | `apps/api` | NestJS + Fastify, Prisma, PostgreSQL, Redis, Argon2, JWT |
-| **Shared contracts** | `packages/shared-types` | TypeScript types + Zod schemas (`/v1` contracts) |
-| **Infra** | `infra/` | Docker, Docker Compose (local + deploy stacks) |
-| **Agent squad** | `.squad/`, `.github/workflows/squad-*` | Roster, charters, routing, ceremonies, CI automation |
+| Component            | Path                                   | Stack                                                        |
+| -------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| **Agent mobile app** | `apps/agent-mobile`                    | React Native + Expo, React Navigation, Expo SecureStore, Zod |
+| **Customer portal**  | `apps/customer-portal`                 | Vite + React, React Router, RTL (Hebrew)                     |
+| **Backend API**      | `apps/api`                             | NestJS + Fastify, Prisma, PostgreSQL, Redis, Argon2, JWT     |
+| **Shared contracts** | `packages/shared-types`                | TypeScript types + Zod schemas (`/v1` contracts)             |
+| **Infra**            | `infra/`                               | Docker, Docker Compose (local + deploy stacks)               |
+| **Agent squad**      | `.squad/`, `.github/workflows/squad-*` | Roster, charters, routing, ceremonies, CI automation         |
 
 A **modular monolith** backend serves two frontends over HTTPS, talks to Hashavshevet through a swappable ERP gateway, and uses Postgres for operational data (tokens, sessions, orders, audit) and Redis for short‑lived caches.
 
@@ -162,16 +162,16 @@ The API listens on `http://localhost:3000` by default.
 
 ## Common scripts
 
-| Command | Does |
-| --- | --- |
-| `pnpm build` / `pnpm lint` / `pnpm test` | Run across all workspaces |
-| `pnpm infra:local:up` / `:down` / `:reset` | Manage local Postgres + Redis |
-| `pnpm infra:local:refresh:data` | Reset infra and reseed testing data |
-| `pnpm api:dev:test` / `pnpm api:dev:prod` | Run API against testing / production Hash env |
-| `pnpm deploy:up` / `:up:test` / `:up:prod` | Bring up the full deploy stack (API + portal + Postgres + Redis) |
-| `pnpm deploy:verify:prod` | Fail‑fast production Hash config guardrails |
-| `pnpm test:portal-e2e` | Playwright critical‑path E2E for the portal |
-| `pnpm test:portal-visual` / `:agent-mobile-visual` | Visual‑regression suites (add `:update` to refresh snapshots) |
+| Command                                            | Does                                                             |
+| -------------------------------------------------- | ---------------------------------------------------------------- |
+| `pnpm build` / `pnpm lint` / `pnpm test`           | Run across all workspaces                                        |
+| `pnpm infra:local:up` / `:down` / `:reset`         | Manage local Postgres + Redis                                    |
+| `pnpm infra:local:refresh:data`                    | Reset infra and reseed testing data                              |
+| `pnpm api:dev:test` / `pnpm api:dev:prod`          | Run API against testing / production Hash env                    |
+| `pnpm deploy:up` / `:up:test` / `:up:prod`         | Bring up the full deploy stack (API + portal + Postgres + Redis) |
+| `pnpm deploy:verify:prod`                          | Fail‑fast production Hash config guardrails                      |
+| `pnpm test:portal-e2e`                             | Playwright critical‑path E2E for the portal                      |
+| `pnpm test:portal-visual` / `:agent-mobile-visual` | Visual‑regression suites (add `:update` to refresh snapshots)    |
 
 Per‑app scripts and the full operational route list live in each app's README (`apps/api/README.md`, `apps/agent-mobile/README.md`, `apps/customer-portal/README.md`).
 
@@ -189,15 +189,15 @@ Per‑app scripts and the full operational route list live in each app's README 
 
 ## Documentation
 
-| Doc | What it covers |
-| --- | --- |
-| [`docs/PRD.md`](docs/PRD.md) | Product requirements, personas, functional spec |
-| [`docs/Architecture.md`](docs/Architecture.md) | System architecture, domain model, API design |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | The "Artisanal Ledger" design system |
-| [`docs/hashavshevet-isolation-and-supervisor-control-plane.md`](docs/hashavshevet-isolation-and-supervisor-control-plane.md) | ERP isolation + supervisor plane |
-| [`docs/testing-critical-paths.md`](docs/testing-critical-paths.md) | Critical‑path test coverage |
-| [`docs/ci-cd-release-gates.md`](docs/ci-cd-release-gates.md) | CI/CD release gates |
-| [`docs/mobile-store-release-readiness.md`](docs/mobile-store-release-readiness.md) | iOS + Android store readiness checklist |
+| Doc                                                                                                                          | What it covers                                  |
+| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| [`docs/PRD.md`](docs/PRD.md)                                                                                                 | Product requirements, personas, functional spec |
+| [`docs/Architecture.md`](docs/Architecture.md)                                                                               | System architecture, domain model, API design   |
+| [`docs/DESIGN.md`](docs/DESIGN.md)                                                                                           | The "Artisanal Ledger" design system            |
+| [`docs/hashavshevet-isolation-and-supervisor-control-plane.md`](docs/hashavshevet-isolation-and-supervisor-control-plane.md) | ERP isolation + supervisor plane                |
+| [`docs/testing-critical-paths.md`](docs/testing-critical-paths.md)                                                           | Critical‑path test coverage                     |
+| [`docs/ci-cd-release-gates.md`](docs/ci-cd-release-gates.md)                                                                 | CI/CD release gates                             |
+| [`docs/mobile-store-release-readiness.md`](docs/mobile-store-release-readiness.md)                                           | iOS + Android store readiness checklist         |
 
 ---
 
