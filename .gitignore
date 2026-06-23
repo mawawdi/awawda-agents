@@ -28,3 +28,5 @@ test-results/
 .venv/
 
 hash/
+
+.DS_Store

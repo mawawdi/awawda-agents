@@ -128,7 +128,7 @@ awawda-agents/
     compose/
   docs/
     PRD.md
-    Archeticture.md
+    Architecture.md
 ```
 
 Keep only `shared-types` in Phase 1 if you want minimal shared packages.
