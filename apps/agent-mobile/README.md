@@ -61,12 +61,13 @@ For production builds:
 pnpm eas:build:production:all
 ```
 
-Submit to stores:
+Submit (internal distribution — Android only):
 
 ```bash
-pnpm eas:submit:production:android
-pnpm eas:submit:production:ios
+pnpm eas:submit:production:android   # Play Console `internal` track, releaseStatus: draft
 ```
+
+> Only Android submit is configured, and it targets the Play Console **internal** test track with `releaseStatus: draft` (`eas.json` → `submit.production.android`) — not a public store release. There is **no** iOS submit profile, so `eas:submit:production:ios` has no profile and cannot run non-interactively. Distribution today is effectively internal (preview = internal APK, production Android = internal-track draft AAB).
 
 ### Current mobile release readiness (summary)
 

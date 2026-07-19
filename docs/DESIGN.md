@@ -32,7 +32,7 @@ To add "soul," use subtle radial gradients on hero sections transitioning from `
 ---
 
 ## 3. Typography: The Editorial Voice
-We utilize a sophisticated pairing of **Newsreader** (for Display/Headlines) and **Inter/Heebo** (for Utility/Body).
+The implemented system uses a single family — **Plus Jakarta Sans** — across both the React Native app and the Vite portal (with a Hebrew-capable fallback). _(The Newsreader/Inter/Heebo pairing described below is from the original brief and is **not** what shipped; see [`docs/DESIGN_DIRECTION.md`](DESIGN_DIRECTION.md) for the current source of truth.)_
 
 *   **Display & Headlines (Newsreader):** This is our "signature." It conveys heritage and gourmet quality. Use `display-lg` for dashboard welcomes and `headline-sm` for section headers.
 *   **Body & UI (Inter/Heebo):** Inter handles Latin characters and numerals with Swiss precision; Heebo ensures the RTL Hebrew script maintains modern readability. 
@@ -69,7 +69,7 @@ In this system, depth is a matter of light and shadow, not lines.
 
 ### Platform-Specific Components
 *   **The "Grade" Chip:** High-contrast chips for meat grading (e.g., Prime, Choice). Use `primary-fixed` (#ffdad6) with `on-primary-fixed` (#410002) for a "stamped" look.
-*   **Weight Scale Slider:** Use `secondary` (#7a5647) for the track to mimic a leather measuring strap.
+*   **Weight Scale Slider:** Use `secondary` for the track. _(Note: the implemented `secondary` token is teal `#0d9488` — see `apps/agent-mobile/src/theme/tokens.ts` — not the `#7a5647` leather brown in this stale brief. Actual current values: background `#fafaf9`, primary `#1c1917`, primaryContainer `#7f1d1d`; refer to the token file and [`docs/DESIGN_DIRECTION.md`](DESIGN_DIRECTION.md).)_
 
 ---
 

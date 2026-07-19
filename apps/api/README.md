@@ -4,7 +4,7 @@ NestJS + Fastify backend entrypoint for the Awawda Agents platform.
 
 ## Environment
 
-Copy `.env.example` to `.env` and set all required values before running workspace checks.
+Copy `.env.example` to `.env` **and** copy `infra/secrets.env.example` to `infra/secrets.env`, then set the required secrets (`JWT_SECRET` plus any `HASH_*` credentials) in `infra/secrets.env`. The dev script loads both files via `--env-file`, and it will fail to boot if `infra/secrets.env` is missing or `JWT_SECRET` is unset.
 
 ## Scripts
 
@@ -12,7 +12,7 @@ Copy `.env.example` to `.env` and set all required values before running workspa
 - `pnpm --filter @awawda/api test` — run API tests
 - `pnpm --filter @awawda/api build` — compile TypeScript to `dist/`
 - `pnpm --filter @awawda/api prisma:migrate:deploy` — run migrations in deploy environments
-- `pnpm --filter @awawda/api seed:testing` — seed local infra DB (`127.0.0.1:55432`) with realistic **testing-only** agents/customers/approved-items data
+- `pnpm --filter @awawda/api seed:testing` — seed local infra DB (`127.0.0.1:55432`) with realistic **testing-only** agents/customers/approved-items data. Note: this points `DATABASE_URL` at the primary `awawda` database, which the seed script refuses to seed unless `ALLOW_SEED_PRIMARY_DB=true`; run `ALLOW_SEED_PRIMARY_DB=true pnpm --filter @awawda/api seed:testing` (or point it at `awawda_test`).
 - `pnpm --filter @awawda/api seed:testing:deploy` — seed deploy-stack DB (`127.0.0.1:55433`) from host
 
 ## Operational routes
@@ -171,6 +171,7 @@ Expected parity with committed migration: only explicit `CREATE EXTENSION IF NOT
 ## ERP integration boundary (T07)
 
 - Application modules consume ERP via the `ERP_GATEWAY` abstraction token (`apps/api/src/erp/erp.gateway.ts`).
+- By default (`HASH_ENV=testing`) `ERP_GATEWAY` is bound to the mock `TestingErpAdapter` (in-memory fixtures) — `HashavshevetAdapter` and `BMaxXmlAdapter` are **not** used. Only when `HASH_ENV=production` does `ErpModule` bind `ERP_GATEWAY` to `CompositeErpGateway`.
 - `HashavshevetAdapter` is wired for read flows and production `imovein` handoff via H-Connect plugin envelope mode.
 - `BMaxXmlAdapter` is wired as XML fallback stub for order handoff when primary ERP delivery fails.
 - Internal ERP failures use stable `ERP_*` error codes from `apps/api/src/erp/erp.errors.ts`.

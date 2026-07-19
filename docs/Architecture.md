@@ -34,6 +34,8 @@ flowchart LR
     B --> H[WhatsApp Deep Link]
 ```
 
+> **ERP mode note:** the live Hashavshevet/B‑MAX path is active only when `HASH_ENV != testing`. With `HASH_ENV=testing` (used by `pnpm api:dev:test`, `pnpm deploy:up:test`, and CI) `ErpModule` binds `ERP_GATEWAY` to an in‑process `TestingErpAdapter` mock — no real ERP calls are made. The real path (`CompositeErpGateway`: `HashavshevetAdapter` primary via H‑Connect at `https://ws.wizground.com/api`, `BMaxXmlAdapter` fallback) runs only in production mode.
+
 Architecture style:
 
 - Modular monolith backend (single deployable service with clear modules).
@@ -45,7 +47,7 @@ Architecture style:
 Why this is the right level of complexity:
 
 - One backend service is enough for Phase 1.
-- Redis used only for performance and ephemeral session/token caching.
+- Redis is optional infra (used only by the readiness probe); catalog caching is in‑process, and sessions/tokens/idempotency live in PostgreSQL.
 - PostgreSQL stores operational data, audit trails, and idempotency.
 - Hashavshevet remains authoritative for customers/items/prices/orders.
 
@@ -57,24 +59,25 @@ Why this is the right level of complexity:
 
 - React Native with Expo (TypeScript)
 - React Navigation
-- TanStack Query (server state)
-- Zustand (small local UI state)
-- React Hook Form + Zod (forms/validation)
+- Custom fetch‑based API clients for server state (no TanStack Query)
+- React Context for auth/session state (no Zustand)
+- Zod for validation (no React Hook Form)
 - Expo SecureStore (token storage)
 - Expo Linking / `Linking.openURL` (open WhatsApp link)
 
 Reasoning:
 
 - Expo accelerates delivery and supports both iOS/Android from one codebase.
-- TanStack Query reduces custom data fetching logic.
+- Thin hand‑written fetch clients keep the dependency surface small.
 - Minimal local state complexity.
 
 ## 3.2 Customer Portal (Web)
 
 - Vite + React (TypeScript)
-- CSS Modules / app-level CSS
-- TanStack Query
-- Zod-validated API contracts
+- Utility‑class styling (`clsx` + `tailwind-merge` + `class-variance-authority`) with shadcn/ui‑style components, plus one app‑level `customer-portal.css` (no CSS Modules)
+- `react-router-dom` for routing
+- Hand‑written fetch API client (`portal-api-client.ts`) with manual payload normalization (no TanStack Query, no Zod)
+- Shared TypeScript contracts from `@awawda/shared-types` (types only, no Zod schemas)
 
 Reasoning:
 
@@ -87,15 +90,15 @@ Reasoning:
 - Fastify adapter (better performance)
 - Prisma ORM
 - PostgreSQL
-- Redis
-- Pino logger
-- Zod for request/response boundary validation where needed
+- Redis (optional; readiness probe only)
+- Sentry (`@sentry/nestjs`) for error/trace reporting; per‑request `x-request-id` correlation (no Pino/structured JSON logger configured)
+- class‑validator + class‑transformer via a global Nest `ValidationPipe` (whitelist, forbidNonWhitelisted, transform) for request validation (Zod is not used on the backend)
 
 Reasoning:
 
 - Clear module structure with low operational overhead.
 - Strong typing end-to-end.
-- Fastify + Redis supports responsive customer experience.
+- Fastify keeps request handling fast and lightweight.
 
 ## 3.4 Integration Layer
 
@@ -121,7 +124,7 @@ awawda-agents/
     customer-portal/        # Vite + React app
     api/                    # NestJS backend
   packages/
-    shared-types/           # Shared TS types + zod schemas
+    shared-types/           # Shared TS types
     ui-tokens/              # Optional shared design tokens (if needed)
   infra/
     docker/
@@ -315,6 +318,15 @@ All APIs are versioned: `/v1/...`
 - Request: `{ expiresInHours?: number }` (default 24)
 - Response: `{ linkUrl, expiresAt }`
 
+### `POST /v1/agent/auth/refresh`
+
+- Request: `{ refreshToken }`
+- Rotates the refresh token and returns a new access token.
+
+### `POST /v1/agent/auth/logout`
+
+- Revokes the current refresh token (supervisor force‑logout also supported).
+
 ## 7.2 Customer APIs
 
 ### `POST /v1/customer/sessions/activate`
@@ -374,10 +386,12 @@ interface ErpGateway {
 
 Implementations:
 
-- `HashavshevetApiGateway` (primary)
-- `BmaxXmlGateway` (fallback mode)
+- `HashavshevetAdapter` (primary, H‑Connect transport) and `BMaxXmlAdapter` (fallback), composed by `CompositeErpGateway` (primary‑then‑fallback)
+- `TestingErpAdapter` (mock), selected when `HASH_ENV=testing`
 
 This keeps application modules independent from ERP protocol details.
+
+> The real interface (`erp.gateway.ts`) names differ from the sketch above: `submitOrder` → `handoffOrder`, `getCustomerPriceList` → `getCustomerPricing`, `getRecentItems` → `getCustomerRecentItems`, plus `getHealth`, an optional `cancelOrder`, and report methods.
 
 ## 8.2 Validation Before Commit
 
@@ -417,7 +431,7 @@ If mismatch:
 
 - Argon2 password hashing.
 - JWT access token with short TTL (for example 8h shift).
-- Optional refresh token in Phase 2.
+- Refresh tokens are implemented: login returns a 30‑day refresh token (SHA‑256 hash persisted), with `POST /v1/agent/auth/refresh` (rotation) and `POST /v1/agent/auth/logout` (revocation).
 - Per-agent authorization checks on every customer operation.
 
 ## 9.4 API Hardening
@@ -426,7 +440,7 @@ If mismatch:
 - CORS strict allowlist.
 - Helmet-like security headers.
 - Request body size limits.
-- Input validation with DTO + Zod.
+- Input validation with DTOs + class‑validator (global Nest `ValidationPipe`).
 - Idempotency keys on order submission.
 
 ## 9.5 Auditability
@@ -451,10 +465,7 @@ Tactics:
 
 - Keep portal UI minimal and mobile-first.
 - Use server-side rendering for first load where it helps.
-- Use Redis cache for short-lived read-through data:
-  - master catalog (5-15 min)
-  - customer price list snapshot (2-5 min)
-  - recent items (2-5 min)
+- In‑process (single‑instance) memory cache for the master catalog (default 5 min TTL). Sessions, magic‑link tokens, idempotency keys, and rate‑limit buckets live in PostgreSQL / process memory, not Redis. Redis is optional and currently used only by the `/v1/ready` probe.
 - Compress responses (`gzip`/`brotli`).
 - Paginate long catalogs in agent app.
 
@@ -488,7 +499,7 @@ Phase 1 recommendation:
 
 Minimum for Phase 1:
 
-- Structured JSON logs (Pino).
+- Error/trace reporting via Sentry (`@sentry/nestjs`); per‑request `x-request-id` correlation. (No Pino/structured JSON application logger is configured.)
 - Request correlation ID per API call.
 - Basic metrics:
   - request latency
@@ -531,9 +542,10 @@ Store securely (platform secrets manager):
 - `HASH_API_URL`
 - `HASH_API_KEY` or auth credentials
 - `JWT_SECRET`
-- `DB_URL`
+- `DATABASE_URL`
 - `REDIS_URL`
-- `MAGIC_LINK_SIGNING_SECRET`
+- `MAGIC_LINK_BASE_URL` (plus `MAGIC_LINK_TTL_SECONDS`; there is no magic‑link signing secret — tokens are random and SHA‑256‑hashed at rest)
+- Hashavshevet H‑Connect credentials (`HASH_HCONNECT_STATION` / `COMPANY` / `NET_PASSPORT_ID` / `SIGNATURE_TOKEN`, report keys)
 
 ---
 
@@ -551,9 +563,9 @@ Store securely (platform secrets manager):
 
 ## 14.2 State Layers
 
-- TanStack Query for server data.
-- Zustand for UI state (filters, temporary selections).
-- SecureStore for auth token.
+- Custom fetch API clients for server data (no TanStack Query).
+- React Context + local component state for UI/auth state (no Zustand).
+- Expo SecureStore for the auth/refresh tokens.
 
 ## 14.3 Core Screens
 
@@ -566,7 +578,7 @@ Store securely (platform secrets manager):
 
 Use deep link format:
 
-- `whatsapp://send?phone=<customerPhone>&text=<encodedMessage>`
+- `whatsapp://send?text=<encodedMessage>` (the implementation does not include a phone parameter; the user picks the recipient in WhatsApp)
 - Fallback to copy link if WhatsApp unavailable.
 
 ---
@@ -722,8 +734,8 @@ Recommended tools:
 
 ## 21. Mobile Store Release Readiness (iOS + Android)
 
-- Build profiles and signing are configured for both stores (Apple distribution cert/profile, Android keystore).
-- App metadata is finalized (localized app name, subtitle/short description, support URL, privacy policy URL).
+- EAS build profiles exist (development/preview = internal distribution, Android APK; production Android = app‑bundle to the Google Play **internal** track as a draft). There is **no iOS submit profile**, and signing credentials are not committed in‑repo. Current distribution is internal (APK / Play internal track), not a finalized public iOS+Android store release.
+- `app.json` defines only the app name, slug, and bundle identifiers (`co.awawda.agent`). Store metadata (subtitle/short description, support URL, privacy policy URL) is not yet present, and the Sentry DSN is unset.
 - Permission surface is minimal and justified in store disclosures.
 - Crash-safe startup verified on fresh install and upgrade path.
 - Auth/session/logout, link sharing fallback, and degraded network flows pass release smoke tests.

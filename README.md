@@ -9,7 +9,7 @@
 
 > A real B2B ordering platform for a meat factory — **and** an experiment in agentic software engineering. I designed an **autonomous squad of 8 specialized AI agents** (planner, backend, frontend, tester, DevOps, reviewer, logger, monitor), wired them to GitHub Issues, and orchestrated them to ship this full‑stack, production‑grade system end‑to‑end.
 
-**The product:** sales agents manage restaurant/butcher customers from a mobile app and send each a **tokenized magic link**. The customer taps it — no login, no install — sees only their approved items at pre‑negotiated prices, and submits an order that's validated against the live **Hashavshevet** ERP before it commits.
+**The product:** sales agents manage restaurant/butcher customers from a mobile app and send each a **tokenized magic link**. The customer taps it — no login, no install — sees only their approved items at pre‑negotiated prices, and submits an order that's validated against **Hashavshevet** pricing before it commits. _(In the documented dev/test mode the ERP is an in‑process mock; the live Hashavshevet path runs under `HASH_ENV=production`.)_
 
 **The interesting part:** I wrote almost none of this by hand. I built the orchestration system that did.
 
@@ -48,7 +48,7 @@ Instead of writing the code directly, I built a **multi‑agent engineering team
 
 **How the system actually runs:**
 
-- **Issue‑driven routing.** A GitHub Issue labeled `squad` lands in the lead's inbox; the lead triages it and assigns a `squad:{member}` label. A GitHub Action ([`.github/workflows/squad-issue-assign.yml`](.github/workflows/squad-issue-assign.yml)) reads the roster and dispatches the work to that agent. Eleven `squad-*` workflows automate triage, label enforcement, CI, preview, promote, release, and heartbeat.
+- **Issue‑driven routing.** A GitHub Issue labeled `squad` lands in the lead's inbox; the lead triages it and assigns a `squad:{member}` label. A GitHub Action ([`.github/workflows/squad-issue-assign.yml`](.github/workflows/squad-issue-assign.yml)) reads the roster and dispatches the work to that agent. Ten `squad-*` workflows automate triage, label enforcement, CI, preview, promote, release, and heartbeat.
 - **Reviewer gates, not vibes.** Backend and frontend output doesn't merge until **Bishop** approves; everything else is reviewed by **Ripley**. Rejections bounce back with reasons.
 - **Ceremonies.** A **design review** auto‑fires _before_ any task touching shared systems (agree on interfaces/contracts first); a **retrospective** auto‑fires _after_ any build failure, test failure, or reviewer rejection (root‑cause, then action items). See [`.squad/ceremonies.md`](.squad/ceremonies.md).
 - **Durable memory.** Architecture decisions ([`.squad/decisions.md`](.squad/decisions.md)) and per‑agent orchestration logs ([`.squad/orchestration-log/`](.squad/orchestration-log/)) give the squad a shared, persistent record across sessions.
@@ -78,11 +78,11 @@ This repo is, in effect, two projects in one: a shipped B2B product, and the **a
 | **Agent mobile app** | `apps/agent-mobile`                    | React Native + Expo, React Navigation, Expo SecureStore, Zod |
 | **Customer portal**  | `apps/customer-portal`                 | Vite + React, React Router, RTL (Hebrew)                     |
 | **Backend API**      | `apps/api`                             | NestJS + Fastify, Prisma, PostgreSQL, Redis, Argon2, JWT     |
-| **Shared contracts** | `packages/shared-types`                | TypeScript types + Zod schemas (`/v1` contracts)             |
+| **Shared contracts** | `packages/shared-types`                | TypeScript types (`/v1` contracts)                          |
 | **Infra**            | `infra/`                               | Docker, Docker Compose (local + deploy stacks)               |
 | **Agent squad**      | `.squad/`, `.github/workflows/squad-*` | Roster, charters, routing, ceremonies, CI automation         |
 
-A **modular monolith** backend serves two frontends over HTTPS, talks to Hashavshevet through a swappable ERP gateway, and uses Postgres for operational data (tokens, sessions, orders, audit) and Redis for short‑lived caches.
+A **modular monolith** backend serves two frontends over HTTPS, talks to Hashavshevet through a swappable ERP gateway, and uses Postgres for operational data (tokens, sessions, orders, audit) with an in‑process cache for hot ERP reads. (Redis is wired only as an optional readiness‑probe dependency.)
 
 ```mermaid
 flowchart LR
@@ -101,7 +101,7 @@ flowchart LR
 
 **Agent → customer**
 
-1. Agent logs in (Argon2‑verified, JWT shift token) and sees their assigned customers, pulled live from Hashavshevet.
+1. Agent logs in (Argon2‑verified, JWT shift token) and sees their assigned customers from their assignment list (managed via the supervisor control plane).
 2. Agent browses the master catalog and adds items to a customer's permanent **Approved Items** allowlist.
 3. Agent taps **Generate Link** → backend mints a 32‑byte token, stores only its SHA‑256 hash with a 24h expiry, and the app fires a **WhatsApp deep link** (falls back to copy‑link).
 
@@ -144,7 +144,7 @@ cp apps/agent-mobile/.env.example apps/agent-mobile/.env
 cp infra/secrets.env.example infra/secrets.env
 ```
 
-Key API vars: `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `MAGIC_LINK_SIGNING_SECRET`, and the `HASH_*` Hashavshevet credentials. See `apps/api/README.md` for the full list.
+Key API vars: `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `MAGIC_LINK_BASE_URL`, `MAGIC_LINK_TTL_SECONDS`, and the `HASH_*` Hashavshevet credentials. See `apps/api/README.md` for the full list.
 
 ### 4. Run the apps
 
@@ -183,7 +183,7 @@ Per‑app scripts and the full operational route list live in each app's README 
 - **Agent auth:** Argon2 password hashing, short‑lived JWT shift tokens, refresh‑token mechanism, per‑agent authorization on every customer operation, supervisor force‑logout.
 - **Order integrity:** idempotency keys, pre‑commit price/availability revalidation, structured error codes, never a silent submit on uncertainty.
 - **Auditability:** every link, approval, assignment, and order attempt is written to `audit_logs` and surfaced through the supervisor timeline.
-- **ERP isolation:** a single `ErpGateway` interface (`HashavshevetApiGateway` primary, `BmaxXmlGateway` fallback) keeps app modules independent of ERP protocol details, with retries and circuit‑breaker behavior on transient upstream failures.
+- **ERP isolation:** a single `ErpGateway` interface — implemented by `CompositeErpGateway`, which uses `HashavshevetAdapter` (primary) and `BMaxXmlAdapter` (fallback) — keeps app modules independent of ERP protocol details, with retries and fallback behavior on transient upstream failures.
 
 ---
 
