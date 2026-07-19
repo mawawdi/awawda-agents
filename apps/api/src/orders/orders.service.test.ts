@@ -71,6 +71,7 @@ describe('OrdersService', () => {
       }),
       persistOrderSubmission: vi.fn().mockResolvedValue(undefined),
       finalizeIdempotencyKey: vi.fn().mockResolvedValue(undefined),
+      releaseIdempotencyKey: vi.fn().mockResolvedValue(undefined),
     };
 
     const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
@@ -167,6 +168,7 @@ describe('OrdersService', () => {
       }),
       persistOrderSubmission: vi.fn().mockResolvedValue(undefined),
       finalizeIdempotencyKey: vi.fn().mockResolvedValue(undefined),
+      releaseIdempotencyKey: vi.fn().mockResolvedValue(undefined),
     };
 
     const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
@@ -243,6 +245,7 @@ describe('OrdersService', () => {
       }),
       persistOrderSubmission: vi.fn().mockResolvedValue(undefined),
       finalizeIdempotencyKey: vi.fn().mockResolvedValue(undefined),
+      releaseIdempotencyKey: vi.fn().mockResolvedValue(undefined),
     };
 
     const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
@@ -317,6 +320,7 @@ describe('OrdersService', () => {
       }),
       persistOrderSubmission: vi.fn(),
       finalizeIdempotencyKey: vi.fn(),
+      releaseIdempotencyKey: vi.fn(),
     };
 
     const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
@@ -376,6 +380,7 @@ describe('OrdersService', () => {
         reserveIdempotencyKey: vi.fn().mockResolvedValue({ kind: 'conflict' }),
         persistOrderSubmission: vi.fn(),
         finalizeIdempotencyKey: vi.fn(),
+        releaseIdempotencyKey: vi.fn(),
       },
     );
 
@@ -400,8 +405,9 @@ describe('OrdersService', () => {
     ).rejects.toBeInstanceOf(CustomerOrderIdempotencyKeyConflictError);
   });
 
-  it('returns and persists actionable ERP error when ERP pricing snapshot fails', async () => {
+  it('releases the idempotency reservation when the ERP pricing snapshot fails', async () => {
     const finalizeIdempotencyKey = vi.fn();
+    const releaseIdempotencyKey = vi.fn();
     const service = new OrdersService(
       {
         handoffOrder: vi.fn(),
@@ -433,6 +439,7 @@ describe('OrdersService', () => {
         }),
         persistOrderSubmission: vi.fn(),
         finalizeIdempotencyKey,
+        releaseIdempotencyKey,
       },
     );
 
@@ -461,6 +468,7 @@ describe('OrdersService', () => {
         message: CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE,
       },
     });
-    expect(finalizeIdempotencyKey).toHaveBeenCalledTimes(1);
+    expect(releaseIdempotencyKey).toHaveBeenCalledTimes(1);
+    expect(finalizeIdempotencyKey).not.toHaveBeenCalled();
   });
 });

@@ -101,6 +101,16 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
     `;
   }
 
+  async releaseIdempotencyKey(idempotencyId: string): Promise<void> {
+    // Drop an un-finalized reservation so the key becomes reusable for a fresh attempt. Only called
+    // before a terminal result is stored (transient ERP outage, or a post-handoff persistence
+    // failure) — never after a 201/409 has been finalized.
+    await this.prisma.$executeRaw`
+      DELETE FROM "idempotency_keys"
+      WHERE "id" = ${idempotencyId}::UUID
+    `;
+  }
+
   async persistOrderSubmission(input: PersistOrderSubmissionInput): Promise<void> {
     const submittedAt = new Date(input.submittedAt);
     const orderStatus = toOrderStatus(input.status);

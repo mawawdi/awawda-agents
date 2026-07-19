@@ -98,7 +98,9 @@ describe('ERP module', () => {
     expect(response.externalRef).toMatch(/^bmax-queue:4dadf2f2-a619-4eb0-9db7-8817ed7fd98d:\d+$/);
   });
 
-  it('falls back to B-MAX when Hashavshevet wraps a transient timeout failure', async () => {
+  it('does NOT fall back to B-MAX when Hashavshevet handoff times out (order may have committed)', async () => {
+    // A timeout can fire after Hashavshevet already committed the order, so falling back to B-MAX
+    // would create a duplicate. The error must propagate instead.
     const hashavshevet = new HashavshevetAdapter();
     const bmax = new BMaxXmlAdapter();
     const hashavshevetSpy = vi.spyOn(hashavshevet, 'handoffOrder').mockRejectedValue(
@@ -108,12 +110,7 @@ describe('ERP module', () => {
         new ErpGatewayError(ERP_ERROR_CODES.ERP_TIMEOUT, 'timeout'),
       ),
     );
-    const bmaxSpy = vi.spyOn(bmax, 'handoffOrder').mockResolvedValue({
-      status: 'pending_retry',
-      provider: 'bmax_xml',
-      externalRef: 'bmax-queue:test-order:42',
-      acceptedAt: '2026-05-01T10:00:00.000Z',
-    });
+    const bmaxSpy = vi.spyOn(bmax, 'handoffOrder');
     const gateway = new CompositeErpGateway(hashavshevet, bmax);
 
     await expect(
@@ -122,15 +119,12 @@ describe('ERP module', () => {
         customerId: 'customer-18',
         lines: [{ itemId: 'item-1', quantity: 1, unit: 'kg', clientUnitPrice: 10 }],
       }),
-    ).resolves.toEqual({
-      status: 'pending_retry',
-      provider: 'bmax_xml',
-      externalRef: 'bmax-queue:test-order:42',
-      acceptedAt: '2026-05-01T10:00:00.000Z',
-    });
+    ).rejects.toMatchObject({
+      code: ERP_ERROR_CODES.ERP_ORDER_HANDOFF_FAILED,
+    } satisfies Partial<ErpGatewayError>);
 
     expect(hashavshevetSpy).toHaveBeenCalledTimes(1);
-    expect(bmaxSpy).toHaveBeenCalledTimes(1);
+    expect(bmaxSpy).not.toHaveBeenCalled();
   });
 
   it('does not fallback to B-MAX when Hashavshevet returns non-fallback ERP errors', async () => {

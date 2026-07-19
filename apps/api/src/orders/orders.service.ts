@@ -69,16 +69,14 @@ export class OrdersService {
       ]);
     } catch (error) {
       if (isErpGatewayError(error)) {
-        const replay: OrderSubmitReplay = {
+        // Transient ERP failure: release the reservation instead of finalizing a 503 into it, so a
+        // same-key retry can proceed once the ERP recovers. Finalizing would replay the 503 forever
+        // and permanently burn the idempotency key.
+        await this.ordersRepository.releaseIdempotencyKey(reservation.idempotencyId);
+        return {
           statusCode: 503,
           body: createCustomerOrderErpUnavailableBody(),
         };
-        await this.ordersRepository.finalizeIdempotencyKey(
-          reservation.idempotencyId,
-          replay,
-          createResponseHash(replay),
-        );
-        return replay;
       }
       throw error;
     }
@@ -152,16 +150,14 @@ export class OrdersService {
       });
     } catch (error) {
       if (isErpGatewayError(error)) {
-        const replay: OrderSubmitReplay = {
+        // Transient ERP failure: release the reservation instead of finalizing a 503 into it, so a
+        // same-key retry can proceed once the ERP recovers. Finalizing would replay the 503 forever
+        // and permanently burn the idempotency key.
+        await this.ordersRepository.releaseIdempotencyKey(reservation.idempotencyId);
+        return {
           statusCode: 503,
           body: createCustomerOrderErpUnavailableBody(),
         };
-        await this.ordersRepository.finalizeIdempotencyKey(
-          reservation.idempotencyId,
-          replay,
-          createResponseHash(replay),
-        );
-        return replay;
       }
       throw error;
     }
@@ -185,26 +181,34 @@ export class OrdersService {
       } satisfies CustomerOrderSubmitResponse,
     };
 
-    await this.ordersRepository.persistOrderSubmission({
-      orderId,
-      customerId: context.customerId,
-      customerSessionId: context.customerSessionId,
-      orderRef: erpResponse.externalRef,
-      status: erpResponse.status,
-      submittedAt: erpResponse.acceptedAt,
-      submittedByAgentId: agentInfo?.agentId ?? null,
-      hashSubmittedByAgentId: agentInfo?.hashAgentId ?? null,
-      lines: linesWithSnapshots,
-      estimatedTotal: linesWithSnapshots.reduce((sum, line) => sum + line.lineTotalSnapshot, 0),
-      requestedDeliveryDate: normalizedRequest.requestedDeliveryDate ?? null,
-      consumeSession: erpResponse.status === 'submitted',
-    });
+    try {
+      await this.ordersRepository.persistOrderSubmission({
+        orderId,
+        customerId: context.customerId,
+        customerSessionId: context.customerSessionId,
+        orderRef: erpResponse.externalRef,
+        status: erpResponse.status,
+        submittedAt: erpResponse.acceptedAt,
+        submittedByAgentId: agentInfo?.agentId ?? null,
+        hashSubmittedByAgentId: agentInfo?.hashAgentId ?? null,
+        lines: linesWithSnapshots,
+        estimatedTotal: linesWithSnapshots.reduce((sum, line) => sum + line.lineTotalSnapshot, 0),
+        requestedDeliveryDate: normalizedRequest.requestedDeliveryDate ?? null,
+        consumeSession: erpResponse.status === 'submitted',
+      });
 
-    await this.ordersRepository.finalizeIdempotencyKey(
-      reservation.idempotencyId,
-      replay,
-      createResponseHash(replay),
-    );
+      await this.ordersRepository.finalizeIdempotencyKey(
+        reservation.idempotencyId,
+        replay,
+        createResponseHash(replay),
+      );
+    } catch (error) {
+      // The ERP handoff already succeeded but local persistence/finalization failed. Release the
+      // reservation so the key is not left un-finalized — otherwise every same-key retry would
+      // return a permanent conflict while the ERP order sits orphaned.
+      await this.ordersRepository.releaseIdempotencyKey(reservation.idempotencyId);
+      throw error;
+    }
 
     return replay;
   }

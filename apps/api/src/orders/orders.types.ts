@@ -59,5 +59,6 @@ export interface OrdersRepository {
     replay: OrderSubmitReplay,
     responseHash: string,
   ): Promise<void>;
+  releaseIdempotencyKey(idempotencyId: string): Promise<void>;
   persistOrderSubmission(input: PersistOrderSubmissionInput): Promise<void>;
 }

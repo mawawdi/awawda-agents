@@ -102,9 +102,11 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
+// ERP_TIMEOUT is intentionally excluded: a timeout can fire AFTER Hashavshevet already received
+// and committed the order, so retrying it would create duplicate documents. Only ERP_UNAVAILABLE
+// (transport/connection-level — the request most likely never landed) is safe to retry.
 const RETRYABLE_HANDOFF_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([
   ERP_ERROR_CODES.ERP_UNAVAILABLE,
-  ERP_ERROR_CODES.ERP_TIMEOUT,
 ]);
 const DEFAULT_HEALTH_PATH = '/health';
 const DEFAULT_ASSIGNED_CUSTOMERS_PATH = '/agents/{agentId}/customers';
@@ -720,8 +722,7 @@ export class HashavshevetAdapter {
       );
     }
 
-    const referenceDigits = request.orderId.replaceAll(/\D+/g, '').slice(0, 9);
-    const reference = referenceDigits.length > 0 ? referenceDigits : request.orderId.replaceAll('-', '').slice(0, 9);
+    const reference = derive9DigitErpReference(request.orderId);
     const accountKey = this.config.hconnect.handoffAccountKey ?? request.customerId;
 
     const pluginData = request.lines.map((line) => ({
@@ -736,7 +737,7 @@ export class HashavshevetAdapter {
     }));
 
     const payload = await this.invokeCapabilityPlugin('movein', pluginData, plugin);
-    const responseRecord = extractPrimaryRecord(payload);
+    const responseRecord = extractPrimaryRecord(normalizeHConnectReportResponse(payload));
 
     const externalRef =
       (responseRecord
@@ -772,9 +773,7 @@ export class HashavshevetAdapter {
     }
 
     const referenceBase = request.orderRef ?? request.orderId;
-    const referenceDigits = referenceBase.replaceAll(/\D+/g, '').slice(0, 9);
-    const reference =
-      referenceDigits.length > 0 ? referenceDigits : referenceBase.replaceAll('-', '').slice(0, 9);
+    const reference = derive9DigitErpReference(referenceBase);
     const accountKey = this.config.hconnect.handoffAccountKey ?? request.customerId;
 
     const pluginData = [
@@ -790,7 +789,7 @@ export class HashavshevetAdapter {
     ];
 
     const payload = await this.invokeCapabilityPlugin('movein', pluginData, plugin);
-    const responseRecord = extractPrimaryRecord(payload);
+    const responseRecord = extractPrimaryRecord(normalizeHConnectReportResponse(payload));
     const now = new Date().toISOString();
 
     return {
@@ -1111,6 +1110,20 @@ function isNonRetryableHandoffError(error: unknown): boolean {
   return error instanceof ErpGatewayError && !RETRYABLE_HANDOFF_ERROR_CODES.has(error.code);
 }
 
+function derive9DigitErpReference(base: string): string {
+  const digitsOnly = base.replaceAll(/\D+/g, '');
+  if (digitsOnly.length > 0 && digitsOnly.length <= 9) {
+    // Short, already-numeric ids are unique among themselves — pass them through unchanged.
+    return digitsOnly;
+  }
+
+  // Otherwise hash the full identifier so the 9-digit reference is spread uniformly over the id's
+  // entropy rather than a biased leading slice: a random UUID's first 9 digits, or a long
+  // sequential id truncated to its first 9 digits, both collide far too easily.
+  const hashed = createHash('sha256').update(base).digest().readUInt32BE(0) % 1_000_000_000;
+  return hashed.toString().padStart(9, '0');
+}
+
 function loadHashavshevetConfig(env: NodeJS.ProcessEnv = process.env): HashavshevetConfig {
   const environment = resolveHashEnvironment(env.HASH_ENV);
   const baseUrl = resolveBaseUrl(environment, env);
@@ -1359,7 +1372,10 @@ function detectHConnectError(payload: unknown): ErpGatewayError | null {
     return new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, message);
   }
 
-  return new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, message);
+  // Unknown H-Connect business errors are permanent rejections, not transient outages. Classifying
+  // them as ERP_VALIDATION_FAILED keeps them non-retryable and non-fallback, so a definitively
+  // rejected order is never re-submitted or silently queued into B-MAX and reported as accepted.
+  return new ErpGatewayError(ERP_ERROR_CODES.ERP_VALIDATION_FAILED, message);
 }
 
 function detectHConnectErrorMessage(payload: unknown): string | null {

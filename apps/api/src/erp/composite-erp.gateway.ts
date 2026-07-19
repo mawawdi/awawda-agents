@@ -26,9 +26,11 @@ import type {
 import { BMaxXmlAdapter } from './bmax-xml.adapter';
 import { HashavshevetAdapter } from './hashavshevet.adapter';
 
+// ERP_TIMEOUT is intentionally excluded: a Hashavshevet timeout may mean the order was already
+// committed on that side, so falling back to B-MAX would create a duplicate order. Only clear
+// pre-commit signals (transport unavailable, primary not implemented) are eligible for fallback.
 const FALLBACK_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([
   ERP_ERROR_CODES.ERP_UNAVAILABLE,
-  ERP_ERROR_CODES.ERP_TIMEOUT,
   ERP_ERROR_CODES.ERP_NOT_IMPLEMENTED,
 ]);
 const NON_FALLBACK_ERROR_CODES: ReadonlySet<ErpErrorCode> = new Set([

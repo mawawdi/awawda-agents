@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsIn,
@@ -8,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
   Min,
   MinLength,
@@ -24,6 +26,7 @@ class CustomerOrderSubmitLineDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 3 })
   @Min(0.001)
+  @Max(100_000)
   quantity!: number;
 
   @ApiProperty({ enum: ['kg'] })
@@ -34,6 +37,7 @@ class CustomerOrderSubmitLineDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(10_000)
   clientUnitPrice!: number;
 }
 
@@ -41,6 +45,7 @@ export class CustomerOrderSubmitDto {
   @ApiProperty({ type: [CustomerOrderSubmitLineDto] })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => CustomerOrderSubmitLineDto)
   lines!: CustomerOrderSubmitLineDto[];
