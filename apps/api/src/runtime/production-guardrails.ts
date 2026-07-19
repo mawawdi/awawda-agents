@@ -37,12 +37,14 @@ export function assertProductionRuntimeGuardrails(env: NodeJS.ProcessEnv = proce
 
   const hasRestBaseUrl = hasNonEmptyValue(env.HASH_API_URL) || hasNonEmptyValue(env.HASH_PROD_API_URL);
   const hasRestApiKey = hasNonEmptyValue(env.HASH_API_KEY) || hasNonEmptyValue(env.HASH_PROD_API_KEY);
-  const hconnectEnabled = resolveOptionalBoolean(env.HASH_HCONNECT_ENABLED) ?? false;
   const hasHconnectCredentials =
     hasNonEmptyValue(env.HASH_HCONNECT_STATION) &&
     hasNonEmptyValue(env.HASH_HCONNECT_COMPANY) &&
     hasNonEmptyValue(env.HASH_HCONNECT_NET_PASSPORT_ID) &&
     hasNonEmptyValue(env.HASH_HCONNECT_SIGNATURE_TOKEN);
+  // Mirror the adapter: when HASH_HCONNECT_ENABLED is unset, full H-Connect credentials imply
+  // enabled — so a valid H-Connect-only production deployment boots instead of being rejected.
+  const hconnectEnabled = resolveOptionalBoolean(env.HASH_HCONNECT_ENABLED) ?? hasHconnectCredentials;
 
   if (hconnectEnabled && !hasHconnectCredentials) {
     throw new Error(
@@ -56,9 +58,12 @@ export function assertProductionRuntimeGuardrails(env: NodeJS.ProcessEnv = proce
     );
   }
 
-  if (hasRestBaseUrl && !hasRestApiKey && !(hconnectEnabled && hasHconnectCredentials)) {
+  // A configured REST base URL in production MUST be authenticated — unconditionally, even when
+  // H-Connect is enabled. Otherwise a report with no H-Connect mapping falls back to an
+  // unauthenticated REST call against the production ERP.
+  if (hasRestBaseUrl && !hasRestApiKey) {
     throw new Error(
-      'Production runtime forbids unauthenticated Hashavshevet REST calls. Set HASH_API_KEY/HASH_PROD_API_KEY or enable HASH_HCONNECT with full credentials.',
+      'Production runtime forbids unauthenticated Hashavshevet REST calls. Set HASH_API_KEY/HASH_PROD_API_KEY, or remove HASH_API_URL/HASH_PROD_API_URL and use H-Connect only.',
     );
   }
 }

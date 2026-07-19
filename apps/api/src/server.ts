@@ -6,7 +6,7 @@ import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fa
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 
 import { AppModule } from "./app.module"
-import { assertProductionRuntimeGuardrails } from "./runtime/production-guardrails"
+import { assertProductionRuntimeGuardrails, isNodeProductionRuntime } from "./runtime/production-guardrails"
 
 const DEFAULT_API_BODY_LIMIT_BYTES = 1024 * 1024
 
@@ -32,9 +32,24 @@ const CORS_ALLOWED_HEADERS = [
 ]
 
 function resolveCorsAllowedOrigins(): Set<string> {
-	const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(",")
+	const rawValue = process.env.CORS_ALLOWED_ORIGINS
+	const configuredOrigins = rawValue
+		?.split(",")
 		.map((origin) => origin.trim())
 		.filter((origin) => origin.length > 0)
+
+	// In production, CORS must be configured explicitly. Never fall back to the localhost dev
+	// defaults (they would answer credentialed requests from local origins), and treat an
+	// explicitly-set-but-empty value as deny-all rather than reverting to those defaults.
+	if (isNodeProductionRuntime()) {
+		if (rawValue === undefined) {
+			throw new Error(
+				"Production runtime requires CORS_ALLOWED_ORIGINS to be set explicitly (a comma-separated origin allowlist).",
+			)
+		}
+
+		return new Set(configuredOrigins ?? [])
+	}
 
 	if (configuredOrigins && configuredOrigins.length > 0) {
 		return new Set(configuredOrigins)

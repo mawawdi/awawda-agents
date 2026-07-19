@@ -57,8 +57,7 @@ export class AgentAuthGuard implements CanActivate {
       throw new AgentAccessRevokedError();
     }
 
-    const issuedAtMs = resolveIssuedAtMilliseconds(payload);
-    if (!issuedAtMs || agent.updatedAt.getTime() > issuedAtMs) {
+    if (isShiftTokenRevoked(payload.iat, agent.updatedAt)) {
       throw new AgentAccessRevokedError();
     }
 
@@ -104,9 +103,14 @@ function isAgentShiftPayload(payload: unknown): payload is {
   );
 }
 
-function resolveIssuedAtMilliseconds(payload: { iat?: number }): number | null {
-  if (typeof payload.iat !== 'number' || !Number.isFinite(payload.iat) || payload.iat <= 0) {
-    return null;
+function isShiftTokenRevoked(iatSeconds: number | undefined, updatedAt: Date): boolean {
+  // Missing/invalid issue time fails closed (treated as revoked).
+  if (typeof iatSeconds !== 'number' || !Number.isFinite(iatSeconds) || iatSeconds <= 0) {
+    return true;
   }
-  return payload.iat * 1000;
+
+  // The JWT `iat` claim is floored to whole seconds, so compare at second granularity. Comparing a
+  // millisecond `updatedAt` against `iat * 1000` falsely revokes a token re-issued later in the
+  // same second as a force-logout; only a strictly-earlier issue second counts as revoked.
+  return Math.floor(updatedAt.getTime() / 1000) > iatSeconds;
 }

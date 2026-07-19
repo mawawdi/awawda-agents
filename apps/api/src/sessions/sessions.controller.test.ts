@@ -36,4 +36,17 @@ describe('resolveClientIp', () => {
       }),
     ).toBe('203.0.113.18');
   });
+
+  it('ignores a spoofed leftmost X-Forwarded-For entry and uses the rightmost untrusted client', () => {
+    // The client prepends a fake IP; the proxy appends the real client on the right. The leftmost
+    // value must not win, or the per-IP activation rate limiter is trivially bypassed.
+    expect(
+      resolveClientIp({
+        ip: '10.0.0.5',
+        headers: {
+          'x-forwarded-for': '1.2.3.4, 203.0.113.7, 10.0.0.12',
+        },
+      }),
+    ).toBe('203.0.113.7');
+  });
 });

@@ -59,6 +59,34 @@ describe('production runtime guardrails', () => {
     ).not.toThrow();
   });
 
+  it('accepts H-Connect-only production config when HASH_HCONNECT_ENABLED is unset but credentials are complete', () => {
+    expect(() =>
+      assertProductionRuntimeGuardrails({
+        NODE_ENV: 'production',
+        HASH_ENV: 'production',
+        HASH_HCONNECT_STATION: 'station',
+        HASH_HCONNECT_COMPANY: 'company',
+        HASH_HCONNECT_NET_PASSPORT_ID: '12345',
+        HASH_HCONNECT_SIGNATURE_TOKEN: 'signature',
+      } as NodeJS.ProcessEnv),
+    ).not.toThrow();
+  });
+
+  it('forbids an unauthenticated REST base URL in production even when H-Connect is enabled', () => {
+    expect(() =>
+      assertProductionRuntimeGuardrails({
+        NODE_ENV: 'production',
+        HASH_ENV: 'production',
+        HASH_API_URL: 'https://hash.prod.example/api',
+        HASH_HCONNECT_ENABLED: 'true',
+        HASH_HCONNECT_STATION: 'station',
+        HASH_HCONNECT_COMPANY: 'company',
+        HASH_HCONNECT_NET_PASSPORT_ID: '12345',
+        HASH_HCONNECT_SIGNATURE_TOKEN: 'signature',
+      } as NodeJS.ProcessEnv),
+    ).toThrow('forbids unauthenticated Hashavshevet REST calls');
+  });
+
   it('rejects unsupported HASH_ENV values', () => {
     expect(() => resolveHashEnvironment('staging')).toThrow('HASH_ENV must be either "testing" or "production".');
   });

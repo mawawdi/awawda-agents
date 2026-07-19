@@ -64,13 +64,28 @@ export function resolveClientIp(request: {
 }
 
 function readForwardedIp(headers: Record<string, string | string[] | undefined>): string | null {
-  const forwardedForValue = readHeaderIp(headers['x-forwarded-for']);
-  if (!forwardedForValue) {
+  const rawValue = headers['x-forwarded-for'];
+  const headerValue = Array.isArray(rawValue) ? rawValue.join(',') : rawValue;
+  const normalized = normalizeIpValue(headerValue);
+  if (!normalized) {
     return null;
   }
 
-  const [firstIp] = forwardedForValue.split(',');
-  return normalizeIpValue(firstIp);
+  // A client can prepend arbitrary values to X-Forwarded-For, so the leftmost entry is
+  // attacker-controlled. Walk right-to-left (each proxy appends the address it observed) and return
+  // the first address that is not itself a trusted proxy — i.e. the closest real client.
+  const candidates = normalized
+    .split(',')
+    .map((entry) => normalizeIpValue(entry))
+    .filter((entry): entry is string => entry !== null);
+
+  for (let index = candidates.length - 1; index >= 0; index -= 1) {
+    if (!isTrustedProxyIp(candidates[index])) {
+      return candidates[index];
+    }
+  }
+
+  return null;
 }
 
 function readHeaderIp(value: string | string[] | undefined): string | null {

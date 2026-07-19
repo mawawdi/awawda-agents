@@ -1151,9 +1151,9 @@ function loadHashavshevetConfig(env: NodeJS.ProcessEnv = process.env): Hashavshe
       );
     }
 
-    if (restEnabled && apiKey === null && !(hconnect.enabled && hasHconnectCredentials)) {
+    if (restEnabled && apiKey === null) {
       throw new Error(
-        'HASH_ENV=production forbids unauthenticated Hashavshevet REST calls. Set HASH_API_KEY/HASH_PROD_API_KEY or enable HASH_HCONNECT with full credentials.',
+        'HASH_ENV=production forbids unauthenticated Hashavshevet REST calls. Set HASH_API_KEY/HASH_PROD_API_KEY, or remove HASH_API_URL/HASH_PROD_API_URL and use H-Connect only.',
       );
     }
   }
