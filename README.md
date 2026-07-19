@@ -18,6 +18,7 @@
 - 🤖 **[How this was built →](#-how-this-was-built-an-autonomous-agent-squad)** — the multi‑agent engineering system (the part worth your time)
 - 🧠 **[My role →](#-my-role)** — what I designed vs. what the agents produced
 - 🏗️ **[Architecture →](docs/Architecture.md)** · 📋 **[Product spec →](docs/PRD.md)**
+- 🔍 **[Audit →](docs/AUDIT.md)** — a multi‑agent security & correctness review of this codebase (18 findings, all resolved)
 
 ---
 
@@ -198,6 +199,7 @@ Per‑app scripts and the full operational route list live in each app's README 
 | [`docs/testing-critical-paths.md`](docs/testing-critical-paths.md)                                                           | Critical‑path test coverage                     |
 | [`docs/ci-cd-release-gates.md`](docs/ci-cd-release-gates.md)                                                                 | CI/CD release gates                             |
 | [`docs/mobile-store-release-readiness.md`](docs/mobile-store-release-readiness.md)                                           | iOS + Android store readiness checklist         |
+| [`docs/AUDIT.md`](docs/AUDIT.md)                                                                                             | Multi‑agent security & correctness audit (18 findings, all resolved) |
 
 ---
 
