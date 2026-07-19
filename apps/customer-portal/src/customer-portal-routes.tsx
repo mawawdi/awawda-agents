@@ -8,6 +8,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Input } from './components/ui/input';
 import {
+  applyAcceptedUnitPrices,
   clearOrderSubmitting,
   createOrderErrorState,
   createOrderLoadingState,
@@ -523,6 +524,18 @@ function OrderRoute({
 
     if (forceNewIdempotencyKey || !submitIdempotencyKeyRef.current) {
       submitIdempotencyKeyRef.current = crypto.randomUUID();
+    }
+
+    // Persist accepted mismatch prices into order state so the summary/confirmation totals — and any
+    // later retry — reflect the prices actually being submitted, not the stale pre-mismatch ones.
+    const acceptedUnitPrices = new Map<string, number>();
+    for (const [itemId, price] of mismatchOverrides) {
+      if (typeof price === 'number') {
+        acceptedUnitPrices.set(itemId, price);
+      }
+    }
+    if (acceptedUnitPrices.size > 0) {
+      setState((current) => applyAcceptedUnitPrices(current, acceptedUnitPrices));
     }
 
     setSubmitState(markSubmitting());

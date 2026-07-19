@@ -20,6 +20,17 @@ export function unregisterRefreshCallback(): void {
 }
 
 /**
+ * Invalidate the current authenticated session (on sign-out) WITHOUT dropping the callback.
+ * The AuthProvider stays mounted across logout/login, so the singleton must keep a live callback
+ * for the next session; bumping the generation discards any in-flight refresh so it cannot
+ * resurrect the session that was just signed out.
+ */
+export function invalidateRefreshSession(): void {
+  _sessionGeneration++
+  _refreshPromise = null
+}
+
+/**
  * Execute a token refresh. Concurrent callers share one in-flight promise (mutex).
  * Returns the new access token, or null if refresh failed (=> force sign-out).
  */

@@ -12,7 +12,7 @@ import {
   readSessionProfile,
   readSessionToken,
 } from '../session/session-storage'
-import { registerRefreshCallback, unregisterRefreshCallback } from './token-refresher'
+import { invalidateRefreshSession, registerRefreshCallback, unregisterRefreshCallback } from './token-refresher'
 
 const PROACTIVE_REFRESH_BUFFER_SECONDS = 5 * 60 // refresh if access token expires within 5 minutes
 
@@ -141,7 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   }, [])
 
   const signOut = useCallback(async (): Promise<void> => {
-    unregisterRefreshCallback()
+    // Invalidate the in-flight refresh but keep the callback registered: the provider does not
+    // unmount on logout, so nulling the callback here would leave the next login unable to refresh.
+    invalidateRefreshSession()
     const storedRefreshToken = await readRefreshToken().catch(() => null)
     await clearSessionToken()
     tokenRef.current = null

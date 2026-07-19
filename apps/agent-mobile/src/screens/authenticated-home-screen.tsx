@@ -390,6 +390,8 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
     }
   }, [beginSlowNetworkTimer, signOut, token])
 
+  const latestApprovedItemsCustomerIdRef = useRef<string | null>(null)
+
   const loadApprovedItemsForCustomer = useCallback(
     async (customerId: string) => {
       if (!token) {
@@ -398,20 +400,31 @@ export function AuthenticatedHomeScreen(): React.JSX.Element {
         return
       }
 
+      latestApprovedItemsCustomerIdRef.current = customerId
       setIsApprovedItemsLoading(true)
       setApprovedItemsError(null)
       const clearSlowState = beginSlowNetworkTimer(setIsApprovedItemsSlow)
 
       try {
         const response = await listApprovedItems(token, customerId)
+        // Drop a response that resolved after the agent selected a different customer, otherwise the
+        // UI would show customer B selected while listing customer A's approved cuts.
+        if (latestApprovedItemsCustomerIdRef.current !== customerId) {
+          return
+        }
         setApprovedItems(response.items)
         setItemImageCandidateIndexByItemId({})
       } catch (error) {
+        if (latestApprovedItemsCustomerIdRef.current !== customerId) {
+          return
+        }
         setApprovedItems([])
         setApprovedItemsError(error instanceof Error ? error.message : 'לא הצלחנו לטעון פריטים מאושרים.')
       } finally {
         clearSlowState()
-        setIsApprovedItemsLoading(false)
+        if (latestApprovedItemsCustomerIdRef.current === customerId) {
+          setIsApprovedItemsLoading(false)
+        }
       }
     },
     [beginSlowNetworkTimer, token],

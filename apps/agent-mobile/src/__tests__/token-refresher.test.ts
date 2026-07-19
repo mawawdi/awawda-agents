@@ -125,5 +125,39 @@ describe('token-refresher', () => {
       expect(result).toBe('second-session-token')
       expect(newCb).toHaveBeenCalledTimes(1)
     })
+
+    it('keeps the callback registered after invalidateRefreshSession so the next login can refresh', async () => {
+      const { registerRefreshCallback, invalidateRefreshSession, executeRefresh } =
+        await freshRefresher()
+
+      const cb = vi.fn().mockResolvedValue('next-session-token')
+      registerRefreshCallback(cb)
+
+      // Sign-out invalidates the session but must NOT drop the callback: the AuthProvider stays
+      // mounted across logout/login and never re-registers, so the singleton must keep it live.
+      invalidateRefreshSession()
+
+      await expect(executeRefresh()).resolves.toBe('next-session-token')
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('discards an in-flight refresh when invalidateRefreshSession runs before it resolves', async () => {
+      const { registerRefreshCallback, invalidateRefreshSession, executeRefresh } =
+        await freshRefresher()
+
+      let resolveCallback!: (v: string) => void
+      registerRefreshCallback(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveCallback = resolve
+          }),
+      )
+
+      const refreshPromise = executeRefresh()
+      invalidateRefreshSession()
+      resolveCallback('stale-token')
+
+      await expect(refreshPromise).resolves.toBeNull()
+    })
   })
 })

@@ -310,6 +310,33 @@ export function clearOrderSubmitting(state: OrderPageState): OrderPageState {
 	return rebuildReadyState(state, getQuantityMap(state), false)
 }
 
+export function applyAcceptedUnitPrices(
+	state: OrderPageState,
+	acceptedUnitPriceByItemId: Map<string, number>,
+): OrderPageState {
+	if (state.status !== "ready" || acceptedUnitPriceByItemId.size === 0) {
+		return state
+	}
+
+	const overrideItems = (items: OrderSectionItem[]): OrderSectionItem[] =>
+		items.map((item) => {
+			const acceptedUnitPrice = acceptedUnitPriceByItemId.get(item.itemId)
+			return acceptedUnitPrice === undefined ? item : { ...item, unitPrice: acceptedUnitPrice }
+		})
+
+	const nextState: Extract<OrderPageState, { status: "ready" }> = {
+		...state,
+		sections: {
+			recent: { ...state.sections.recent, items: overrideItems(state.sections.recent.items) },
+			approved: { ...state.sections.approved, items: overrideItems(state.sections.approved.items) },
+		},
+	}
+
+	// Rebuild so cart line estimates and the estimated total reflect the accepted prices, not the
+	// stale pre-mismatch prices the customer never confirmed.
+	return rebuildReadyState(nextState, getQuantityMap(nextState), nextState.isSubmitting)
+}
+
 function rebuildReadyState(
 	state: Extract<OrderPageState, { status: "ready" }>,
 	quantities: Record<string, number>,

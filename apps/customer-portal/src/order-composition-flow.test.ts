@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyAcceptedUnitPrices,
   clearOrderSubmitting,
   createOrderErrorState,
   createOrderLoadingState,
@@ -254,6 +255,33 @@ describe('order composition interactions and UX states', () => {
       status: 'ready',
       cart: {
         lines: [{ itemId: 'itm-beef-001', unit: 'kg' }],
+      },
+    });
+  });
+
+  it('applyAcceptedUnitPrices rewrites accepted prices and recomputes cart totals', () => {
+    const ready = setOrderLineQuantity(
+      createOrderReadyState({
+        recentItems: [{ itemId: 'item-1', name: 'Ribeye Steak', lastOrderedAt: '2026-04-07T10:00:00.000Z' }],
+        approvedItems: [{ hashItemId: 'item-1', createdAt: '2026-04-06T09:00:00.000Z' }],
+        pricing: [{ itemId: 'item-1', unitPrice: 42.5, currency: 'ILS' }],
+      }),
+      'item-1',
+      2,
+    );
+
+    expect(ready).toMatchObject({ status: 'ready', cart: { estimatedTotal: 85 } });
+
+    const accepted = applyAcceptedUnitPrices(ready, new Map([['item-1', 50]]));
+
+    expect(accepted).toMatchObject({
+      status: 'ready',
+      sections: {
+        recent: { items: [{ itemId: 'item-1', unitPrice: 50 }] },
+      },
+      cart: {
+        lines: [{ itemId: 'item-1', lineEstimate: 100 }],
+        estimatedTotal: 100,
       },
     });
   });
