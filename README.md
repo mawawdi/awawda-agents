@@ -205,4 +205,4 @@ Per‑app scripts and the full operational route list live in each app's README 
 
 Phase 1 (MVP → hardening): agent app, customer portal, magic‑link ordering, supervisor control plane, and synchronous ERP submission are implemented and tested. Mobile EAS build/submit profiles exist; final store assets and credentials are the remaining gate to store submission.
 
-Private monorepo (`pnpm` workspaces). Built and orchestrated by [@devCana](https://github.com/devCana).
+Private monorepo (`pnpm` workspaces). Built and orchestrated by [@mawawdi](https://github.com/mawawdi).
