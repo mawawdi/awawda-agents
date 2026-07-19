@@ -184,29 +184,30 @@ export class PrismaAgentCustomersRepository implements AgentCustomersRepository 
     hashItemId: string,
     agentId: string,
   ): Promise<{ removed: boolean }> {
-    const existing = await this.prisma.approvedItem.findUnique({
-      where: {
-        hashCustomerId_hashItemId: {
-          hashCustomerId: customerId,
-          hashItemId,
-        },
-      },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return { removed: false };
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.approvedItem.delete({
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.approvedItem.findUnique({
         where: {
           hashCustomerId_hashItemId: {
             hashCustomerId: customerId,
             hashItemId,
           },
         },
+        select: { id: true },
       });
+
+      // Atomic conditional delete: deleteMany does not throw when the row is already gone (e.g. a
+      // double-click firing two concurrent removals), so the loser returns an idempotent
+      // { removed: false } instead of an unhandled Prisma P2025 -> HTTP 500.
+      const deleted = await tx.approvedItem.deleteMany({
+        where: {
+          hashCustomerId: customerId,
+          hashItemId,
+        },
+      });
+
+      if (deleted.count === 0) {
+        return { removed: false };
+      }
 
       await tx.auditLog.create({
         data: {
@@ -214,14 +215,14 @@ export class PrismaAgentCustomersRepository implements AgentCustomersRepository 
           actorId: agentId,
           eventType: 'approved_item.removed',
           eventPayloadJson: {
-            approvedItemId: existing.id,
+            approvedItemId: existing?.id ?? null,
             customerId,
             hashItemId,
           },
         },
       });
-    });
 
-    return { removed: true };
+      return { removed: true };
+    });
   }
 }
