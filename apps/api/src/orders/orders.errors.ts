@@ -24,6 +24,31 @@ export class CustomerOrderIdempotencyKeyConflictError extends HttpException {
   }
 }
 
+export class CustomerOrderSessionAlreadySubmittedError extends HttpException {
+  constructor() {
+    super(
+      {
+        code: 'CUSTOMER_ORDER_SESSION_ALREADY_SUBMITTED',
+        message: 'An order has already been submitted for this session',
+      },
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+/**
+ * Internal signal (not HTTP) raised by the repository when a concurrent submit already placed the
+ * order for a single-use session — either the session-claim gate found the session already consumed,
+ * or the partial unique index rejected a duplicate order. The service translates it into a
+ * {@link CustomerOrderSessionAlreadySubmittedError}.
+ */
+export class OrderSessionConflictError extends Error {
+  constructor() {
+    super('An order already exists for this customer session');
+    this.name = 'OrderSessionConflictError';
+  }
+}
+
 export const CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE = 'CUSTOMER_ORDER_ERP_UNAVAILABLE' as const;
 export const CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE =
   'Order service is temporarily unavailable. Please retry in a moment.' as const;

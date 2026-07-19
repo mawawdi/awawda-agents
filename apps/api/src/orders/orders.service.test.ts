@@ -7,6 +7,8 @@ import {
   CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE,
   CUSTOMER_ORDER_ERP_UNAVAILABLE_MESSAGE,
   CustomerOrderIdempotencyKeyConflictError,
+  CustomerOrderSessionAlreadySubmittedError,
+  OrderSessionConflictError,
 } from './orders.errors';
 import { OrdersService } from './orders.service';
 import type { OrdersRepository } from './orders.types';
@@ -470,5 +472,71 @@ describe('OrdersService', () => {
     });
     expect(releaseIdempotencyKey).toHaveBeenCalledTimes(1);
     expect(finalizeIdempotencyKey).not.toHaveBeenCalled();
+  });
+
+  it('rolls back the ERP handoff and returns a conflict when the session was already consumed', async () => {
+    const cancelOrder = vi.fn().mockResolvedValue({
+      status: 'cancelled',
+      provider: 'hashavshevet',
+      externalRef: 'ORD-2026-00099',
+      canceledAt: '2026-04-10T11:05:00.000Z',
+    });
+    const releaseIdempotencyKey = vi.fn().mockResolvedValue(undefined);
+
+    const erpGateway: ErpGateway = {
+      handoffOrder: vi.fn().mockResolvedValue({
+        status: 'submitted',
+        provider: 'hashavshevet',
+        externalRef: 'ORD-2026-00099',
+        acceptedAt: '2026-04-10T11:00:00.000Z',
+      }),
+      cancelOrder,
+      getHealth: vi.fn(),
+      getAssignedCustomers: vi.fn(),
+      getMasterCatalog: vi.fn(),
+      getCustomerRecentItems: vi.fn().mockResolvedValue({
+        source: 'hashavshevet',
+        syncedAt: '2026-04-10T10:55:00.000Z',
+        items: [],
+      }),
+      getCustomerPricing: vi.fn().mockResolvedValue({
+        source: 'hashavshevet',
+        syncedAt: '2026-04-10T10:56:00.000Z',
+        version: 'v4',
+        lines: [{ itemId: 'item-1', unitPrice: 49.9, currency: 'ILS' }],
+      }),
+    };
+
+    const sessionsRepository: CustomerSessionsRepository = {
+      activateMagicToken: vi.fn(),
+      validateCustomerSession: vi.fn(),
+      deactivateCustomerSession: vi.fn(),
+      recordActivationAttempt: vi.fn(),
+      listApprovedItems: vi.fn().mockResolvedValue([
+        { hashItemId: 'item-1', addedByAgentId: 'agent-1', createdAt: '2026-04-01T09:00:00.000Z' },
+      ]),
+      listRecentOrdersFeed: vi.fn(),
+      resolveSessionAgent: vi.fn().mockResolvedValue(null),
+    };
+
+    const ordersRepository: OrdersRepository = {
+      reserveIdempotencyKey: vi.fn().mockResolvedValue({ kind: 'reserved', idempotencyId: 'idem-conflict' }),
+      persistOrderSubmission: vi.fn().mockRejectedValue(new OrderSessionConflictError()),
+      finalizeIdempotencyKey: vi.fn(),
+      releaseIdempotencyKey,
+    };
+
+    const service = new OrdersService(erpGateway, sessionsRepository, ordersRepository);
+
+    await expect(
+      service.submitOrder(
+        { customerId: 'cust-7', customerSessionId: 'sess-7', idempotencyKey: 'idem-conflict' },
+        { lines: [{ itemId: 'item-1', quantity: 1, unit: 'kg', clientUnitPrice: 49.9 }] },
+      ),
+    ).rejects.toBeInstanceOf(CustomerOrderSessionAlreadySubmittedError);
+
+    expect(releaseIdempotencyKey).toHaveBeenCalledTimes(1);
+    expect(cancelOrder).toHaveBeenCalledTimes(1);
+    expect(cancelOrder).toHaveBeenCalledWith(expect.objectContaining({ orderRef: 'ORD-2026-00099' }));
   });
 });

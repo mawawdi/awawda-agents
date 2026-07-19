@@ -358,6 +358,8 @@ describe('Customer order submit endpoint', () => {
       kind: 'reserved',
       idempotencyId: 'idem-row-4',
     });
+    const releaseSpy = vi.spyOn(ordersRepository, 'releaseIdempotencyKey').mockResolvedValue(undefined);
+    const finalizeSpy = vi.spyOn(ordersRepository, 'finalizeIdempotencyKey').mockResolvedValue(undefined);
 
     vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
       source: 'hashavshevet',
@@ -392,9 +394,12 @@ describe('Customer order submit endpoint', () => {
       code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
       message: 'Order service is temporarily unavailable. Please retry in a moment.',
     });
+    // The reservation must be released (not finalized), so the key stays reusable once ERP recovers.
+    expect(releaseSpy).toHaveBeenCalledTimes(1);
+    expect(finalizeSpy).not.toHaveBeenCalled();
   });
 
-  it('replays persisted 503 ERP outage response for duplicate idempotency retries', async () => {
+  it('releases the reservation on a transient 503 so a same-key retry re-attempts once ERP recovers', async () => {
     const sessionsRepository = app.get<CustomerSessionsRepository>(CUSTOMER_SESSIONS_REPOSITORY);
     const ordersRepository = app.get<OrdersRepository>(ORDERS_REPOSITORY);
     const erpGateway = app.get<ErpGateway>(ERP_GATEWAY);
@@ -405,23 +410,26 @@ describe('Customer order submit endpoint', () => {
       customerId: 'cust-25',
       sessionExpiresAt: new Date('2026-04-10T14:00:00.000Z'),
     });
-    vi.spyOn(sessionsRepository, 'listApprovedItems').mockResolvedValue([]);
+    vi.spyOn(sessionsRepository, 'listApprovedItems').mockResolvedValue([
+      {
+        hashItemId: 'item-1',
+        addedByAgentId: 'agent-1',
+        createdAt: '2026-04-09T09:00:00.000Z',
+      },
+    ]);
+    vi.spyOn(sessionsRepository, 'resolveSessionAgent').mockResolvedValue({
+      agentId: 'agent-1',
+      hashAgentId: null,
+    });
 
-    vi.spyOn(ordersRepository, 'reserveIdempotencyKey')
-      .mockResolvedValueOnce({
-        kind: 'reserved',
-        idempotencyId: 'idem-row-5',
-      })
-      .mockResolvedValueOnce({
-        kind: 'replay',
-        replay: {
-          statusCode: 503,
-          body: {
-            code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
-            message: 'Order service is temporarily unavailable. Please retry in a moment.',
-          },
-        },
-      });
+    // Reservation succeeds on both attempts — because the first attempt RELEASED the row, the key is
+    // free to reserve again rather than replaying a stored 503.
+    vi.spyOn(ordersRepository, 'reserveIdempotencyKey').mockResolvedValue({
+      kind: 'reserved',
+      idempotencyId: 'idem-row-5',
+    });
+    const releaseSpy = vi.spyOn(ordersRepository, 'releaseIdempotencyKey').mockResolvedValue(undefined);
+    vi.spyOn(ordersRepository, 'persistOrderSubmission').mockResolvedValue(undefined);
     vi.spyOn(ordersRepository, 'finalizeIdempotencyKey').mockResolvedValue(undefined);
 
     vi.spyOn(erpGateway, 'getCustomerRecentItems').mockResolvedValue({
@@ -429,9 +437,21 @@ describe('Customer order submit endpoint', () => {
       syncedAt: '2026-04-10T10:00:00.000Z',
       items: [],
     });
-    vi.spyOn(erpGateway, 'getCustomerPricing').mockRejectedValue(
-      new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'pricing endpoint unavailable'),
-    );
+    const pricingSpy = vi
+      .spyOn(erpGateway, 'getCustomerPricing')
+      .mockRejectedValueOnce(new ErpGatewayError(ERP_ERROR_CODES.ERP_UNAVAILABLE, 'pricing endpoint unavailable'))
+      .mockResolvedValue({
+        source: 'hashavshevet',
+        syncedAt: '2026-04-10T10:05:00.000Z',
+        version: 'v4',
+        lines: [{ itemId: 'item-1', unitPrice: 49.9, currency: 'ILS' }],
+      });
+    vi.spyOn(erpGateway, 'handoffOrder').mockResolvedValue({
+      status: 'submitted',
+      provider: 'hashavshevet',
+      externalRef: 'ORD-2026-00025',
+      acceptedAt: '2026-04-10T11:00:00.000Z',
+    });
 
     const firstResponse = await app.inject({
       method: 'POST',
@@ -441,14 +461,7 @@ describe('Customer order submit endpoint', () => {
         'idempotency-key': 'idem-781',
       },
       payload: {
-        lines: [
-          {
-            itemId: 'item-1',
-            quantity: 1,
-            unit: 'kg',
-            clientUnitPrice: 49.9,
-          },
-        ],
+        lines: [{ itemId: 'item-1', quantity: 1, unit: 'kg', clientUnitPrice: 49.9 }],
       },
     });
 
@@ -460,24 +473,21 @@ describe('Customer order submit endpoint', () => {
         'idempotency-key': 'idem-781',
       },
       payload: {
-        lines: [
-          {
-            itemId: 'item-1',
-            quantity: 1,
-            unit: 'kg',
-            clientUnitPrice: 49.9,
-          },
-        ],
+        lines: [{ itemId: 'item-1', quantity: 1, unit: 'kg', clientUnitPrice: 49.9 }],
       },
     });
 
     expect(firstResponse.statusCode).toBe(503);
-    expect(secondResponse.statusCode).toBe(503);
-    expect(secondResponse.json()).toEqual({
-      code: 'CUSTOMER_ORDER_ERP_UNAVAILABLE',
-      message: 'Order service is temporarily unavailable. Please retry in a moment.',
+    expect(releaseSpy).toHaveBeenCalledTimes(1);
+
+    // Same key, ERP recovered: the order is actually placed (not a replayed 503).
+    expect(secondResponse.statusCode).toBe(201);
+    expect(secondResponse.json()).toMatchObject({
+      orderRef: 'ORD-2026-00025',
+      status: 'submitted',
     });
-    expect(erpGateway.getCustomerPricing).toHaveBeenCalledTimes(1);
+    // The retry genuinely re-attempted the ERP call instead of replaying a stored response.
+    expect(pricingSpy).toHaveBeenCalledTimes(2);
   });
 });
 

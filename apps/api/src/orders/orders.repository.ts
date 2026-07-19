@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { AuditActorType, IdempotencyScope, MagicLinkStatus, OrderStatus, Prisma, PrismaClient, SessionStatus } from '@prisma/client';
 
 import type { AgentOrdersRepository } from './agent-orders.types';
-import { CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE } from './orders.errors';
+import { CUSTOMER_ORDER_ERP_UNAVAILABLE_CODE, OrderSessionConflictError } from './orders.errors';
 import type {
   OrderSubmitReplay,
   OrdersRepository,
@@ -114,54 +114,21 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
   async persistOrderSubmission(input: PersistOrderSubmissionInput): Promise<void> {
     const submittedAt = new Date(input.submittedAt);
     const orderStatus = toOrderStatus(input.status);
+    const consumesSession = input.consumeSession && orderStatus === OrderStatus.SUBMITTED;
 
-    await this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.create({
-        data: {
-          id: input.orderId,
-          customerSessionId: input.customerSessionId,
-          hashCustomerId: input.customerId,
-          hashOrderRef: input.orderRef,
-          submittedByAgentId: input.submittedByAgentId,
-          hashSubmittedByAgentId: input.hashSubmittedByAgentId,
-          status: orderStatus,
-          submittedAt,
-          requestedDeliveryDate: input.requestedDeliveryDate ? new Date(input.requestedDeliveryDate) : null,
-          estimatedTotal: new Prisma.Decimal(input.estimatedTotal),
-          currency: 'ILS',
-          orderLines: {
-            create: input.lines.map((line) => ({
-              hashItemId: line.itemId,
-              itemNameSnapshot: line.itemNameSnapshot,
-              quantity: new Prisma.Decimal(line.quantity),
-              unit: line.unit,
-              unitPriceSnapshot: new Prisma.Decimal(line.unitPriceSnapshot),
-              lineTotalSnapshot: new Prisma.Decimal(line.lineTotalSnapshot),
-            })),
-          },
-        },
-        select: {
-          id: true,
-        },
-      });
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        let consumedMagicLinkId: string | null = null;
 
-      if (input.consumeSession && orderStatus === OrderStatus.SUBMITTED) {
-        const session = await tx.session.findUnique({
-          where: {
-            id: input.customerSessionId,
-          },
-          select: {
-            id: true,
-            magicLinkId: true,
-          },
-        });
-
-        if (session) {
-          const consumedAt = new Date();
-
-          await tx.session.update({
+        if (consumesSession) {
+          // Atomically claim the session as the concurrency gate: only one concurrent submit can
+          // transition it ACTIVE -> CLOSED. A second submit for the same single-use magic link sees
+          // count === 0 and is rejected before it can create a duplicate order or ERP handoff.
+          const claimed = await tx.session.updateMany({
             where: {
-              id: session.id,
+              id: input.customerSessionId,
+              status: SessionStatus.ACTIVE,
+              isActive: true,
             },
             data: {
               status: SessionStatus.CLOSED,
@@ -169,9 +136,52 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
             },
           });
 
+          if (claimed.count === 0) {
+            throw new OrderSessionConflictError();
+          }
+
+          const session = await tx.session.findUnique({
+            where: { id: input.customerSessionId },
+            select: { magicLinkId: true },
+          });
+          consumedMagicLinkId = session?.magicLinkId ?? null;
+        }
+
+        const order = await tx.order.create({
+          data: {
+            id: input.orderId,
+            customerSessionId: input.customerSessionId,
+            hashCustomerId: input.customerId,
+            hashOrderRef: input.orderRef,
+            submittedByAgentId: input.submittedByAgentId,
+            hashSubmittedByAgentId: input.hashSubmittedByAgentId,
+            status: orderStatus,
+            submittedAt,
+            requestedDeliveryDate: input.requestedDeliveryDate ? new Date(input.requestedDeliveryDate) : null,
+            estimatedTotal: new Prisma.Decimal(input.estimatedTotal),
+            currency: 'ILS',
+            orderLines: {
+              create: input.lines.map((line) => ({
+                hashItemId: line.itemId,
+                itemNameSnapshot: line.itemNameSnapshot,
+                quantity: new Prisma.Decimal(line.quantity),
+                unit: line.unit,
+                unitPriceSnapshot: new Prisma.Decimal(line.unitPriceSnapshot),
+                lineTotalSnapshot: new Prisma.Decimal(line.lineTotalSnapshot),
+              })),
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (consumesSession && consumedMagicLinkId) {
+          const consumedAt = new Date();
+
           await tx.magicLink.update({
             where: {
-              id: session.magicLinkId,
+              id: consumedMagicLinkId,
             },
             data: {
               status: MagicLinkStatus.CONSUMED,
@@ -204,7 +214,7 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
                 actorId: input.customerId,
                 eventType: 'magic_link.consumed',
                 eventPayloadJson: {
-                  magicLinkId: session.magicLinkId,
+                  magicLinkId: consumedMagicLinkId,
                   orderId: order.id,
                 },
               },
@@ -213,20 +223,32 @@ export class PrismaOrdersRepository implements OrdersRepository, AgentOrdersRepo
 
           return;
         }
+
+        await tx.auditLog.create({
+          data: {
+            actorType: AuditActorType.CUSTOMER_SESSION,
+            actorId: input.customerSessionId,
+            eventType: 'customer_order.submitted',
+            eventPayloadJson: {
+              orderId: input.orderId,
+              orderRef: input.orderRef,
+            },
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof OrderSessionConflictError) {
+        throw error;
       }
 
-      await tx.auditLog.create({
-        data: {
-          actorType: AuditActorType.CUSTOMER_SESSION,
-          actorId: input.customerSessionId,
-          eventType: 'customer_order.submitted',
-          eventPayloadJson: {
-            orderId: input.orderId,
-            orderRef: input.orderRef,
-          },
-        },
-      });
-    });
+      // The partial unique index on (customer_session_id) rejects a duplicate active order for the
+      // same session — treat it as the same conflict as a lost session-claim race.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new OrderSessionConflictError();
+      }
+
+      throw error;
+    }
   }
 
   async listAgentOrders(input: {

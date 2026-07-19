@@ -16,6 +16,8 @@ import { ORDERS_REPOSITORY } from './orders.constants';
 import {
   createCustomerOrderErpUnavailableBody,
   CustomerOrderIdempotencyKeyConflictError,
+  CustomerOrderSessionAlreadySubmittedError,
+  OrderSessionConflictError,
 } from './orders.errors';
 import { createResponseHash } from './orders.repository';
 import type { OrderSubmitReplay, OrdersRepository } from './orders.types';
@@ -207,10 +209,40 @@ export class OrdersService {
       // reservation so the key is not left un-finalized — otherwise every same-key retry would
       // return a permanent conflict while the ERP order sits orphaned.
       await this.ordersRepository.releaseIdempotencyKey(reservation.idempotencyId);
+
+      if (error instanceof OrderSessionConflictError) {
+        // A concurrent submit already placed the order for this single-use session. Roll back this
+        // request's ERP handoff (best-effort) so it is not orphaned, then surface a clean 409.
+        await this.tryCancelErpHandoff(orderId, erpResponse, context.customerId);
+        throw new CustomerOrderSessionAlreadySubmittedError();
+      }
+
       throw error;
     }
 
     return replay;
+  }
+
+  private async tryCancelErpHandoff(
+    orderId: string,
+    erpResponse: Awaited<ReturnType<ErpGateway['handoffOrder']>>,
+    customerId: string,
+  ): Promise<void> {
+    if (!this.erpGateway.cancelOrder) {
+      return;
+    }
+
+    try {
+      await this.erpGateway.cancelOrder({
+        orderId,
+        orderRef: erpResponse.externalRef,
+        customerId,
+        reason: 'Duplicate submission for an already-consumed session',
+      });
+    } catch {
+      // Best-effort rollback: the local order was never persisted, so a failed cancel leaves only an
+      // ERP order to reconcile — never a duplicate in our system of record.
+    }
   }
 }
 
